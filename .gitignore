@@ -1,0 +1,60 @@
+# ---- OS junk ----
+.DS_Store
+Thumbs.db
+
+# ---- IDE (Android Studio / IntelliJ) ----
+.idea/
+*.iml
+
+# ---- Build outputs ----
+/build/
+/*/build/
+/**/build/
+.cxx/
+
+# ---- Gradle ----
+.gradle/
+**/local.properties
+# Keep the Gradle wrapper checked in (do NOT ignore these):
+#! gradle/wrapper/gradle-wrapper.jar
+#! gradle/wrapper/gradle-wrapper.properties
+#! gradlew
+#! gradlew.bat
+
+# ---- Android / NDK ----
+captures/
+.externalNativeBuild/
+outputs/
+generated/
+apk/
+
+# ---- Logs ----
+*.log
+
+# ---- Keystores & signing (never commit secrets) ----
+*.jks
+*.keystore
+keystore.properties
+
+# ---- Firebase / Google services ----
+# If you don't want to commit service configs, uncomment:
+# google-services.json
+# GoogleService-Info.plist
+
+# ---- Kotlin/Java tooling ----
+*.class
+hs_err_pid*
+
+# ---- Lint / Reports ----
+lint/reports/
+lint/intermediates/
+
+# ---- Test & Coverage ----
+**/coverage/
+**/jacoco/
+**/test-results/
+**/reports/
+*.ec
+
+# ---- Misc cache ----
+.cache/
