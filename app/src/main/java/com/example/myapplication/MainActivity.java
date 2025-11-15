@@ -34,6 +34,9 @@ public class MainActivity extends AppCompatActivity {
                 if (item.getItemId() == R.id.navigation_scan) {
                     startActivity(new Intent(MainActivity.this, ScanBarcodeActivity.class));
                     return true;
+                } else if (item.getItemId() == R.id.navigation_pantry) {
+                    startActivity(new Intent(MainActivity.this, PantryActivity.class));
+                    return true;
                 }
                 return false;
             }

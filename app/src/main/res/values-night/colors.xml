@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
-    
-    <color name="bottom_sheet_background">#FFFFFF</color>
-    <color name="text_primary">#000000</color>
-    <color name="text_secondary">#80000000</color>
+    <color name="bottom_sheet_background">#121212</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B3FFFFFF</color>
 
     <!-- Score Colors -->
     <color name="nutriscore_a">#2ECC71</color>
@@ -18,6 +15,6 @@
     <color name="nova_2">#FFC107</color>
     <color name="nova_3">#FF9800</color>
     <color name="nova_4">#F44336</color>
-
-    <color name="score_unknown">#BDBDBD</color>
+    
+    <color name="score_unknown">#424242</color>
 </resources>
