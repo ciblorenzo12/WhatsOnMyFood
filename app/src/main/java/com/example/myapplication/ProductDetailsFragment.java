@@ -1,16 +1,21 @@
 package com.example.myapplication;
 
 import android.app.Dialog;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.style.BackgroundColorSpan;
+import android.text.style.RelativeSizeSpan;
+import android.text.style.StyleSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.DecelerateInterpolator;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -23,7 +28,13 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.myapplication.analysis.ProductAnalysisReport;
+import com.example.myapplication.analysis.rules.AnalysisResult;
+import com.example.myapplication.analysis.AnalysisResultAdapter;
+import com.example.myapplication.analysis.rules.RuleEngine;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.squareup.picasso.Picasso;
@@ -40,13 +51,15 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     private ProductRepository productRepository;
     private ExecutorService executorService;
     private AppDatabase db;
+    private RuleEngine ruleEngine;
 
     private ImageView productImageView;
     private TextView productNameTextView, productBrandTextView, packagingTextView, labelsTextView, ingredientsTextView;
-    private TextView nutriscoreTextView, novaTextView, ecoscoreTextView, categoriesTextView, servingSizeTextView;
+    private TextView nutriscoreTextView, novaTextView, ecoscoreTextView, categoriesTextView, servingSizeTextView, healthScoreTextView;
     private Button removeFromPantryButton;
     private TableLayout nutritionFactsTable;
     private ConstraintLayout scoresLayout;
+    private RecyclerView analysisRecyclerView;
 
     public static ProductDetailsFragment newInstance(String barcode) {
         ProductDetailsFragment fragment = new ProductDetailsFragment();
@@ -62,6 +75,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         productRepository = new ProductRepository(requireActivity().getApplication());
         executorService = Executors.newSingleThreadExecutor();
         db = AppDatabase.getDatabase(requireContext());
+        ruleEngine = new RuleEngine();
     }
 
     @Nullable
@@ -125,15 +139,16 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         ecoscoreTextView = view.findViewById(R.id.ecoscore_text_view);
         categoriesTextView = view.findViewById(R.id.categories_text_view);
         servingSizeTextView = view.findViewById(R.id.serving_size_text_view);
+        healthScoreTextView = view.findViewById(R.id.health_score_text_view);
         removeFromPantryButton = view.findViewById(R.id.remove_from_pantry_button);
         nutritionFactsTable = view.findViewById(R.id.nutrition_facts_table);
         scoresLayout = view.findViewById(R.id.scores_layout);
+        analysisRecyclerView = view.findViewById(R.id.analysis_recycler_view);
+        analysisRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         nutriscoreTextView.setOnClickListener(v -> showNutriscoreExplanation());
         novaTextView.setOnClickListener(v -> showNovaExplanation());
         ecoscoreTextView.setOnClickListener(v -> showEcoScoreExplanation());
-
-        prepareViewsForAnimation();
 
         String barcode = getArguments() != null ? getArguments().getString(ARG_BARCODE) : null;
         if (barcode != null) {
@@ -171,10 +186,16 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
             public void onComplete(ProductRepository.ProductResult result) {
                 if (getActivity() == null) return;
                 getActivity().runOnUiThread(() -> {
+                    if (getActivity() == null || !isAdded()) {
+                        return;
+                    }
                     if (result != null && result.productWithDetails != null) {
                         displayProductDetails(result.productWithDetails);
 
-                        // Save to pantry now that we have the product details
+                        if (result.apiSourceName != null && !result.apiSourceName.isEmpty()) {
+                            Toast.makeText(getContext(), "Data from: " + result.apiSourceName, Toast.LENGTH_LONG).show();
+                        }
+
                         executorService.execute(() -> {
                             db.productDao().insertPantry(new Pantry(barcode));
                             checkIfProductInPantry(barcode);
@@ -197,8 +218,11 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
             @Override
             public void onError(Exception e) {
-                if (getActivity() == null) return;
+                 if (getActivity() == null) return;
                 getActivity().runOnUiThread(() -> {
+                     if (getActivity() == null || !isAdded()) {
+                        return;
+                    }
                     Toast.makeText(getContext(), "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     dismiss();
                 });
@@ -209,8 +233,11 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     private void checkIfProductInPantry(String barcode) {
         executorService.execute(() -> {
             Pantry pantryItem = db.productDao().findPantryItemByBarcode(barcode);
-            if (getActivity() == null) return;
+             if (getActivity() == null) return;
             getActivity().runOnUiThread(() -> {
+                 if (getActivity() == null || !isAdded()) {
+                        return;
+                    }
                 removeFromPantryButton.setVisibility(pantryItem != null ? View.VISIBLE : View.GONE);
             });
         });
@@ -228,25 +255,85 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         categoriesTextView.setText(productDetails.product.categories != null ? productDetails.product.categories : "");
         servingSizeTextView.setText(productDetails.product.servingSize != null ? productDetails.product.servingSize : "");
 
+        ProductAnalysisReport report = ruleEngine.analyze(productDetails);
+        healthScoreTextView.setText(String.format("Health Score: %d/100", report.getOverallScore()));
+        analysisRecyclerView.setAdapter(new AnalysisResultAdapter(report.getResults()));
+
         setScoreTextView(nutriscoreTextView, productDetails.product.nutriscoreGrade, "Nutri-Score");
         setScoreTextView(novaTextView, productDetails.product.novaGroup, "NOVA Group");
         setScoreTextView(ecoscoreTextView, productDetails.product.ecoscoreGrade, "Eco-Score");
 
         displayNutriments(productDetails.nutriments);
+        displayHighlightedIngredients(productDetails, report);
+    }
+
+    private void displayHighlightedIngredients(ProductWithDetails productDetails, ProductAnalysisReport report) {
+        boolean hasBadIngredients = false;
+        for (AnalysisResult result : report.getResults()) {
+            if (result.getLevel() == AnalysisResult.WarningLevel.WARNING || result.getLevel() == AnalysisResult.WarningLevel.SEVERE) {
+                hasBadIngredients = true;
+                break;
+            }
+        }
 
         if (productDetails.ingredients != null && !productDetails.ingredients.isEmpty()) {
-            StringBuilder ingredientsString = new StringBuilder();
-            for (Ingredient ingredient : productDetails.ingredients) {
+            SpannableStringBuilder spannableBuilder = new SpannableStringBuilder();
+            for (int i = 0; i < productDetails.ingredients.size(); i++) {
+                Ingredient ingredient = productDetails.ingredients.get(i);
                 if (ingredient.text != null) {
-                    ingredientsString.append("\u2022 ").append(ingredient.text).append("\n");
+                    spannableBuilder.append(ingredient.text);
+                    if (i < productDetails.ingredients.size() - 1) {
+                        spannableBuilder.append(", ");
+                    }
                 }
             }
-            ingredientsTextView.setText(ingredientsString.toString().trim());
+
+            if (hasBadIngredients) {
+                List<String> badTerms = new ArrayList<>();
+                List<String> goodTerms = new ArrayList<>();
+                for (AnalysisResult result : report.getResults()) {
+                    if (result.getTriggeringIngredient() != null) {
+                        if (result.getLevel() == AnalysisResult.WarningLevel.INFO) {
+                            goodTerms.add(result.getTriggeringIngredient().toLowerCase());
+                        } else {
+                            badTerms.add(result.getTriggeringIngredient().toLowerCase());
+                        }
+                    }
+                }
+
+                for (String goodTerm : goodTerms) {
+                    int startIndex = 0;
+                    while (startIndex >= 0) {
+                        startIndex = spannableBuilder.toString().toLowerCase().indexOf(goodTerm, startIndex);
+                        if (startIndex >= 0) {
+                            spannableBuilder.setSpan(new BackgroundColorSpan(0x3300FF00), startIndex, startIndex + goodTerm.length(), 0);
+                            startIndex += goodTerm.length();
+                        }
+                    }
+                }
+
+                for (String badTerm : badTerms) {
+                    int startIndex = 0;
+                    while (startIndex >= 0) {
+                        startIndex = spannableBuilder.toString().toLowerCase().indexOf(badTerm, startIndex);
+                        if (startIndex >= 0) {
+                            spannableBuilder.setSpan(new BackgroundColorSpan(0x33FF0000), startIndex, startIndex + badTerm.length(), 0);
+                            spannableBuilder.setSpan(new StyleSpan(Typeface.BOLD), startIndex, startIndex + badTerm.length(), 0);
+                            spannableBuilder.setSpan(new RelativeSizeSpan(1.2f), startIndex, startIndex + badTerm.length(), 0);
+                            startIndex += badTerm.length();
+                        }
+                    }
+                }
+            } else {
+                // Apply prominent "good" styling to the entire string
+                spannableBuilder.setSpan(new BackgroundColorSpan(0x3300FF00), 0, spannableBuilder.length(), 0);
+                spannableBuilder.setSpan(new StyleSpan(Typeface.BOLD), 0, spannableBuilder.length(), 0);
+                spannableBuilder.setSpan(new RelativeSizeSpan(1.2f), 0, spannableBuilder.length(), 0);
+            }
+            ingredientsTextView.setText(spannableBuilder);
         } else {
             ingredientsTextView.setText("No ingredients listed.");
         }
-
-        animateViewsIn();
     }
 
     private void displayNutriments(Nutriments nutriments) {
@@ -279,7 +366,8 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     }
 
     private void setScoreTextView(TextView textView, String score, String prefix) {
-        Drawable backgroundDrawable = ContextCompat.getDrawable(requireContext(), R.drawable.score_background);
+        if (getContext() == null) return;
+        Drawable backgroundDrawable = ContextCompat.getDrawable(getContext(), R.drawable.score_background);
         if (backgroundDrawable == null) return;
 
         Drawable newDrawable = backgroundDrawable.getConstantState().newDrawable().mutate();
@@ -290,7 +378,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
             tintColor = getScoreColor(score);
         } else {
             textView.setText(prefix + ": N/A");
-            tintColor = ContextCompat.getColor(requireContext(), R.color.score_unknown);
+            tintColor = ContextCompat.getColor(getContext(), R.color.score_unknown);
         }
 
         DrawableCompat.setTint(newDrawable, tintColor);
@@ -298,49 +386,28 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     }
 
     private int getScoreColor(String score) {
-        switch (score.toLowerCase()) {
-            case "a": return ContextCompat.getColor(requireContext(), R.color.nutriscore_a);
-            case "b": return ContextCompat.getColor(requireContext(), R.color.nutriscore_b);
-            case "c": return ContextCompat.getColor(requireContext(), R.color.nutriscore_c);
-            case "d": return ContextCompat.getColor(requireContext(), R.color.nutriscore_d);
-            case "e": return ContextCompat.getColor(requireContext(), R.color.nutriscore_e);
-            case "1": return ContextCompat.getColor(requireContext(), R.color.nova_1);
-            case "2": return ContextCompat.getColor(requireContext(), R.color.nova_2);
-            case "3": return ContextCompat.getColor(requireContext(), R.color.nova_3);
-            case "4": return ContextCompat.getColor(requireContext(), R.color.nova_4);
-            default: return ContextCompat.getColor(requireContext(), R.color.score_unknown);
+        if (getContext() == null) return Color.GRAY; 
+        if (score == null) return ContextCompat.getColor(getContext(), R.color.score_unknown);
+        
+        try {
+            int novaScore = (int) Math.round(Double.parseDouble(score));
+            switch (novaScore) {
+                case 1: return ContextCompat.getColor(getContext(), R.color.nova_1);
+                case 2: return ContextCompat.getColor(getContext(), R.color.nova_2);
+                case 3: return ContextCompat.getColor(getContext(), R.color.nova_3);
+                case 4: return ContextCompat.getColor(getContext(), R.color.nova_4);
+            }
+        } catch (NumberFormatException e) {
+            // Not a number, fall through to check for letter grades.
         }
-    }
 
-    private void prepareViewsForAnimation() {
-        productImageView.setAlpha(0f);
-        productNameTextView.setAlpha(0f);
-        productBrandTextView.setAlpha(0f);
-        scoresLayout.setAlpha(0f);
-        nutritionFactsTable.setAlpha(0f);
-    }
-
-    private void animateViewsIn() {
-        List<View> viewsToAnimate = new ArrayList<>();
-        viewsToAnimate.add(productImageView);
-        viewsToAnimate.add(productNameTextView);
-        viewsToAnimate.add(productBrandTextView);
-        viewsToAnimate.add(scoresLayout);
-        viewsToAnimate.add(nutritionFactsTable);
-
-        long delay = 150; // start delay
-        long stagger = 75; // delay between each item
-
-        for (View view : viewsToAnimate) {
-            view.setTranslationY(50);
-            view.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setDuration(400)
-                .setStartDelay(delay)
-                .setInterpolator(new DecelerateInterpolator())
-                .start();
-            delay += stagger;
+        switch (score.toLowerCase()) {
+            case "a": return ContextCompat.getColor(getContext(), R.color.nutriscore_a);
+            case "b": return ContextCompat.getColor(getContext(), R.color.nutriscore_b);
+            case "c": return ContextCompat.getColor(getContext(), R.color.nutriscore_c);
+            case "d": return ContextCompat.getColor(getContext(), R.color.nutriscore_d);
+            case "e": return ContextCompat.getColor(getContext(), R.color.nutriscore_e);
+            default: return ContextCompat.getColor(getContext(), R.color.score_unknown);
         }
     }
 

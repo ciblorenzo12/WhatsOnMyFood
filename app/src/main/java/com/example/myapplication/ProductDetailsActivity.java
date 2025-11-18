@@ -1,8 +1,15 @@
 package com.example.myapplication;
 
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.style.BackgroundColorSpan;
+import android.text.style.RelativeSizeSpan;
+import android.text.style.StyleSpan;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
@@ -21,29 +28,38 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.myapplication.analysis.ProductAnalysisReport;
+import com.example.myapplication.analysis.rules.AnalysisResult;
+import com.example.myapplication.analysis.AnalysisResultAdapter;
+import com.example.myapplication.analysis.rules.RuleEngine;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.squareup.picasso.Picasso;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ProductDetailsActivity extends AppCompatActivity {
 
     public static final String EXTRA_BARCODE = "com.example.myapplication.BARCODE";
-    public static final String RESULT_DATA_CHANGED = "com.example.myapplication.DATA_CHANGED";
 
     private ProductRepository productRepository;
     private ExecutorService executorService;
     private AppDatabase db;
+    private RuleEngine ruleEngine;
 
     private ImageView productImageView;
     private TextView productNameTextView, productBrandTextView, packagingTextView, labelsTextView, ingredientsTextView;
-    private TextView nutriscoreTextView, novaTextView, ecoscoreTextView, categoriesTextView, servingSizeTextView;
+    private TextView nutriscoreTextView, novaTextView, ecoscoreTextView, categoriesTextView, servingSizeTextView, healthScoreTextView;
     private Button removeFromPantryButton;
     private CollapsingToolbarLayout collapsingToolbarLayout;
     private LinearLayout detailsLayout;
     private TableLayout nutritionFactsTable;
+    private RecyclerView analysisRecyclerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +76,7 @@ public class ProductDetailsActivity extends AppCompatActivity {
         productRepository = new ProductRepository(getApplication());
         executorService = Executors.newSingleThreadExecutor();
         db = AppDatabase.getDatabase(this);
+        ruleEngine = new RuleEngine();
 
         productImageView = findViewById(R.id.product_image_view);
         productNameTextView = findViewById(R.id.product_name_text_view);
@@ -72,10 +89,13 @@ public class ProductDetailsActivity extends AppCompatActivity {
         ecoscoreTextView = findViewById(R.id.ecoscore_text_view);
         categoriesTextView = findViewById(R.id.categories_text_view);
         servingSizeTextView = findViewById(R.id.serving_size_text_view);
+        healthScoreTextView = findViewById(R.id.health_score_text_view);
         removeFromPantryButton = findViewById(R.id.remove_from_pantry_button);
         collapsingToolbarLayout = findViewById(R.id.collapsing_toolbar);
         detailsLayout = findViewById(R.id.details_layout);
         nutritionFactsTable = findViewById(R.id.nutrition_facts_table);
+        analysisRecyclerView = findViewById(R.id.analysis_recycler_view);
+        analysisRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         nutriscoreTextView.setOnClickListener(v -> showNutriscoreExplanation());
         novaTextView.setOnClickListener(v -> showNovaExplanation());
@@ -92,7 +112,7 @@ public class ProductDetailsActivity extends AppCompatActivity {
                     runOnUiThread(() -> {
                         Toast.makeText(this, "Removed from Pantry", Toast.LENGTH_SHORT).show();
                         Intent resultIntent = new Intent();
-                        resultIntent.putExtra(RESULT_DATA_CHANGED, true);
+                        resultIntent.putExtra(PantryActivity.RESULT_DATA_CHANGED, true);
                         setResult(RESULT_OK, resultIntent);
                         finish();
                     });
@@ -121,6 +141,11 @@ public class ProductDetailsActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     if (result != null && result.productWithDetails != null) {
                         displayProductDetails(result.productWithDetails);
+                        
+                        if (result.apiSourceName != null && !result.apiSourceName.isEmpty()) {
+                            Toast.makeText(ProductDetailsActivity.this, "Data from: " + result.apiSourceName, Toast.LENGTH_LONG).show();
+                        }
+
                         switch (result.status) {
                             case STALE:
                                 Toast.makeText(ProductDetailsActivity.this, "Showing stale data. Please connect to the internet for the latest.", Toast.LENGTH_LONG).show();
@@ -169,24 +194,72 @@ public class ProductDetailsActivity extends AppCompatActivity {
         categoriesTextView.setText(productDetails.product.categories != null ? productDetails.product.categories : "");
         servingSizeTextView.setText(productDetails.product.servingSize != null ? productDetails.product.servingSize : "");
 
+        ProductAnalysisReport report = ruleEngine.analyze(productDetails);
+        healthScoreTextView.setText(String.format("Health Score: %d/100", report.getOverallScore()));
+        analysisRecyclerView.setAdapter(new AnalysisResultAdapter(report.getResults()));
+
         setScoreTextView(nutriscoreTextView, productDetails.product.nutriscoreGrade, "Nutri-Score");
         setScoreTextView(novaTextView, productDetails.product.novaGroup, "NOVA Group");
         setScoreTextView(ecoscoreTextView, productDetails.product.ecoscoreGrade, "Eco-Score");
 
         displayNutriments(productDetails.nutriments);
+        displayHighlightedIngredients(productDetails, report);
+    }
 
+    private void displayHighlightedIngredients(ProductWithDetails productDetails, ProductAnalysisReport report) {
         if (productDetails.ingredients != null && !productDetails.ingredients.isEmpty()) {
-            StringBuilder ingredientsString = new StringBuilder();
-            for (Ingredient ingredient : productDetails.ingredients) {
+            SpannableStringBuilder spannableBuilder = new SpannableStringBuilder();
+            for (int i = 0; i < productDetails.ingredients.size(); i++) {
+                Ingredient ingredient = productDetails.ingredients.get(i);
                 if (ingredient.text != null) {
-                    ingredientsString.append("\u2022 ").append(ingredient.text).append("\n");
+                    spannableBuilder.append(ingredient.text);
+                    if (i < productDetails.ingredients.size() - 1) {
+                        spannableBuilder.append(", ");
+                    }
                 }
             }
-            ingredientsTextView.setText(ingredientsString.toString().trim());
+
+            // Bold 'organic' labels
+            int organicIndex = 0;
+            while(organicIndex >= 0){
+                organicIndex = spannableBuilder.toString().toLowerCase().indexOf("organic", organicIndex);
+                if(organicIndex >= 0){
+                    spannableBuilder.setSpan(new StyleSpan(Typeface.BOLD), organicIndex, organicIndex + 7, 0);
+                    organicIndex += 7;
+                }
+            }
+
+            boolean hasBadIngredients = report.getResults().stream().anyMatch(r -> r.getLevel() == AnalysisResult.WarningLevel.WARNING || r.getLevel() == AnalysisResult.WarningLevel.SEVERE);
+
+            if (hasBadIngredients) {
+                // Detailed highlighting for products with issues
+                for (AnalysisResult result : report.getResults()) {
+                    if (result.getTriggeringIngredient() != null) {
+                        int startIndex = 0;
+                        String term = result.getTriggeringIngredient().toLowerCase();
+                        while(startIndex >= 0){
+                            startIndex = spannableBuilder.toString().toLowerCase().indexOf(term, startIndex);
+                            if(startIndex >= 0){
+                                if (result.getLevel() == AnalysisResult.WarningLevel.INFO) {
+                                    spannableBuilder.setSpan(new BackgroundColorSpan(0x3300FF00), startIndex, startIndex + term.length(), 0);
+                                } else {
+                                    spannableBuilder.setSpan(new BackgroundColorSpan(0x33FF0000), startIndex, startIndex + term.length(), 0);
+                                }
+                                startIndex += term.length();
+                            }
+                        }
+                    }
+                }
+            } else {
+                // If no bad ingredients, highlight the whole thing green
+                spannableBuilder.setSpan(new BackgroundColorSpan(0x3300FF00), 0, spannableBuilder.length(), 0);
+            }
+            ingredientsTextView.setText(spannableBuilder);
         } else {
             ingredientsTextView.setText("No ingredients listed.");
         }
     }
+
 
     private void displayNutriments(Nutriments nutriments) {
         if (nutriments != null) {

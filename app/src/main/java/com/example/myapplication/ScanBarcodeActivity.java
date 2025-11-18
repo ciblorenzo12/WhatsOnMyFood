@@ -4,14 +4,11 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.Rect;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
 import android.util.Size;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -25,10 +22,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
-import androidx.camera.core.FocusMeteringAction;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.Preview;
-import androidx.camera.core.SurfaceOrientedMeteringPointFactory;
 import androidx.camera.core.TorchState;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
@@ -57,13 +52,11 @@ public class ScanBarcodeActivity extends AppCompatActivity {
     private ProcessCameraProvider cameraProvider;
     private ExecutorService cameraExecutor;
     private Camera camera;
-    private boolean isLaunchingDetails = false;
     private boolean isScanLocked = false;
 
     private final Handler launchHandler = new Handler(Looper.getMainLooper());
     private Runnable launchRunnable;
 
-    // Modern photo picker launcher
     private final ActivityResultLauncher<PickVisualMediaRequest> pickMediaLauncher = registerForActivityResult(new ActivityResultContracts.PickVisualMedia(), uri -> {
         if (uri != null) {
             try {
@@ -76,22 +69,20 @@ public class ScanBarcodeActivity extends AppCompatActivity {
         }
     });
 
-    // Launcher for requesting storage permission
     private final ActivityResultLauncher<String> requestStoragePermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
         if (isGranted) {
             Toast.makeText(this, "Permission granted. Please tap the import button again.", Toast.LENGTH_LONG).show();
         } else {
-            Toast.makeText(this, "Permission denied. You can't import images without it.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Permission denied. You can\'t import images without it.", Toast.LENGTH_LONG).show();
         }
     });
 
-    // Launcher for requesting camera permission
     private final ActivityResultLauncher<String> requestCameraPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
         if (isGranted) {
             startCamera();
         } else {
             Toast.makeText(this, "Camera permission is required to use the scanner.", Toast.LENGTH_LONG).show();
-            finish(); // Close the app if camera permission is denied
+            finish();
         }
     });
 
@@ -124,6 +115,23 @@ public class ScanBarcodeActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        checkOfflineStatus();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (cameraExecutor != null) {
+            cameraExecutor.shutdown();
+        }
+        if (cameraProvider != null) {
+            cameraProvider.unbindAll();
+        }
+    }
+
     private void startCamera() {
         cameraProviderFuture = ProcessCameraProvider.getInstance(this);
         cameraProviderFuture.addListener(() -> {
@@ -153,45 +161,27 @@ public class ScanBarcodeActivity extends AppCompatActivity {
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build();
 
         imageAnalysis.setAnalyzer(cameraExecutor, image -> {
-            if (image.getImage() == null || isLaunchingDetails) {
+            if (isScanLocked || image.getImage() == null) {
                 image.close();
                 return;
             }
 
-            int rotationDegrees = image.getImageInfo().getRotationDegrees();
-            graphicOverlay.setImageSourceInfo(
-                    rotationDegrees == 90 || rotationDegrees == 270 ? image.getHeight() : image.getWidth(),
-                    rotationDegrees == 90 || rotationDegrees == 270 ? image.getWidth() : image.getHeight(),
-                    false);
+            InputImage inputImage = InputImage.fromMediaImage(image.getImage(), image.getImageInfo().getRotationDegrees());
+            graphicOverlay.setImageSourceInfo(inputImage.getWidth(), inputImage.getHeight(), false);
 
-            InputImage inputImage = InputImage.fromMediaImage(image.getImage(), rotationDegrees);
             scanner.process(inputImage).addOnSuccessListener(barcodes -> {
                 graphicOverlay.setDrawStaticFrame(barcodes.isEmpty());
                 if (!barcodes.isEmpty()) {
                     Barcode barcode = barcodes.get(0);
-                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                        barcodeGraphic.update(barcode);
-                    }, 100);
-
-                    Rect boundingBox = barcode.getBoundingBox();
-                    if (boundingBox != null) {
-                        SurfaceOrientedMeteringPointFactory factory = new SurfaceOrientedMeteringPointFactory(previewView.getWidth(), previewView.getHeight());
-                        FocusMeteringAction action = new FocusMeteringAction.Builder(factory.createPoint(boundingBox.centerX(), boundingBox.centerY()), FocusMeteringAction.FLAG_AF).build();
-                        camera.getCameraControl().startFocusAndMetering(action);
-                    }
+                    barcodeGraphic.update(barcode);
 
                     if (!isScanLocked) {
                         isScanLocked = true;
                         launchRunnable = () -> handleBarcode(barcode.getRawValue());
                         launchHandler.postDelayed(launchRunnable, 300);
                     }
-
                 } else {
                     barcodeGraphic.hide();
-                    if (isScanLocked) {
-                        launchHandler.removeCallbacks(launchRunnable);
-                        isScanLocked = false;
-                    }
                 }
             }).addOnCompleteListener(task -> image.close());
         });
@@ -235,24 +225,18 @@ public class ScanBarcodeActivity extends AppCompatActivity {
     }
 
     private void handleBarcode(String barcode) {
-        if (isFinishing() || isLaunchingDetails) {
-            return;
-        }
-        isLaunchingDetails = true;
-
         if (cameraProvider != null) {
             cameraProvider.unbindAll();
         }
-        graphicOverlay.setVisibility(View.GONE);
 
         ProductDetailsFragment fragment = ProductDetailsFragment.newInstance(barcode);
+        
         getSupportFragmentManager().registerFragmentLifecycleCallbacks(new FragmentManager.FragmentLifecycleCallbacks() {
             @Override
             public void onFragmentViewDestroyed(@NonNull FragmentManager fm, @NonNull Fragment f) {
                 super.onFragmentViewDestroyed(fm, f);
                 if (f == fragment) {
-                    graphicOverlay.setVisibility(View.VISIBLE);
-                    resetScanner();
+                    resetScannerState();
                     if (ContextCompat.checkSelfPermission(ScanBarcodeActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
                         startCamera();
                     }
@@ -260,38 +244,22 @@ public class ScanBarcodeActivity extends AppCompatActivity {
                 }
             }
         }, false);
+        
         fragment.show(getSupportFragmentManager(), fragment.getTag());
     }
 
-    private void resetScanner() {
-        isLaunchingDetails = false;
+    private void resetScannerState() {
         isScanLocked = false;
         launchHandler.removeCallbacks(launchRunnable);
-        barcodeGraphic.hide();
-        graphicOverlay.setDrawStaticFrame(true);
+        if (graphicOverlay != null) {
+            barcodeGraphic.hide();
+            graphicOverlay.setDrawStaticFrame(true);
+        }
     }
 
     private void checkOfflineStatus(){
         if (offlineIndicator != null) {
             offlineIndicator.setVisibility(NetworkUtils.isOnline(this) ? View.GONE : View.VISIBLE);
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        resetScanner();
-        checkOfflineStatus();
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            startCamera();
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (cameraExecutor != null) {
-            cameraExecutor.shutdown();
         }
     }
 }

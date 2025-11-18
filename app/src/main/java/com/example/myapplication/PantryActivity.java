@@ -33,6 +33,8 @@ import java.util.concurrent.Executors;
 
 public class PantryActivity extends AppCompatActivity {
 
+    public static final String RESULT_DATA_CHANGED = "com.example.myapplication.DATA_CHANGED";
+
     private AppDatabase db;
     private ExecutorService executorService;
     private PantryAdapter adapter;
@@ -44,8 +46,8 @@ public class PantryActivity extends AppCompatActivity {
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                    if (result.getData().getBooleanExtra(ProductDetailsActivity.RESULT_DATA_CHANGED, false)) {
-                        loadPantryItems(recyclerView);
+                    if (result.getData().getBooleanExtra(RESULT_DATA_CHANGED, false)) {
+                        loadPantryItems();
                     }
                 }
             });
@@ -82,7 +84,7 @@ public class PantryActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.pantry_recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        loadPantryItems(recyclerView);
+        loadPantryItems();
         setupSwipeToDelete(recyclerView);
     }
 
@@ -117,7 +119,7 @@ public class PantryActivity extends AppCompatActivity {
         createFileLauncher.launch(intent);
     }
 
-    private void loadPantryItems(RecyclerView recyclerView) {
+    private void loadPantryItems() {
         executorService.execute(() -> {
             pantryProducts = db.productDao().getPantryProducts();
             runOnUiThread(() -> {
@@ -145,7 +147,7 @@ public class PantryActivity extends AppCompatActivity {
 
                 executorService.execute(() -> {
                     db.productDao().deletePantryProduct(product.barcode);
-                    runOnUiThread(() -> adapter.removeItem(position));
+                    runOnUiThread(() -> loadPantryItems());
                 });
             }
 
@@ -157,22 +159,6 @@ public class PantryActivity extends AppCompatActivity {
                 } else {
                     super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
                 }
-            }
-
-            @Override
-            public void onChildDrawOver(@NonNull Canvas c, @NonNull RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
-                 if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
-                    PantryAdapter.PantryViewHolder holder = (PantryAdapter.PantryViewHolder) viewHolder;
-                    getDefaultUIUtil().onDrawOver(c, recyclerView, holder.cardView, dX, dY, actionState, isCurrentlyActive);
-                 } else {
-                    super.onChildDrawOver(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
-                 }
-            }
-
-            @Override
-            public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
-                PantryAdapter.PantryViewHolder holder = (PantryAdapter.PantryViewHolder) viewHolder;
-                getDefaultUIUtil().clearView(holder.cardView);
             }
         }).attachToRecyclerView(recyclerView);
     }

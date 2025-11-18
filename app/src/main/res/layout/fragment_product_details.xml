@@ -49,6 +49,35 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp" />
 
+            <TextView
+                android:id="@+id/ingredients_label"
+                style="@style/TextAppearance.AppCompat.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ingredients" />
+
+            <TextView
+                android:id="@+id/ingredients_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp" />
+
+            <TextView
+                android:id="@+id/health_score_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- Analysis Results -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/analysis_recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp" />
+
             <!-- Scores Section -->
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/scores_layout"
@@ -146,19 +175,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp" />
-
-            <TextView
-                android:id="@+id/ingredients_label"
-                style="@style/TextAppearance.AppCompat.Title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Ingredients" />
-
-            <TextView
-                android:id="@+id/ingredients_text_view"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-
+            
             <Button
                 android:id="@+id/remove_from_pantry_button"
                 android:layout_width="wrap_content"

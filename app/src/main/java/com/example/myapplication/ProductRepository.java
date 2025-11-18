@@ -3,13 +3,17 @@ package com.example.myapplication;
 import android.app.Application;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ProductRepository {
 
     private final ProductDao productDao;
-    private final OpenFoodFactsApiClient apiClient;
+    private final List<BarcodeApiClient> apiClients;
     private final ExecutorService executorService;
     private final Application application;
 
@@ -18,10 +22,12 @@ public class ProductRepository {
     public static class ProductResult {
         public final ProductWithDetails productWithDetails;
         public final DataStatus status;
+        public final String apiSourceName;
 
-        public ProductResult(ProductWithDetails productWithDetails, DataStatus status) {
+        public ProductResult(ProductWithDetails productWithDetails, DataStatus status, String apiSourceName) {
             this.productWithDetails = productWithDetails;
             this.status = status;
+            this.apiSourceName = apiSourceName;
         }
     }
 
@@ -34,7 +40,11 @@ public class ProductRepository {
         this.application = application;
         AppDatabase db = AppDatabase.getDatabase(application);
         this.productDao = db.productDao();
-        this.apiClient = new OpenFoodFactsApiClient(application.getCacheDir());
+        this.apiClients = Arrays.asList(
+                new FoodDataCentralClient(),
+                new NutritionixClient(),
+                new OpenFoodFactsApiClient(application.getCacheDir())
+        );
         this.executorService = Executors.newSingleThreadExecutor();
     }
 
@@ -48,13 +58,13 @@ public class ProductRepository {
 
             if (NetworkUtils.isOnline(application)) {
                 if (cachedProduct == null || isCacheStale) {
-                    fetchFromApi(barcode, callback, cachedProduct, isCacheStale);
+                    fetchFromApiChain(barcode, callback, cachedProduct, isCacheStale);
                 } else {
-                    callback.onComplete(new ProductResult(cachedProduct, DataStatus.FRESH));
+                    callback.onComplete(new ProductResult(cachedProduct, DataStatus.FRESH, "Cache"));
                 }
             } else {
                 if (cachedProduct != null) {
-                    callback.onComplete(new ProductResult(cachedProduct, DataStatus.OFFLINE));
+                    callback.onComplete(new ProductResult(cachedProduct, DataStatus.OFFLINE, "Cache"));
                 } else {
                     callback.onError(new IOException("Offline and no cached data available."));
                 }
@@ -62,32 +72,38 @@ public class ProductRepository {
         });
     }
 
-    private void fetchFromApi(String barcode, RepositoryCallback<ProductResult> callback, ProductWithDetails cachedProduct, boolean isCacheStale) {
-        try {
-            ProductResponse response = apiClient.getProduct(barcode);
-            if (response != null && response.status == 1 && response.product != null) {
-                ProductWithDetails fetchedProduct = responseToProductWithDetails(response, barcode);
-                productDao.insertProductWithDetails(fetchedProduct);
-                productDao.insertCacheMeta(new CacheMeta(barcode, System.currentTimeMillis()));
-                callback.onComplete(new ProductResult(fetchedProduct, DataStatus.FRESH));
-            } else {
-                if (cachedProduct != null) {
-                    callback.onComplete(new ProductResult(cachedProduct, isCacheStale ? DataStatus.STALE : DataStatus.FRESH));
-                } else {
-                    callback.onError(new Exception("Product not found."));
+    private void fetchFromApiChain(String barcode, RepositoryCallback<ProductResult> callback, ProductWithDetails cachedProduct, boolean isCacheStale) {
+        ProductResponse response = null;
+        String sourceName = "";
+        for (BarcodeApiClient client : apiClients) {
+            try {
+                response = client.getProduct(barcode);
+                if (response != null && response.status == 1 && response.product != null && 
+                    (response.product.ingredientsText != null && !response.product.ingredientsText.isEmpty() || 
+                     response.product.ingredients != null && response.product.ingredients.length > 0)) {
+                    sourceName = client.getClass().getSimpleName();
+                    break; 
                 }
+            } catch (IOException e) {
+                e.printStackTrace(); 
             }
-        } catch (IOException e) {
+        }
+
+        if (response != null && response.status == 1 && response.product != null) {
+            ProductWithDetails fetchedProduct = responseToProductWithDetails(response, barcode);
+            productDao.insertProductWithDetails(fetchedProduct);
+            productDao.insertCacheMeta(new CacheMeta(barcode, System.currentTimeMillis()));
+            callback.onComplete(new ProductResult(fetchedProduct, DataStatus.FRESH, sourceName));
+        } else {
             if (cachedProduct != null) {
-                callback.onComplete(new ProductResult(cachedProduct, isCacheStale ? DataStatus.STALE : DataStatus.FRESH));
+                callback.onComplete(new ProductResult(cachedProduct, isCacheStale ? DataStatus.STALE : DataStatus.FRESH, "Cache"));
             } else {
-                callback.onError(e);
+                callback.onError(new Exception("Product not found in any API."));
             }
         }
     }
 
     private ProductWithDetails responseToProductWithDetails(ProductResponse response, String barcode) {
-        // This logic can be extracted to a mapper class for cleanliness
         ProductResponse.ProductData productData = response.product;
         Product product = new Product(barcode, productData.productName, productData.brands, productData.quantity, productData.imageUrl, productData.labels, productData.packaging, productData.categories, productData.servingSize, productData.nutriscoreGrade, productData.novaGroup, productData.ecoscoreGrade);
 
@@ -97,9 +113,38 @@ public class ProductRepository {
             nutriments = new Nutriments(barcode, nutrimentsData.energy, nutrimentsData.fat, nutrimentsData.saturatedFat, nutrimentsData.carbohydrates, nutrimentsData.sugars, nutrimentsData.proteins, nutrimentsData.salt, nutrimentsData.fiber);
         }
 
+        List<Ingredient> ingredients = new ArrayList<>();
+        if (productData.ingredientsText != null && !productData.ingredientsText.isEmpty()) {
+            String cleanedText = productData.ingredientsText.replaceAll("\\[[a-zA-Z-]+\\]", "").trim();
+            String[] ingredientsArray = cleanedText.split(",");
+            int rank = 0;
+            for (String ingredientText : ingredientsArray) {
+                String trimmedText = ingredientText.trim().replaceAll("_", "");
+                if (!trimmedText.isEmpty()) {
+                    String formattedText = trimmedText.substring(0, 1).toUpperCase() + trimmedText.substring(1).toLowerCase();
+                    ingredients.add(new Ingredient(barcode, formattedText, rank++));
+                }
+            }
+        } else if (productData.ingredients != null) {
+            for (ProductResponse.IngredientsData ingredientData : productData.ingredients) {
+                if (ingredientData.text != null && !ingredientData.text.isEmpty()) {
+                    String formattedText = ingredientData.text.substring(0, 1).toUpperCase() + ingredientData.text.substring(1).toLowerCase();
+                    ingredients.add(new Ingredient(barcode, formattedText, ingredientData.rank));
+                }
+            }
+        }
+
+        if (ingredients.size() == 1 && productData.labels != null && productData.labels.toLowerCase().contains("organic")) {
+            Ingredient singleIngredient = ingredients.get(0);
+            if (singleIngredient.text != null && !singleIngredient.text.toLowerCase().contains("organic")) {
+                singleIngredient.text = "Organic " + singleIngredient.text;
+            }
+        }
+
         ProductWithDetails productWithDetails = new ProductWithDetails();
         productWithDetails.product = product;
         productWithDetails.nutriments = nutriments;
+        productWithDetails.ingredients = ingredients;
 
         return productWithDetails;
     }
