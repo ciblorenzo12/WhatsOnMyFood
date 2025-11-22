@@ -2,7 +2,7 @@ package com.example.myapplication.analysis.rules;
 
 import com.example.myapplication.Ingredient;
 import com.example.myapplication.ProductWithDetails;
-import com.example.myapplication.analysis.rules.ProductAnalysisRule;
+import com.example.myapplication.analysis.AnalysisResult;
 
 import java.util.ArrayList;
 import java.util.Arrays;

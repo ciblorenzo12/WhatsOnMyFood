@@ -1,6 +1,7 @@
 package com.example.myapplication.analysis.rules;
 
 import com.example.myapplication.ProductWithDetails;
+import com.example.myapplication.analysis.AnalysisResult;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +14,7 @@ public class HighSaturatedFatRule implements ProductAnalysisRule {
     @Override
     public List<AnalysisResult> evaluate(ProductWithDetails productWithDetails) {
         List<AnalysisResult> results = new ArrayList<>();
-        if (productWithDetails != null && productWithDetails.nutriments != null) {
+        if (productWithDetails != null && productWithDetails.nutriments != null && productWithDetails.nutriments.saturatedFat != null) {
             if (productWithDetails.nutriments.saturatedFat > SAT_FAT_THRESHOLD_G_PER_100G) {
                 results.add(new AnalysisResult("High saturated fat content", AnalysisResult.WarningLevel.WARNING, 20, null, EXPLANATION));
             }

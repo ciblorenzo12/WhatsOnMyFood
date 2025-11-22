@@ -1,6 +1,7 @@
 package com.example.myapplication.analysis.rules;
 
 import com.example.myapplication.ProductWithDetails;
+import com.example.myapplication.analysis.AnalysisResult;
 
 import java.util.ArrayList;
 import java.util.List;
