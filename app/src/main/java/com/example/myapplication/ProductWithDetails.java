@@ -12,13 +12,13 @@ public class ProductWithDetails {
 
     @Relation(
             parentColumn = "barcode",
-            entityColumn = "productBarcode"
+            entityColumn = "barcode"
     )
     public Nutriments nutriments;
 
     @Relation(
             parentColumn = "barcode",
-            entityColumn = "productBarcode"
+            entityColumn = "barcode"
     )
     public List<Ingredient> ingredients;
 }

@@ -1,6 +1,6 @@
 package com.example.myapplication;
 
-import com.example.myapplication.analysis.rules.AnalysisResult;
+import com.example.myapplication.analysis.AnalysisResult;
 
 import java.util.List;
 

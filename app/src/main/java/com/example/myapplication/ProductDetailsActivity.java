@@ -1,15 +1,16 @@
 package com.example.myapplication;
 
 import android.content.Intent;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
+import android.view.Gravity;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
@@ -32,7 +33,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.myapplication.analysis.ProductAnalysisReport;
-import com.example.myapplication.analysis.rules.AnalysisResult;
+import com.example.myapplication.analysis.AnalysisResult;
 import com.example.myapplication.analysis.AnalysisResultAdapter;
 import com.example.myapplication.analysis.rules.RuleEngine;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
@@ -119,7 +120,7 @@ public class ProductDetailsActivity extends AppCompatActivity {
                 });
             });
         } else {
-            showErrorState("No barcode provided.");
+            showErrorState("No barcode provided.", barcode);
         }
     }
 
@@ -155,14 +156,14 @@ public class ProductDetailsActivity extends AppCompatActivity {
                                 break;
                         }
                     } else {
-                        showErrorState("Product not found for barcode: " + barcode);
+                        showErrorState("Product not found for barcode: " + barcode, barcode);
                     }
                 });
             }
 
             @Override
             public void onError(Exception e) {
-                runOnUiThread(() -> showErrorState("Error: " + e.getMessage()));
+                runOnUiThread(() -> showErrorState(e.getMessage(), barcode));
             }
         });
     }
@@ -207,52 +208,48 @@ public class ProductDetailsActivity extends AppCompatActivity {
     }
 
     private void displayHighlightedIngredients(ProductWithDetails productDetails, ProductAnalysisReport report) {
+        List<String> badTerms = new ArrayList<>();
+        List<String> goodTerms = new ArrayList<>();
+        for (AnalysisResult result : report.getResults()) {
+            if (result.getTriggeringIngredient() != null) {
+                if (result.getLevel() == AnalysisResult.WarningLevel.INFO) {
+                    goodTerms.add(result.getTriggeringIngredient().toLowerCase());
+                } else {
+                    badTerms.add(result.getTriggeringIngredient().toLowerCase());
+                }
+            }
+        }
+
         if (productDetails.ingredients != null && !productDetails.ingredients.isEmpty()) {
             SpannableStringBuilder spannableBuilder = new SpannableStringBuilder();
             for (int i = 0; i < productDetails.ingredients.size(); i++) {
                 Ingredient ingredient = productDetails.ingredients.get(i);
                 if (ingredient.text != null) {
-                    spannableBuilder.append(ingredient.text);
+                    String ingredientLine = ingredient.text;
                     if (i < productDetails.ingredients.size() - 1) {
-                        spannableBuilder.append(", ");
+                        ingredientLine += "\n";
                     }
-                }
-            }
 
-            // Bold 'organic' labels
-            int organicIndex = 0;
-            while(organicIndex >= 0){
-                organicIndex = spannableBuilder.toString().toLowerCase().indexOf("organic", organicIndex);
-                if(organicIndex >= 0){
-                    spannableBuilder.setSpan(new StyleSpan(Typeface.BOLD), organicIndex, organicIndex + 7, 0);
-                    organicIndex += 7;
-                }
-            }
+                    SpannableString spannableString = new SpannableString(ingredientLine);
 
-            boolean hasBadIngredients = report.getResults().stream().anyMatch(r -> r.getLevel() == AnalysisResult.WarningLevel.WARNING || r.getLevel() == AnalysisResult.WarningLevel.SEVERE);
-
-            if (hasBadIngredients) {
-                // Detailed highlighting for products with issues
-                for (AnalysisResult result : report.getResults()) {
-                    if (result.getTriggeringIngredient() != null) {
-                        int startIndex = 0;
-                        String term = result.getTriggeringIngredient().toLowerCase();
-                        while(startIndex >= 0){
-                            startIndex = spannableBuilder.toString().toLowerCase().indexOf(term, startIndex);
-                            if(startIndex >= 0){
-                                if (result.getLevel() == AnalysisResult.WarningLevel.INFO) {
-                                    spannableBuilder.setSpan(new BackgroundColorSpan(0x3300FF00), startIndex, startIndex + term.length(), 0);
-                                } else {
-                                    spannableBuilder.setSpan(new BackgroundColorSpan(0x33FF0000), startIndex, startIndex + term.length(), 0);
-                                }
-                                startIndex += term.length();
-                            }
+                    for (String goodTerm : goodTerms) {
+                        int startIndex = ingredient.text.toLowerCase().indexOf(goodTerm);
+                        if (startIndex != -1) {
+                            spannableString.setSpan(new BackgroundColorSpan(0x3300FF00), startIndex, startIndex + goodTerm.length(), 0);
                         }
                     }
+
+                    for (String badTerm : badTerms) {
+                        int startIndex = ingredient.text.toLowerCase().indexOf(badTerm);
+                        if (startIndex != -1) {
+                            spannableString.setSpan(new BackgroundColorSpan(0x33FF0000), startIndex, startIndex + badTerm.length(), 0);
+                            spannableString.setSpan(new StyleSpan(Typeface.BOLD), startIndex, startIndex + badTerm.length(), 0);
+                            spannableString.setSpan(new RelativeSizeSpan(1.2f), startIndex, startIndex + badTerm.length(), 0);
+                        }
+                    }
+
+                    spannableBuilder.append(spannableString);
                 }
-            } else {
-                // If no bad ingredients, highlight the whole thing green
-                spannableBuilder.setSpan(new BackgroundColorSpan(0x3300FF00), 0, spannableBuilder.length(), 0);
             }
             ingredientsTextView.setText(spannableBuilder);
         } else {
@@ -262,20 +259,109 @@ public class ProductDetailsActivity extends AppCompatActivity {
 
 
     private void displayNutriments(Nutriments nutriments) {
+        nutritionFactsTable.removeAllViews();
         if (nutriments != null) {
             nutritionFactsTable.setVisibility(View.VISIBLE);
-            addNutritionRow("Energy", nutriments.energy, "kcal");
-            addNutritionRow("Fat", nutriments.fat, "g");
-            addNutritionRow("Saturated Fat", nutriments.saturatedFat, "g");
-            addNutritionRow("Carbohydrate", nutriments.carbohydrate, "g");
-            addNutritionRow("Sugar", nutriments.sugar, "g");
-            addNutritionRow("Proteins", nutriments.proteins, "g");
-            addNutritionRow("Salt", nutriments.salt, "g");
-            addNutritionRow("Fiber", nutriments.fiber, "g");
+            
+            addNutritionHeaderRow("Energy & Macronutrients");
+            if (nutriments.energy != null && nutriments.energy > 0) addNutritionRow("Energy", nutriments.energy, "kcal");
+            if (nutriments.energyKj != null && nutriments.energyKj > 0) addNutritionRow("Energy (kJ)", nutriments.energyKj, "kJ");
+            if (nutriments.proteins != null && nutriments.proteins > 0) addNutritionRow("Proteins", nutriments.proteins, "g");
+            if (nutriments.carbohydrates != null && nutriments.carbohydrates > 0) addNutritionRow("Carbohydrates", nutriments.carbohydrates, "g");
+            if (nutriments.fat != null && nutriments.fat > 0) addNutritionRow("Fat", nutriments.fat, "g");
+            if (nutriments.fiber != null && nutriments.fiber > 0) addNutritionRow("Fiber", nutriments.fiber, "g");
+
+            addNutritionHeaderRow("Sugars");
+            if (nutriments.sugars != null && nutriments.sugars > 0) addNutritionRow("Total Sugars", nutriments.sugars, "g");
+            if (nutriments.addedSugars != null && nutriments.addedSugars > 0) addNutritionRow("Added Sugars", nutriments.addedSugars, "g");
+            if (nutriments.sucrose != null && nutriments.sucrose > 0) addNutritionRow("Sucrose", nutriments.sucrose, "g");
+            if (nutriments.glucose != null && nutriments.glucose > 0) addNutritionRow("Glucose", nutriments.glucose, "g");
+            if (nutriments.fructose != null && nutriments.fructose > 0) addNutritionRow("Fructose", nutriments.fructose, "g");
+            if (nutriments.lactose != null && nutriments.lactose > 0) addNutritionRow("Lactose", nutriments.lactose, "g");
+            if (nutriments.maltose != null && nutriments.maltose > 0) addNutritionRow("Maltose", nutriments.maltose, "g");
+            if (nutriments.maltodextrins != null && nutriments.maltodextrins > 0) addNutritionRow("Maltodextrins", nutriments.maltodextrins, "g");
+            if (nutriments.starch != null && nutriments.starch > 0) addNutritionRow("Starch", nutriments.starch, "g");
+            if (nutriments.polyols != null && nutriments.polyols > 0) addNutritionRow("Polyols", nutriments.polyols, "g");
+
+            addNutritionHeaderRow("Fats & Fatty Acids");
+            if (nutriments.saturatedFat != null && nutriments.saturatedFat > 0) addNutritionRow("Saturated Fat", nutriments.saturatedFat, "g");
+            if (nutriments.monounsaturatedFat != null && nutriments.monounsaturatedFat > 0) addNutritionRow("Monounsaturated Fat", nutriments.monounsaturatedFat, "g");
+            if (nutriments.polyunsaturatedFat != null && nutriments.polyunsaturatedFat > 0) addNutritionRow("Polyunsaturated Fat", nutriments.polyunsaturatedFat, "g");
+            if (nutriments.transFat != null && nutriments.transFat > 0) addNutritionRow("Trans Fat", nutriments.transFat, "g");
+            if (nutriments.cholesterol != null && nutriments.cholesterol > 0) addNutritionRow("Cholesterol", nutriments.cholesterol, "mg");
+            if (nutriments.omega3Fat != null && nutriments.omega3Fat > 0) addNutritionRow("Omega-3 Fat", nutriments.omega3Fat, "g");
+            if (nutriments.alphaLinolenicAcid != null && nutriments.alphaLinolenicAcid > 0) addNutritionRow("Alpha-Linolenic Acid", nutriments.alphaLinolenicAcid, "g");
+            if (nutriments.eicosapentaenoicAcid != null && nutriments.eicosapentaenoicAcid > 0) addNutritionRow("Eicosapentaenoic Acid", nutriments.eicosapentaenoicAcid, "g");
+            if (nutriments.docosahexaenoicAcid != null && nutriments.docosahexaenoicAcid > 0) addNutritionRow("Docosahexaenoic Acid (DHA)", nutriments.docosahexaenoicAcid, "g");
+            if (nutriments.omega6Fat != null && nutriments.omega6Fat > 0) addNutritionRow("Omega-6 Fat", nutriments.omega6Fat, "g");
+            if (nutriments.linoleicAcid != null && nutriments.linoleicAcid > 0) addNutritionRow("Linoleic Acid", nutriments.linoleicAcid, "g");
+            if (nutriments.arachidonicAcid != null && nutriments.arachidonicAcid > 0) addNutritionRow("Arachidonic Acid", nutriments.arachidonicAcid, "g");
+            if (nutriments.gammaLinolenicAcid != null && nutriments.gammaLinolenicAcid > 0) addNutritionRow("Gamma-Linolenic Acid", nutriments.gammaLinolenicAcid, "g");
+            if (nutriments.dihomoGammaLinolenicAcid != null && nutriments.dihomoGammaLinolenicAcid > 0) addNutritionRow("Dihomo-Gamma-Linolenic Acid", nutriments.dihomoGammaLinolenicAcid, "g");
+            if (nutriments.omega9Fat != null && nutriments.omega9Fat > 0) addNutritionRow("Omega-9 Fat", nutriments.omega9Fat, "g");
+            if (nutriments.oleicAcid != null && nutriments.oleicAcid > 0) addNutritionRow("Oleic Acid", nutriments.oleicAcid, "g");
+
+            addNutritionHeaderRow("Vitamins");
+            if (nutriments.vitaminA != null && nutriments.vitaminA > 0) addNutritionRow("Vitamin A", nutriments.vitaminA, "IU");
+            if (nutriments.vitaminD != null && nutriments.vitaminD > 0) addNutritionRow("Vitamin D", nutriments.vitaminD, "IU");
+            if (nutriments.vitaminE != null && nutriments.vitaminE > 0) addNutritionRow("Vitamin E", nutriments.vitaminE, "mg");
+            if (nutriments.vitaminK != null && nutriments.vitaminK > 0) addNutritionRow("Vitamin K", nutriments.vitaminK, "µg");
+            if (nutriments.vitaminC != null && nutriments.vitaminC > 0) addNutritionRow("Vitamin C", nutriments.vitaminC, "mg");
+            if (nutriments.vitaminB1 != null && nutriments.vitaminB1 > 0) addNutritionRow("Vitamin B1 (Thiamin)", nutriments.vitaminB1, "mg");
+            if (nutriments.vitaminB2 != null && nutriments.vitaminB2 > 0) addNutritionRow("Vitamin B2 (Riboflavin)", nutriments.vitaminB2, "mg");
+            if (nutriments.vitaminPP != null && nutriments.vitaminPP > 0) addNutritionRow("Vitamin B3 (Niacin)", nutriments.vitaminPP, "mg");
+            if (nutriments.vitaminB6 != null && nutriments.vitaminB6 > 0) addNutritionRow("Vitamin B6", nutriments.vitaminB6, "mg");
+            if (nutriments.vitaminB9 != null && nutriments.vitaminB9 > 0) addNutritionRow("Vitamin B9 (Folate)", nutriments.vitaminB9, "µg");
+            if (nutriments.vitaminB12 != null && nutriments.vitaminB12 > 0) addNutritionRow("Vitamin B12", nutriments.vitaminB12, "µg");
+            if (nutriments.biotin != null && nutriments.biotin > 0) addNutritionRow("Biotin (B7)", nutriments.biotin, "µg");
+            if (nutriments.pantothenicAcid != null && nutriments.pantothenicAcid > 0) addNutritionRow("Pantothenic Acid (B5)", nutriments.pantothenicAcid, "mg");
+
+            addNutritionHeaderRow("Minerals & Trace Elements");
+            if (nutriments.silica != null && nutriments.silica > 0) addNutritionRow("Silica", nutriments.silica, "mg");
+            if (nutriments.bicarbonate != null && nutriments.bicarbonate > 0) addNutritionRow("Bicarbonate", nutriments.bicarbonate, "mg");
+            if (nutriments.potassium != null && nutriments.potassium > 0) addNutritionRow("Potassium", nutriments.potassium, "mg");
+            if (nutriments.chloride != null && nutriments.chloride > 0) addNutritionRow("Chloride", nutriments.chloride, "mg");
+            if (nutriments.calcium != null && nutriments.calcium > 0) addNutritionRow("Calcium", nutriments.calcium, "mg");
+            if (nutriments.phosphorus != null && nutriments.phosphorus > 0) addNutritionRow("Phosphorus", nutriments.phosphorus, "mg");
+            if (nutriments.iron != null && nutriments.iron > 0) addNutritionRow("Iron", nutriments.iron, "mg");
+            if (nutriments.magnesium != null && nutriments.magnesium > 0) addNutritionRow("Magnesium", nutriments.magnesium, "mg");
+            if (nutriments.zinc != null && nutriments.zinc > 0) addNutritionRow("Zinc", nutriments.zinc, "mg");
+            if (nutriments.copper != null && nutriments.copper > 0) addNutritionRow("Copper", nutriments.copper, "mg");
+            if (nutriments.manganese != null && nutriments.manganese > 0) addNutritionRow("Manganese", nutriments.manganese, "mg");
+            if (nutriments.fluoride != null && nutriments.fluoride > 0) addNutritionRow("Fluoride", nutriments.fluoride, "µg");
+            if (nutriments.selenium != null && nutriments.selenium > 0) addNutritionRow("Selenium", nutriments.selenium, "µg");
+            if (nutriments.chromium != null && nutriments.chromium > 0) addNutritionRow("Chromium", nutriments.chromium, "µg");
+            if (nutriments.molybdenum != null && nutriments.molybdenum > 0) addNutritionRow("Molybdenum", nutriments.molybdenum, "µg");
+            if (nutriments.iodine != null && nutriments.iodine > 0) addNutritionRow("Iodine", nutriments.iodine, "µg");
+
+            addNutritionHeaderRow("Other");
+            if (nutriments.sodium != null && nutriments.sodium > 0) addNutritionRow("Sodium", nutriments.sodium, "mg");
+            if (nutriments.alcohol != null && nutriments.alcohol > 0) addNutritionRow("Alcohol", nutriments.alcohol, "% vol");
+            if (nutriments.caffeine != null && nutriments.caffeine > 0) addNutritionRow("Caffeine", nutriments.caffeine, "mg");
+            if (nutriments.taurine != null && nutriments.taurine > 0) addNutritionRow("Taurine", nutriments.taurine, "mg");
+            if (nutriments.carbonFootprint != null && nutriments.carbonFootprint > 0) addNutritionRow("Carbon Footprint", nutriments.carbonFootprint, "g CO2e/100g");
+
         } else {
             nutritionFactsTable.setVisibility(View.GONE);
         }
     }
+
+    private void addNutritionHeaderRow(String title) {
+        TableRow row = new TableRow(this);
+        TextView header = new TextView(this);
+        header.setText(title);
+        header.setTextSize(18);
+        header.setTypeface(null, Typeface.BOLD);
+        header.setGravity(Gravity.CENTER_HORIZONTAL);
+        TableRow.LayoutParams params = new TableRow.LayoutParams();
+        params.span = 2;
+        params.topMargin = 24;
+        params.bottomMargin = 8;
+        header.setLayoutParams(params);
+        row.addView(header);
+        nutritionFactsTable.addView(row);
+    }
+
 
     private void addNutritionRow(String name, double value, String unit) {
         TableRow row = new TableRow(this);
@@ -284,6 +370,9 @@ public class ProductDetailsActivity extends AppCompatActivity {
 
         nameView.setText(name);
         valueView.setText(String.format("%.2f %s", value, unit));
+        nameView.setPadding(8, 4, 8, 4);
+        valueView.setPadding(8, 4, 8, 4);
+        valueView.setGravity(Gravity.END);
 
         row.addView(nameView);
         row.addView(valueView);
@@ -310,31 +399,55 @@ public class ProductDetailsActivity extends AppCompatActivity {
     }
 
     private int getScoreColor(String score) {
+        if (score == null) return ContextCompat.getColor(this, R.color.score_unknown);
+
+        try {
+            int novaScore = (int) Math.round(Double.parseDouble(score));
+            switch (novaScore) {
+                case 1: return ContextCompat.getColor(this, R.color.nova_1);
+                case 2: return ContextCompat.getColor(this, R.color.nova_2);
+                case 3: return ContextCompat.getColor(this, R.color.nova_3);
+                case 4: return ContextCompat.getColor(this, R.color.nova_4);
+            }
+        } catch (NumberFormatException e) {
+            // Not a number, fall through to check for letter grades.
+        }
+
         switch (score.toLowerCase()) {
             case "a": return ContextCompat.getColor(this, R.color.nutriscore_a);
             case "b": return ContextCompat.getColor(this, R.color.nutriscore_b);
             case "c": return ContextCompat.getColor(this, R.color.nutriscore_c);
             case "d": return ContextCompat.getColor(this, R.color.nutriscore_d);
             case "e": return ContextCompat.getColor(this, R.color.nutriscore_e);
-            case "1": return ContextCompat.getColor(this, R.color.nova_1);
-            case "2": return ContextCompat.getColor(this, R.color.nova_2);
-            case "3": return ContextCompat.getColor(this, R.color.nova_3);
-            case "4": return ContextCompat.getColor(this, R.color.nova_4);
             default: return ContextCompat.getColor(this, R.color.score_unknown);
         }
     }
 
-    private void showErrorState(String message) {
-        collapsingToolbarLayout.setTitle("Error");
-        productNameTextView.setText(message);
-        productBrandTextView.setText("");
-        packagingTextView.setText("");
-        labelsTextView.setText("");
-        ingredientsTextView.setText("");
-        categoriesTextView.setText("");
-        servingSizeTextView.setText("");
-        nutritionFactsTable.setVisibility(View.GONE);
-        removeFromPantryButton.setVisibility(View.GONE);
+    private void showErrorState(String message, final String barcode) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Error");
+        
+        String lowerCaseMessage = message.toLowerCase();
+
+        if (lowerCaseMessage.contains("network error") || lowerCaseMessage.contains("offline")) {
+            builder.setMessage("A network error occurred. Please check your connection and try again.");
+            builder.setPositiveButton("Retry", (dialog, which) -> loadProductDetails(barcode));
+            builder.setNegativeButton("Cancel", (dialog, which) -> finish());
+        } else if (lowerCaseMessage.contains("not found") || lowerCaseMessage.contains("insufficient")) {
+            builder.setMessage("We couldn't find complete information for this product in our database.");
+            builder.setPositiveButton("Search Web", (dialog, which) -> {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://duckduckgo.com/?q=" + barcode));
+                startActivity(intent);
+                finish();
+            });
+            builder.setNegativeButton("Cancel", (dialog, which) -> finish());
+        } else {
+            builder.setMessage("An unexpected error occurred: " + message);
+            builder.setPositiveButton("OK", (dialog, which) -> finish());
+        }
+        
+        builder.setOnCancelListener(dialog -> finish());
+        builder.show();
     }
 
     @Override
