@@ -21,4 +21,9 @@ public class HighSugarRule implements ProductAnalysisRule {
         }
         return results;
     }
+
+    @Override
+    public String getRuleDescription() {
+        return "Detects products with high total sugar content (above 22.5g per 100g). High sugar intake is linked to obesity and metabolic issues.";
+    }
 }

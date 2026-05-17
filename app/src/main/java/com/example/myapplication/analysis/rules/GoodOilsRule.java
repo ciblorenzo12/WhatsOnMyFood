@@ -22,7 +22,7 @@ public class GoodOilsRule implements ProductAnalysisRule {
                     String lowerCaseIngredient = ingredient.text.toLowerCase();
                     for (String goodOil : GOOD_OILS) {
                         if (lowerCaseIngredient.contains(goodOil)) {
-                            results.add(new AnalysisResult("Contains beneficial oils", AnalysisResult.WarningLevel.INFO, -5, goodOil, EXPLANATION));
+                            results.add(new AnalysisResult("Contains beneficial oils", AnalysisResult.WarningLevel.POSITIVE, -5, goodOil, EXPLANATION));
                         }
                     }
                 }

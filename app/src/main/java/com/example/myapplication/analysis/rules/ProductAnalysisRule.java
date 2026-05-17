@@ -7,4 +7,7 @@ import java.util.List;
 
 public interface ProductAnalysisRule {
     List<AnalysisResult> evaluate(ProductWithDetails productWithDetails);
+    default String getRuleDescription() {
+        return "This rule checks for " + this.getClass().getSimpleName().replace("Rule", "") + ".";
+    }
 }

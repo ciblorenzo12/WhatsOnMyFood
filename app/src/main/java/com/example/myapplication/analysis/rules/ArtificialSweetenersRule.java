@@ -37,4 +37,9 @@ public class ArtificialSweetenersRule implements ProductAnalysisRule {
         }
         return results;
     }
+
+    @Override
+    public String getRuleDescription() {
+        return "Detects artificial sweeteners (sucralose, aspartame) and sugar alcohols. These can affect metabolism, gut microbiome, and cause digestive issues.";
+    }
 }

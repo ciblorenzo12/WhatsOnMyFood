@@ -27,4 +27,9 @@ public class AddedSugarRule implements ProductAnalysisRule {
         }
         return results;
     }
+
+    @Override
+    public String getRuleDescription() {
+        return "Detects any amount of added sugar. Added sugar is a significant negative signal linked to health problems.";
+    }
 }

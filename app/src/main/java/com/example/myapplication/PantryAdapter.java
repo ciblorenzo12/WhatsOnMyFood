@@ -46,6 +46,11 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
         return products.size();
     }
 
+    public void updateList(List<Product> newProducts) {
+        this.products = newProducts;
+        notifyDataSetChanged();
+    }
+
     public void removeItem(int position) {
         products.remove(position);
         notifyItemRemoved(position);
@@ -57,7 +62,7 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
 
     static class PantryViewHolder extends RecyclerView.ViewHolder {
         ImageView productImageView;
-        TextView productNameTextView, productBrandTextView, productQuantityTextView;
+        TextView productNameTextView, productBrandTextView, productQuantityTextView, aiVerifiedBadge;
         public MaterialCardView cardView; // Expose the foreground view
 
         public PantryViewHolder(@NonNull View itemView) {
@@ -66,6 +71,7 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
             productNameTextView = itemView.findViewById(R.id.product_name_text_view);
             productBrandTextView = itemView.findViewById(R.id.product_brand_text_view);
             productQuantityTextView = itemView.findViewById(R.id.product_quantity_text_view);
+            aiVerifiedBadge = itemView.findViewById(R.id.ai_verified_badge);
             cardView = itemView.findViewById(R.id.card_view);
         }
 
@@ -73,8 +79,23 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
             productNameTextView.setText(product.productName);
             productBrandTextView.setText(product.brands);
             productQuantityTextView.setText(product.quantity);
+
+            if (product.healthScore != null) {
+                aiVerifiedBadge.setVisibility(View.VISIBLE);
+            } else {
+                aiVerifiedBadge.setVisibility(View.GONE);
+            }
+
             if (product.imageUrl != null && !product.imageUrl.isEmpty()) {
-                Picasso.get().load(product.imageUrl).into(productImageView);
+                Picasso.get()
+                        .load(product.imageUrl)
+                        .placeholder(R.drawable.ic_scan)
+                        .error(R.drawable.ic_scan)
+                        .resize(100, 100)
+                        .centerCrop()
+                        .into(productImageView);
+            } else {
+                productImageView.setImageResource(R.drawable.ic_scan);
             }
             itemView.setOnClickListener(v -> listener.onItemClick(product));
         }

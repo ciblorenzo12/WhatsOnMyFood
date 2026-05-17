@@ -5,7 +5,7 @@ import androidx.annotation.Nullable;
 public class AnalysisResult {
 
     public enum WarningLevel {
-        INFO, WARNING, SEVERE
+        POSITIVE, INFO, WARNING, SEVERE
     }
 
     private final String message;

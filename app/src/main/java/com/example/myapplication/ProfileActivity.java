@@ -95,8 +95,13 @@ public class ProfileActivity extends AppCompatActivity {
         
         Uri photoUrl = currentUser.getPhotoUrl();
         if (photoUrl != null) {
-            String highResUrl = photoUrl.toString().replace("=s96-c", "=s400-c");
-            Picasso.get().load(highResUrl).placeholder(R.drawable.ic_launcher_background).into(profileImageView);
+            String highResUrl = photoUrl.toString().replace("=s96-c", "=s300-c"); // 300 is enough for a profile pic
+            Picasso.get()
+                    .load(highResUrl)
+                    .placeholder(R.drawable.ic_launcher_background)
+                    .resize(300, 300)
+                    .centerCrop()
+                    .into(profileImageView);
         }
     }
 

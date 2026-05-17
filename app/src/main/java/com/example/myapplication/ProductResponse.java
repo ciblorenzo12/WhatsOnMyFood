@@ -25,8 +25,12 @@ public class ProductResponse {
         @SerializedName("ecoscore_grade")
         public String ecoscoreGrade;
         public NutrimentsData nutriments;
-        @SerializedName("ingredients_text_with_allergens_en")
+        @SerializedName("ingredients_text")
         public String ingredientsText;
+
+        @SerializedName("ingredients_text_with_allergens_en")
+        public String ingredientsTextEn;
+
         public IngredientsData[] ingredients;
     }
 

@@ -64,4 +64,12 @@ public class RuleEngine {
 
         return new ProductAnalysisReport(Math.max(0, Math.min(100, overallScore)), allResults);
     }
+
+    public List<String> getRuleDescriptions() {
+        List<String> descriptions = new ArrayList<>();
+        for (ProductAnalysisRule rule : rules) {
+            descriptions.add(rule.getRuleDescription());
+        }
+        return descriptions;
+    }
 }

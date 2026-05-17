@@ -1,6 +1,6 @@
 plugins {
     id("com.android.application") version "9.2.1"
-    id("com.google.gms.google-services") version "4.4.2"
+    id("com.google.gms.google-services") version "4.4.4"
 }
 
 android {
@@ -48,6 +48,7 @@ dependencies {
 
     // Camera & ML Kit
     implementation("com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.1")
+    implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.1")
     implementation("androidx.camera:camera-core:1.4.1")
     implementation("androidx.camera:camera-camera2:1.4.1")
     implementation("androidx.camera:camera-lifecycle:1.4.1")
@@ -58,6 +59,9 @@ dependencies {
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("com.squareup.picasso:picasso:2.71828")
     implementation("androidx.test.espresso:espresso-idling-resource:3.6.1")
+
+    // OpenAI SDK
+    implementation("com.theokanning.openai-gpt3-java:service:0.18.2")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")

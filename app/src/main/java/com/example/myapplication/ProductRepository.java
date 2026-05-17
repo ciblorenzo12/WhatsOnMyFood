@@ -118,7 +118,7 @@ public class ProductRepository {
                  if (networkErrors == apiClients.size()) {
                     callback.onError(new IOException("Network error. Please check your connection and try again."));
                 } else {
-                    callback.onError(new Exception("Product found, but ingredient information is insufficient."));
+                    callback.onError(new Exception("Product not found in any database."));
                 }
             }
         }
@@ -146,8 +146,14 @@ public class ProductRepository {
         boolean hasAddedSugars = nutriments != null && nutriments.addedSugars != null && nutriments.addedSugars > 0;
         List<String> sugarKeywords = Arrays.asList("sugar", "syrup", "juice", "sweetener", "fructose", "dextrose", "cane");
 
-        if (productData.ingredientsText != null && !productData.ingredientsText.isEmpty()) {
-            String cleanedText = productData.ingredientsText.replaceAll("\\[[a-zA-Z-]+\\]", "").trim();
+        String ingredientsSource = productData.ingredientsText;
+        if (ingredientsSource == null || ingredientsSource.isEmpty()) {
+            ingredientsSource = productData.ingredientsTextEn;
+        }
+
+        if (ingredientsSource != null && !ingredientsSource.isEmpty()) {
+            // Remove language tags like [en:sugar] and cleanup extra whitespace
+            String cleanedText = ingredientsSource.replaceAll("\\[[a-zA-Z:-]+\\]", "").trim();
             
             List<String> ingredientStrings = new ArrayList<>();
             StringBuilder current = new StringBuilder();
@@ -191,7 +197,7 @@ public class ProductRepository {
         } else if (productData.ingredients != null) {
             for (ProductResponse.IngredientsData ingredientData : productData.ingredients) {
                 if (ingredientData != null && ingredientData.text != null) {
-                    String cleanedText = ingredientData.text.replaceAll("\\[[a-zA-Z-]+\\]", "").trim();
+                    String cleanedText = ingredientData.text.replaceAll("\\[[a-zA-Z:-]+\\]", "").trim();
                     String formattedText = cleanedText.substring(0, 1).toUpperCase() + cleanedText.substring(1).toLowerCase();
                     boolean isSugar = sugarKeywords.stream().anyMatch(formattedText.toLowerCase()::contains);
                     if (isSugar) {
@@ -212,6 +218,14 @@ public class ProductRepository {
         productWithDetails.ingredients = ingredients;
 
         return productWithDetails;
+    }
+
+    public void updateProductAiInsight(String barcode, String aiInsight) {
+        executorService.execute(() -> productDao.updateAiInsight(barcode, aiInsight));
+    }
+
+    public void updateProductHealthScore(String barcode, int healthScore) {
+        executorService.execute(() -> productDao.updateHealthScore(barcode, healthScore));
     }
 
     public void close() {

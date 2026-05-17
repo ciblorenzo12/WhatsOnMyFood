@@ -5,29 +5,27 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    android:background="@android:color/white"
+    android:background="@color/background_light"
     tools:context=".ProductDetailsActivity">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/app_bar_layout"
         android:layout_width="match_parent"
         android:layout_height="300dp"
-        android:fitsSystemWindows="true"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        app:elevation="0dp">
 
         <com.google.android.material.appbar.CollapsingToolbarLayout
             android:id="@+id/collapsing_toolbar"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:fitsSystemWindows="true"
-            app:contentScrim="?attr/colorPrimary"
+            app:contentScrim="@color/colorPrimary"
             app:layout_scrollFlags="scroll|exitUntilCollapsed|snap">
 
             <ImageView
                 android:id="@+id/product_image_view"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:fitsSystemWindows="true"
                 android:scaleType="centerInside"
                 app:layout_collapseMode="parallax" />
 
@@ -45,6 +43,9 @@
         android:id="@+id/nested_scroll_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_marginTop="-24dp"
+        android:background="@drawable/rounded_top_surface"
+        android:paddingTop="24dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
@@ -52,34 +53,114 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="20dp">
 
             <TextView
                 android:id="@+id/product_name_text_view"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="4dp"
-                android:textSize="24sp"
+                android:textColor="@color/text_primary"
+                android:textSize="26sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/product_brand_text_view"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:textColor="@color/text_secondary"
+                android:textSize="16sp"
                 android:layout_marginBottom="16dp" />
+
+            <!-- AI Insight Card (Modern Version) -->
+            <FrameLayout
+                android:id="@+id/ai_summary_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <com.example.myapplication.AiGlowView
+                    android:id="@+id/ai_card_glow"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_margin="2dp" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/ai_summary_layout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="12dp"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp"
+                    app:cardBackgroundColor="#F5F3FF">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <com.example.myapplication.BitwiseAiSpriteView
+                                android:layout_width="64dp"
+                                android:layout_height="64dp"
+                                android:layout_marginEnd="8dp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Bitwise AI"
+                                android:textColor="@color/colorPrimary"
+                                android:textStyle="bold"
+                                android:textSize="18sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/ai_summary_text_view"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:textSize="16sp"
+                            android:lineSpacingExtra="6dp"
+                            android:textColor="@color/text_primary"
+                            tools:text="OpenAI is analyzing this product..."/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/ingredients_label"
-                style="@style/TextAppearance.AppCompat.Title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Ingredients" />
+                android:text="Ingredients"
+                android:textColor="@color/text_primary"
+                android:textStyle="bold"
+                android:textSize="18sp" />
 
-            <TextView
-                android:id="@+id/ingredients_text_view"
-                android:layout_width="wrap_content"
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp" />
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="1dp"
+                app:strokeWidth="0dp">
+                <TextView
+                    android:id="@+id/ingredients_text_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp"
+                    android:textSize="15sp"
+                    android:lineSpacingExtra="4dp"
+                    android:textColor="@color/text_secondary"
+                    tools:text="Water, Sugar, Corn Syrup..." />
+            </com.google.android.material.card.MaterialCardView>
 
             <TextView
                 android:id="@+id/health_score_text_view"
@@ -88,7 +169,9 @@
                 android:layout_gravity="center_horizontal"
                 android:textSize="28sp"
                 android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
+                android:textColor="@color/colorPrimary"
+                android:layout_marginBottom="16dp"
+                tools:text="85/100"/>
 
             <!-- Analysis Results -->
             <androidx.recyclerview.widget.RecyclerView
@@ -102,98 +185,122 @@
                 android:id="@+id/scores_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="24dp"
                 android:orientation="horizontal">
 
                 <TextView
                     android:id="@+id/nutriscore_text_view"
                     style="@style/ScoreTextView"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:text="Nutri-Score" />
 
                 <TextView
                     android:id="@+id/nova_text_view"
                     style="@style/ScoreTextView"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:text="NOVA" />
 
                 <TextView
                     android:id="@+id/ecoscore_text_view"
                     style="@style/ScoreTextView"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:text="Eco-Score" />
             </LinearLayout>
 
             <TextView
                 android:id="@+id/serving_size_label"
-                style="@style/TextAppearance.AppCompat.Title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Serving Size" />
+                android:text="Serving Size"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="@color/text_primary" />
 
             <TextView
                 android:id="@+id/serving_size_text_view"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp" />
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="24dp" />
 
             <!-- Nutrition Facts Table -->
             <TextView
-                style="@style/TextAppearance.AppCompat.Title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="Nutrition Facts" />
+                android:text="Nutrition Facts"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:textColor="@color/text_primary"
+                android:layout_marginBottom="12dp" />
 
             <TableLayout
                 android:id="@+id/nutrition_facts_table"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp" />
+                android:layout_marginBottom="24dp" />
 
             <TextView
                 android:id="@+id/categories_label"
-                style="@style/TextAppearance.AppCompat.Title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Categories" />
+                android:text="Categories"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="@color/text_primary" />
 
             <TextView
                 android:id="@+id/categories_text_view"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:textColor="@color/text_secondary"
                 android:layout_marginBottom="16dp" />
 
             <TextView
                 android:id="@+id/packaging_label"
-                style="@style/TextAppearance.AppCompat.Title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Packaging" />
+                android:text="Packaging"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="@color/text_primary" />
 
             <TextView
                 android:id="@+id/packaging_text_view"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:textColor="@color/text_secondary"
                 android:layout_marginBottom="16dp" />
 
             <TextView
                 android:id="@+id/labels_label"
-                style="@style/TextAppearance.AppCompat.Title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Labels, Certifications, Awards" />
+                android:text="Labels, Certifications, Awards"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="@color/text_primary" />
 
             <TextView
                 android:id="@+id/labels_text_view"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:textColor="@color/text_secondary"
                 android:layout_marginBottom="16dp" />
 
             <Button
                 android:id="@+id/remove_from_pantry_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
                 android:layout_marginTop="24dp"
                 android:text="Remove from Pantry"
+                app:cornerRadius="16dp"
                 android:visibility="gone" />
 
         </LinearLayout>

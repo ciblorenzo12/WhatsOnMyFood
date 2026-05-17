@@ -2,6 +2,7 @@ package com.example.myapplication;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
@@ -11,6 +12,7 @@ import android.provider.MediaStore;
 import android.util.Size;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
@@ -37,6 +39,9 @@ import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
 import com.google.mlkit.vision.barcode.BarcodeScanning;
 import com.google.mlkit.vision.barcode.common.Barcode;
 import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.text.TextRecognition;
+import com.google.mlkit.vision.text.TextRecognizer;
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
@@ -44,15 +49,23 @@ import java.util.concurrent.Executors;
 
 public class ScanBarcodeActivity extends AppCompatActivity {
 
+    public enum ScanMode {
+        BARCODE, INGREDIENTS
+    }
+
     private PreviewView previewView;
     private GraphicOverlay graphicOverlay;
-    private TextView offlineIndicator;
+    private TextView offlineIndicator, modeTextView;
+    private ImageButton modeToggleButton;
     private BarcodeGraphic barcodeGraphic;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private ProcessCameraProvider cameraProvider;
     private ExecutorService cameraExecutor;
     private Camera camera;
     private boolean isScanLocked = false;
+    private ScanMode currentMode = ScanMode.BARCODE;
+    private TextRecognizer textRecognizer;
+    private BarcodeScanner barcodeScanner;
 
     private final Handler launchHandler = new Handler(Looper.getMainLooper());
     private Runnable launchRunnable;
@@ -61,19 +74,15 @@ public class ScanBarcodeActivity extends AppCompatActivity {
         if (uri != null) {
             try {
                 Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
-                decodeBarcodeFromBitmap(bitmap);
+                if (currentMode == ScanMode.INGREDIENTS) {
+                    analyzeUploadedIngredients(bitmap);
+                } else {
+                    decodeBarcodeFromBitmap(bitmap);
+                }
             } catch (IOException e) {
                 e.printStackTrace();
                 Toast.makeText(this, "Failed to load image", Toast.LENGTH_SHORT).show();
             }
-        }
-    });
-
-    private final ActivityResultLauncher<String> requestStoragePermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-        if (isGranted) {
-            Toast.makeText(this, "Permission granted. Please tap the import button again.", Toast.LENGTH_LONG).show();
-        } else {
-            Toast.makeText(this, "Permission denied. You can\'t import images without it.", Toast.LENGTH_LONG).show();
         }
     });
 
@@ -86,6 +95,9 @@ public class ScanBarcodeActivity extends AppCompatActivity {
         }
     });
 
+    private ScanningOverlayView scanningOverlay;
+    private ProgressBar transitionProgressBar;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -93,26 +105,29 @@ public class ScanBarcodeActivity extends AppCompatActivity {
 
         previewView = findViewById(R.id.preview_view);
         graphicOverlay = findViewById(R.id.graphic_overlay);
-        offlineIndicator = findViewById(R.id.offline_indicator);
+        scanningOverlay = findViewById(R.id.scanning_overlay);
+        modeTextView = findViewById(R.id.mode_text_view);
+        modeToggleButton = findViewById(R.id.mode_toggle_button);
+        transitionProgressBar = findViewById(R.id.loading_progress_bar);
         cameraExecutor = Executors.newSingleThreadExecutor();
 
         barcodeGraphic = new BarcodeGraphic(graphicOverlay);
         graphicOverlay.add(barcodeGraphic);
 
+        textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+        
+        BarcodeScannerOptions options = new BarcodeScannerOptions.Builder()
+                .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
+                .build();
+        barcodeScanner = BarcodeScanning.getClient(options);
+
+        modeToggleButton.setOnClickListener(v -> toggleScanMode());
+
         ImageButton importButton = findViewById(R.id.import_button);
         importButton.setOnClickListener(v -> {
-            String permission;
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                permission = Manifest.permission.READ_MEDIA_IMAGES;
-            } else {
-                permission = Manifest.permission.READ_EXTERNAL_STORAGE;
-            }
-
-            if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED) {
-                pickMediaLauncher.launch(new PickVisualMediaRequest.Builder().setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE).build());
-            } else {
-                requestStoragePermissionLauncher.launch(permission);
-            }
+            pickMediaLauncher.launch(new PickVisualMediaRequest.Builder()
+                    .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE)
+                    .build());
         });
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
@@ -151,20 +166,39 @@ public class ScanBarcodeActivity extends AppCompatActivity {
         }, ContextCompat.getMainExecutor(this));
     }
 
+    private void toggleScanMode() {
+        if (currentMode == ScanMode.BARCODE) {
+            currentMode = ScanMode.INGREDIENTS;
+            modeTextView.setText("Ingredient Mode");
+            modeToggleButton.setImageResource(R.drawable.ic_ingredients_list);
+            runOnUiThread(() -> {
+                graphicOverlay.setVisibility(View.GONE);
+                if (scanningOverlay != null) scanningOverlay.startScanning();
+            });
+        } else {
+            currentMode = ScanMode.BARCODE;
+            modeTextView.setText("Barcode Mode");
+            modeToggleButton.setImageResource(R.drawable.ic_scan);
+            runOnUiThread(() -> {
+                graphicOverlay.setVisibility(View.VISIBLE);
+                if (scanningOverlay != null) scanningOverlay.stopScanning();
+            });
+        }
+        
+        if (cameraProvider != null) {
+            bindCameraUseCases(cameraProvider);
+        }
+    }
+
     @SuppressLint({"UnsafeOptInUsageError", "ClickableViewAccessibility"})
     private void bindCameraUseCases(@NonNull ProcessCameraProvider cameraProvider) {
         Preview preview = new Preview.Builder()
-                .setTargetResolution(new Size(1920, 1080))
+                .setTargetResolution(new Size(1280, 720))
                 .build();
         preview.setSurfaceProvider(previewView.getSurfaceProvider());
 
-        BarcodeScannerOptions options = new BarcodeScannerOptions.Builder()
-                .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
-                .build();
-        BarcodeScanner scanner = BarcodeScanning.getClient(options);
-
         ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
-                .setTargetResolution(new Size(1920, 1080))
+                .setTargetResolution(new Size(1280, 720))
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build();
 
         imageAnalysis.setAnalyzer(cameraExecutor, image -> {
@@ -176,21 +210,59 @@ public class ScanBarcodeActivity extends AppCompatActivity {
             InputImage inputImage = InputImage.fromMediaImage(image.getImage(), image.getImageInfo().getRotationDegrees());
             graphicOverlay.setImageSourceInfo(inputImage.getWidth(), inputImage.getHeight(), false);
 
-            scanner.process(inputImage).addOnSuccessListener(barcodes -> {
-                graphicOverlay.setDrawStaticFrame(barcodes.isEmpty());
-                if (!barcodes.isEmpty()) {
-                    Barcode barcode = barcodes.get(0);
-                    barcodeGraphic.update(barcode);
+            if (currentMode == ScanMode.BARCODE) {
+                runOnUiThread(() -> {
+                    graphicOverlay.setVisibility(View.VISIBLE);
+                    if (scanningOverlay != null) scanningOverlay.stopScanning();
+                });
+                barcodeScanner.process(inputImage).addOnSuccessListener(barcodes -> {
+                    graphicOverlay.setDrawStaticFrame(barcodes.isEmpty());
+                    if (!barcodes.isEmpty()) {
+                        Barcode barcode = barcodes.get(0);
+                        barcodeGraphic.update(barcode);
 
-                    if (!isScanLocked) {
-                        isScanLocked = true;
-                        launchRunnable = () -> handleBarcode(barcode.getRawValue());
-                        launchHandler.postDelayed(launchRunnable, 300);
+                        if (!isScanLocked) {
+                            isScanLocked = true;
+                            launchRunnable = () -> handleBarcode(barcode.getRawValue());
+                            launchHandler.postDelayed(launchRunnable, 300);
+                        }
+                    } else {
+                        barcodeGraphic.hide();
                     }
-                } else {
-                    barcodeGraphic.hide();
-                }
-            }).addOnCompleteListener(task -> image.close());
+                }).addOnCompleteListener(task -> image.close());
+            } else {
+                runOnUiThread(() -> {
+                    graphicOverlay.setVisibility(View.GONE);
+                    if (scanningOverlay != null) scanningOverlay.startScanning();
+                });
+                textRecognizer.process(inputImage).addOnSuccessListener(text -> {
+                    // "Spatial AI" approach: instead of flattening all text, look at blocks
+                    // This helps separate the nutrition table from the ingredients list
+                    String bestBlockText = "";
+                    int bestConfidence = 0;
+                    
+                    for (com.google.mlkit.vision.text.Text.TextBlock block : text.getTextBlocks()) {
+                        String blockText = block.getText();
+                        int confidence = getIngredientConfidence(blockText);
+                        
+                        if (confidence > bestConfidence) {
+                            bestConfidence = confidence;
+                            bestBlockText = blockText;
+                        }
+                    }
+
+                    if (bestConfidence > 5) { // Lowered threshold to be more responsive
+                        if (!isScanLocked) {
+                            isScanLocked = true;
+                            final String resultText = text.getText(); 
+                            Bitmap rawBitmap = BitmapUtils.getBitmap(image);
+                            final Bitmap bitmap = (rawBitmap != null) ? BitmapUtils.cropCenter(rawBitmap, 0.4f) : null;
+                            launchRunnable = () -> handleIngredients(resultText, bitmap);
+                            launchHandler.postDelayed(launchRunnable, 500);
+                        }
+                    }
+                }).addOnCompleteListener(task -> image.close());
+            }
         });
 
         try {
@@ -200,6 +272,98 @@ public class ScanBarcodeActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private int getIngredientConfidence(String text) {
+        String lower = text.toLowerCase();
+        int score = 0;
+        
+        // Product name keywords or brand indicators
+        String[] identityMarkers = {"bottle", "can", "pack", "brand", "original", "natural", "organic", "product of"};
+        for (String m : identityMarkers) {
+            if (lower.contains(m)) score += 15;
+        }
+
+        // Primary marker: The word "ingredients" is essential for this mode
+        if (lower.contains("ingredients") || lower.contains("ingrédients") || lower.contains("ingredientes")) {
+            score += 70;
+        } else if (lower.contains("contains:") || lower.contains("contient:") || lower.contains("contiene:")) {
+            score += 40;
+        }
+        
+        String[] markers = {"water", "sugar", "sucrose", "syrup", "flour", "oil", "salt", "acid", "flavor", "gum", "lecithin", "starch"};
+        for (String m : markers) {
+            if (lower.contains(m)) score += 10;
+        }
+        
+        // Commas and semicolons are high indicators of a list
+        if (lower.contains(",")) score += 10;
+        if (lower.contains(";")) score += 5;
+        
+        return score;
+    }
+
+    private void handleIngredients(String text, Bitmap bitmap) {
+        handleIngredientsWithBarcode(text, bitmap, null);
+    }
+
+    private void handleIngredientsWithBarcode(String text, Bitmap bitmap, String barcode) {
+        String processedText = text;
+        String lowerText = text.toLowerCase();
+        
+        // Try to find the start of the list - must find a valid header
+        String[] markers = {"ingredients:", "ingredients", "contains:", "ingrédients:", "ingredientes:", "carbonated water", "water,"};
+        int bestStartIndex = -1;
+        
+        for (String marker : markers) {
+            int index = lowerText.indexOf(marker);
+            if (index != -1) {
+                if (bestStartIndex == -1 || index < bestStartIndex) {
+                    bestStartIndex = index;
+                }
+            }
+        }
+
+        // If we didn't find any start marker but confidence was high, we still trigger 
+        // to let the AI's computer vision identify the product.
+        if (bestStartIndex != -1) {
+            processedText = text.substring(bestStartIndex);
+        }
+        
+        isScanLocked = true;
+        
+        // Trim UI noise often found when scanning a screen/webpage
+        String[] uiNoise = {"share", "download", "label", "content", "uploaded", "related searches"};
+        for (String noise : uiNoise) {
+            int noiseIndex = processedText.toLowerCase().indexOf(noise);
+            if (noiseIndex > 20) { // Only trim if it's further down
+                 processedText = processedText.substring(0, noiseIndex);
+            }
+        }
+
+        Intent intent = new Intent(this, IngredientAnalysisActivity.class);
+        intent.putExtra(IngredientAnalysisActivity.EXTRA_INGREDIENTS_TEXT, processedText.trim());
+        if (barcode != null) {
+            intent.putExtra(IngredientAnalysisActivity.EXTRA_BARCODE, barcode);
+        }
+        if (bitmap != null) {
+            byte[] bytes = BitmapUtils.bitmapToByteArray(bitmap);
+            intent.putExtra("extra_image_bytes", bytes);
+        }
+
+        runOnUiThread(() -> {
+            if (transitionProgressBar != null) transitionProgressBar.setVisibility(View.VISIBLE);
+            if (scanningOverlay != null) scanningOverlay.stopScanning();
+        });
+
+        // Small delay to let the loading animation show before the heavy activity transition
+        launchHandler.postDelayed(() -> {
+            startActivity(intent);
+            runOnUiThread(() -> {
+                if (transitionProgressBar != null) transitionProgressBar.setVisibility(View.GONE);
+            });
+            launchHandler.postDelayed(this::resetScannerState, 3000);
+        }, 300);
     }
 
     private void setupTorchControl() {
@@ -223,12 +387,68 @@ public class ScanBarcodeActivity extends AppCompatActivity {
             if (!barcodes.isEmpty()) {
                 String rawValue = barcodes.get(0).getRawValue();
                 if (rawValue != null) {
-                    handleBarcode(rawValue);
+                    if (currentMode == ScanMode.INGREDIENTS) {
+                        analyzeUploadedIngredientsWithBarcode(bitmap, rawValue);
+                    } else {
+                        handleBarcode(rawValue);
+                    }
                 }
             } else {
-                Toast.makeText(this, "No barcode found in image", Toast.LENGTH_SHORT).show();
+                if (currentMode == ScanMode.INGREDIENTS) {
+                    analyzeUploadedIngredients(bitmap);
+                } else {
+                    Toast.makeText(this, "No barcode found in image", Toast.LENGTH_SHORT).show();
+                }
             }
-        }).addOnFailureListener(e -> Toast.makeText(this, "Error scanning image", Toast.LENGTH_SHORT).show());
+        }).addOnFailureListener(e -> {
+            if (currentMode == ScanMode.INGREDIENTS) {
+                analyzeUploadedIngredients(bitmap);
+            } else {
+                Toast.makeText(this, "Error scanning image", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void analyzeUploadedIngredientsWithBarcode(Bitmap bitmap, String barcode) {
+        if (bitmap == null) return;
+        
+        runOnUiThread(() -> {
+            if (transitionProgressBar != null) transitionProgressBar.setVisibility(View.VISIBLE);
+            AiGlowManager.startGlow(this);
+        });
+
+        InputImage image = InputImage.fromBitmap(bitmap, 0);
+        textRecognizer.process(image).addOnSuccessListener(text -> {
+            String fullText = text.getText();
+            handleIngredientsWithBarcode(fullText.isEmpty() ? "Image upload" : fullText, bitmap, barcode);
+        }).addOnFailureListener(e -> {
+            handleIngredientsWithBarcode("Image upload (OCR failed)", bitmap, barcode);
+        }).addOnCompleteListener(task -> {
+            runOnUiThread(() -> {
+                if (transitionProgressBar != null) transitionProgressBar.setVisibility(View.GONE);
+            });
+        });
+    }
+
+    private void analyzeUploadedIngredients(Bitmap bitmap) {
+        if (bitmap == null) return;
+        
+        runOnUiThread(() -> {
+            if (transitionProgressBar != null) transitionProgressBar.setVisibility(View.VISIBLE);
+            AiGlowManager.startGlow(this);
+        });
+
+        InputImage image = InputImage.fromBitmap(bitmap, 0);
+        textRecognizer.process(image).addOnSuccessListener(text -> {
+            String fullText = text.getText();
+            handleIngredients(fullText.isEmpty() ? "Image upload" : fullText, bitmap);
+        }).addOnFailureListener(e -> {
+            handleIngredients("Image upload (OCR failed)", bitmap);
+        }).addOnCompleteListener(task -> {
+            runOnUiThread(() -> {
+                if (transitionProgressBar != null) transitionProgressBar.setVisibility(View.GONE);
+            });
+        });
     }
 
     private void handleBarcode(String barcode) {
@@ -258,6 +478,18 @@ public class ScanBarcodeActivity extends AppCompatActivity {
     private void resetScannerState() {
         isScanLocked = false;
         launchHandler.removeCallbacks(launchRunnable);
+        AiGlowManager.stopGlow(this);
+        
+        // Reset to Barcode Mode after a successful scan
+        if (currentMode != ScanMode.BARCODE) {
+            currentMode = ScanMode.BARCODE;
+            modeTextView.setText("Barcode Mode");
+            modeToggleButton.setImageResource(R.drawable.ic_scan);
+            if (cameraProvider != null) {
+                bindCameraUseCases(cameraProvider);
+            }
+        }
+
         if (graphicOverlay != null) {
             barcodeGraphic.hide();
             graphicOverlay.setDrawStaticFrame(true);

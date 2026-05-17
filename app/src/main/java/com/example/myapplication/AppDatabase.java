@@ -6,8 +6,8 @@ import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
-// CORRECTED: Incremented database version to 7 to reflect schema changes.
-@Database(entities = {Product.class, Nutriments.class, Ingredient.class, Pantry.class, CacheMeta.class}, version = 7, exportSchema = false)
+// CORRECTED: Incremented database version to 9 to reflect schema changes (added healthScore to Product).
+@Database(entities = {Product.class, Nutriments.class, Ingredient.class, Pantry.class, CacheMeta.class}, version = 9, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     public abstract ProductDao productDao();

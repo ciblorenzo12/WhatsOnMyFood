@@ -23,4 +23,9 @@ public class HighSodiumRule implements ProductAnalysisRule {
         }
         return results;
     }
+
+    @Override
+    public String getRuleDescription() {
+        return "Detects products with high sodium content (above 600mg per 100g). Excessive sodium is linked to high blood pressure and heart disease.";
+    }
 }

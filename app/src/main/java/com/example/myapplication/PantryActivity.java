@@ -134,13 +134,16 @@ public class PantryActivity extends AppCompatActivity {
         executorService.execute(() -> {
             pantryProducts = db.productDao().getPantryProducts(currentUser.getUid());
             runOnUiThread(() -> {
-                adapter = new PantryAdapter(pantryProducts, product -> {
-                    Intent intent = new Intent(PantryActivity.this, ProductDetailsActivity.class);
-                    // CORRECTED: Removed the invalid syntax from the class name.
-                    intent.putExtra(ProductDetailsActivity.EXTRA_BARCODE, product.barcode);
-                    detailsActivityLauncher.launch(intent);
-                });
-                recyclerView.setAdapter(adapter);
+                if (adapter == null) {
+                    adapter = new PantryAdapter(pantryProducts, product -> {
+                        Intent intent = new Intent(PantryActivity.this, ProductDetailsActivity.class);
+                        intent.putExtra(ProductDetailsActivity.EXTRA_BARCODE, product.barcode);
+                        detailsActivityLauncher.launch(intent);
+                    });
+                    recyclerView.setAdapter(adapter);
+                } else {
+                    adapter.updateList(pantryProducts);
+                }
             });
         });
     }

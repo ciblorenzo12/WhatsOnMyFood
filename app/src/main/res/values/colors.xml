@@ -1,24 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Modern Brand Palette -->
+    <color name="colorPrimary">#7C4DFF</color> <!-- Vibrant Deep Purple -->
+    <color name="colorPrimaryDark">#6200EA</color>
+    <color name="colorAccent">#00E5FF</color> <!-- Electric Cyan -->
+
+    <color name="surface">#FFFFFF</color>
+    <color name="background_light">#F8F9FF</color> <!-- Soft Tinted White -->
+    <color name="text_primary">#1A1C1E</color>
+    <color name="text_secondary">#42474E</color>
+    <color name="text_muted">#8E9199</color>
+
+    <!-- Animated Mesh Gradient Colors -->
+    <color name="mesh_1">#7C4DFF</color>
+    <color name="mesh_2">#00E5FF</color>
+    <color name="mesh_3">#FF4081</color>
+    <color name="mesh_4">#651FFF</color>
+
+    <!-- Gemini-inspired Gradient Colors -->
+    <color name="ai_start">#7C4DFF</color>
+    <color name="ai_mid">#00E5FF</color>
+    <color name="ai_end">#FF4081</color>
+    <color name="ai_accent">#7C4DFF</color>
+
+    <!-- UI Components -->
+    <color name="card_background">#FFFFFF</color>
+    <color name="divider">#E5E7EB</color>
+
+    <color name="purple_200">#A5B4FC</color>
+    <color name="purple_500">#6366F1</color>
+    <color name="purple_700">#4338CA</color>
+    <color name="teal_200">#6EE7B7</color>
+    <color name="teal_700">#047857</color>
+    <color name="black">#111827</color>
+    <color name="white">#FFFFFF</color>
     
     <!-- Score Colors -->
-    <color name="nutriscore_a">#FF008000</color>
-    <color name="nutriscore_b">#FF80C000</color>
-    <color name="nutriscore_c">#FFFFC000</color>
-    <color name="nutriscore_d">#FFFF8000</color>
-    <color name="nutriscore_e">#FFFF0000</color>
-    <color name="score_unknown">#FF808080</color>
+    <color name="nutriscore_a">#059669</color>
+    <color name="nutriscore_b">#10B981</color>
+    <color name="nutriscore_c">#F59E0B</color>
+    <color name="nutriscore_d">#F97316</color>
+    <color name="nutriscore_e">#EF4444</color>
+    <color name="score_unknown">#9CA3AF</color>
 
     <!-- NOVA Group Colors -->
-    <color name="nova_1">#FF008000</color>
-    <color name="nova_2">#FFFFC000</color>
-    <color name="nova_3">#FFFF8000</color>
-    <color name="nova_4">#FFFF0000</color>
+    <color name="nova_1">#059669</color>
+    <color name="nova_2">#F59E0B</color>
+    <color name="nova_3">#F97316</color>
+    <color name="nova_4">#EF4444</color>
 </resources>

@@ -19,7 +19,7 @@ public class OrganicMilkRule implements ProductAnalysisRule {
                 if (ingredient.text != null) {
                     String lowerCaseIngredient = ingredient.text.toLowerCase();
                     if (lowerCaseIngredient.contains("organic") && lowerCaseIngredient.contains("milk")) {
-                        results.add(new AnalysisResult("Contains Organic Milk", AnalysisResult.WarningLevel.INFO, -10, "organic milk", EXPLANATION));
+                        results.add(new AnalysisResult("Contains Organic Milk", AnalysisResult.WarningLevel.POSITIVE, -10, "organic milk", EXPLANATION));
                         break;
                     }
                 }

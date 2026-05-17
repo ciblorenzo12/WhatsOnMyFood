@@ -18,7 +18,7 @@ public class OrganicIngredientRule implements ProductAnalysisRule {
         if (productWithDetails != null && productWithDetails.ingredients != null) {
             for (Ingredient ingredient : productWithDetails.ingredients) {
                 if (ingredient.text != null && ingredient.text.toLowerCase().contains(ORGANIC)) {
-                    results.add(new AnalysisResult("Contains organic ingredients", AnalysisResult.WarningLevel.INFO, -5, ORGANIC, EXPLANATION));
+                    results.add(new AnalysisResult("Contains organic ingredients", AnalysisResult.WarningLevel.POSITIVE, -5, ORGANIC, EXPLANATION));
                 }
             }
         }
