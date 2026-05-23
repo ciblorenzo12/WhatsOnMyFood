@@ -44,9 +44,9 @@ public class ProductRepository {
         AppDatabase db = AppDatabase.getDatabase(application);
         this.productDao = db.productDao();
         this.apiClients = Arrays.asList(
+                new OpenFoodFactsApiClient(application.getCacheDir()),
                 new FoodDataCentralClient(),
-                new NutritionixClient(),
-                new OpenFoodFactsApiClient(application.getCacheDir())
+                new NutritionixClient()
         );
         this.executorService = Executors.newSingleThreadExecutor();
     }
@@ -61,13 +61,18 @@ public class ProductRepository {
                 long currentTime = System.currentTimeMillis();
                 boolean isCacheStale = cacheMeta == null || (currentTime - cacheMeta.lastUpdated) > (24 * 60 * 60 * 1000);
 
+                if (cachedProduct != null) {
+                    callback.onComplete(new ProductResult(
+                            cachedProduct,
+                            isCacheStale ? DataStatus.STALE : DataStatus.FRESH,
+                            hasSavedAiInsight(cachedProduct) ? "Cache (Saved Bitwise)" : "Cache"
+                    ));
+                    idlingResource.decrement();
+                    return;
+                }
+
                 if (NetworkUtils.isOnline(application)) {
-                    if (cachedProduct == null || isCacheStale) {
-                        fetchFromApiChain(barcode, callback, cachedProduct, isCacheStale);
-                    } else {
-                        callback.onComplete(new ProductResult(cachedProduct, DataStatus.FRESH, "Cache"));
-                        idlingResource.decrement();
-                    }
+                    fetchFromApiChain(barcode, callback, cachedProduct, isCacheStale);
                 } else {
                     if (cachedProduct != null) {
                         callback.onComplete(new ProductResult( cachedProduct, DataStatus.OFFLINE, "Cache"));
@@ -108,6 +113,7 @@ public class ProductRepository {
 
         if (finalResponse != null) {
             ProductWithDetails fetchedProduct = responseToProductWithDetails(finalResponse, barcode);
+            preserveSavedFields(fetchedProduct, cachedProduct);
             productDao.insertProductWithDetails(fetchedProduct);
             productDao.insertCacheMeta(new CacheMeta(barcode, System.currentTimeMillis()));
             callback.onComplete(new ProductResult(fetchedProduct, DataStatus.FRESH, sourceName));
@@ -218,6 +224,23 @@ public class ProductRepository {
         productWithDetails.ingredients = ingredients;
 
         return productWithDetails;
+    }
+
+    private boolean hasSavedAiInsight(ProductWithDetails productWithDetails) {
+        return productWithDetails != null
+                && productWithDetails.product != null
+                && productWithDetails.product.aiInsight != null
+                && !productWithDetails.product.aiInsight.trim().isEmpty();
+    }
+
+    private void preserveSavedFields(ProductWithDetails fetchedProduct, ProductWithDetails cachedProduct) {
+        if (fetchedProduct == null || fetchedProduct.product == null || cachedProduct == null || cachedProduct.product == null) {
+            return;
+        }
+
+        fetchedProduct.product.aiInsight = cachedProduct.product.aiInsight;
+        fetchedProduct.product.healthScore = cachedProduct.product.healthScore;
+        fetchedProduct.product.isFavorite = cachedProduct.product.isFavorite;
     }
 
     public void updateProductAiInsight(String barcode, String aiInsight) {

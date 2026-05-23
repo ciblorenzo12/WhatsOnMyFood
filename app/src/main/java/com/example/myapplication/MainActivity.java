@@ -6,7 +6,6 @@ import android.view.MenuItem;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -14,7 +13,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends BaseActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,6 +27,8 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
+        com.example.myapplication.utils.GlassMotion.enter(findViewById(R.id.home_content), 0L);
+
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
         bottomNavigationView.setOnItemSelectedListener(new NavigationBarView.OnItemSelectedListener() {
             @Override
@@ -38,6 +39,9 @@ public class MainActivity extends AppCompatActivity {
                     return true;
                 } else if (itemId == R.id.navigation_pantry) {
                     startActivity(new Intent(MainActivity.this, PantryActivity.class));
+                    return true;
+                } else if (itemId == R.id.navigation_database) {
+                    startActivity(new Intent(MainActivity.this, AdditiveDatabaseActivity.class));
                     return true;
                 } else if (itemId == R.id.navigation_profile) {
                     startActivity(new Intent(MainActivity.this, ProfileActivity.class));

@@ -31,6 +31,24 @@ public class Product {
     @ColumnInfo(defaultValue = "0")
     public boolean isFavorite;
 
+    public boolean isValid() {
+        if (barcode == null || barcode.trim().isEmpty()) return false;
+        if (productName == null || productName.trim().isEmpty()) return false;
+        
+        String lowerName = productName.toLowerCase().trim();
+        if (lowerName.equals("scanned product") || 
+            lowerName.equals("unknown product") || 
+            lowerName.equals("name") ||
+            lowerName.equals("product name") ||
+            lowerName.equals("brand unknown") ||
+            lowerName.equals("brand")) return false;
+            
+        // Stricter check: if the name is very short and doesn't look like a product
+        if (productName.length() < 2) return false;
+        
+        return true;
+    }
+
     public Product(@NonNull String barcode, String productName, String brands, String quantity, String imageUrl, String labels, String packaging, String categories, String servingSize, String nutriscoreGrade, String novaGroup, String ecoscoreGrade, String aiInsight, Integer healthScore) {
         this.barcode = barcode;
         this.productName = productName;

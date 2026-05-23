@@ -14,9 +14,10 @@ public class AiGlowManager {
         if (existingGlow != null) return;
 
         AiGlowView glowView = new AiGlowView(activity);
+        glowView.setScreenBorder(true);
         glowView.setTag("AI_GLOW_VIEW");
         glowView.setAlpha(0f);
-        glowView.setElevation(100f); 
+        glowView.setElevation(100f);
         glowView.setTranslationZ(100f);
 
         ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(
@@ -24,7 +25,7 @@ public class AiGlowManager {
                 ViewGroup.LayoutParams.MATCH_PARENT);
         decorView.addView(glowView, params);
         
-        glowView.animate().alpha(1.0f).setDuration(500).start();
+        glowView.animate().alpha(0.85f).setDuration(450).start();
     }
 
     public static void stopGlow(Activity activity) {
@@ -35,7 +36,7 @@ public class AiGlowManager {
         if (glowView != null) {
             glowView.animate()
                     .alpha(0f)
-                    .setDuration(600)
+                    .setDuration(450)
                     .withEndAction(() -> decorView.removeView(glowView))
                     .start();
         }

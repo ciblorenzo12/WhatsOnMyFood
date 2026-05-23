@@ -9,14 +9,13 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.io.IOException;
 
-public class AddProductActivity extends AppCompatActivity {
+public class AddProductActivity extends BaseActivity {
 
     public static final String EXTRA_BARCODE = "com.example.myapplication.EXTRA_BARCODE";
 

@@ -17,10 +17,13 @@ public class RuleEngine {
                 // Negative Rules
                 new ArtificialColorsRule(),
                 new PartiallyHydrogenatedOilsRule(),
+                new TransFatNutritionRule(),
                 new HighFructoseCornSyrupRule(),
                 new ProcessedMeatPreservativesRule(),
+                new PreservativesRule(),
                 new AddedSugarRule(),
                 new SugarAsMainIngredientRule(),
+                new RefinedFlourRule(),
                 new ArtificialSweetenersRule(),
                 new BadVegetableOilsRule(),
                 new HighSodiumRule(),

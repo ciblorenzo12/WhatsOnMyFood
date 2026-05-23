@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -21,7 +22,6 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.PickVisualMediaRequest;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
@@ -44,20 +44,20 @@ import com.google.mlkit.vision.text.TextRecognizer;
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class ScanBarcodeActivity extends AppCompatActivity {
+public class ScanBarcodeActivity extends BaseActivity {
 
     public enum ScanMode {
         BARCODE, INGREDIENTS
     }
 
     private PreviewView previewView;
-    private GraphicOverlay graphicOverlay;
     private TextView offlineIndicator, modeTextView;
     private ImageButton modeToggleButton;
-    private BarcodeGraphic barcodeGraphic;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private ProcessCameraProvider cameraProvider;
     private ExecutorService cameraExecutor;
@@ -104,15 +104,16 @@ public class ScanBarcodeActivity extends AppCompatActivity {
         setContentView(R.layout.activity_scan_barcode);
 
         previewView = findViewById(R.id.preview_view);
-        graphicOverlay = findViewById(R.id.graphic_overlay);
         scanningOverlay = findViewById(R.id.scanning_overlay);
         modeTextView = findViewById(R.id.mode_text_view);
         modeToggleButton = findViewById(R.id.mode_toggle_button);
         transitionProgressBar = findViewById(R.id.loading_progress_bar);
         cameraExecutor = Executors.newSingleThreadExecutor();
 
-        barcodeGraphic = new BarcodeGraphic(graphicOverlay);
-        graphicOverlay.add(barcodeGraphic);
+        if (scanningOverlay != null) {
+            scanningOverlay.setMode(ScanningOverlayView.OverlayMode.BARCODE);
+            scanningOverlay.startScanning();
+        }
 
         textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
         
@@ -172,16 +173,20 @@ public class ScanBarcodeActivity extends AppCompatActivity {
             modeTextView.setText("Ingredient Mode");
             modeToggleButton.setImageResource(R.drawable.ic_ingredients_list);
             runOnUiThread(() -> {
-                graphicOverlay.setVisibility(View.GONE);
-                if (scanningOverlay != null) scanningOverlay.startScanning();
+                if (scanningOverlay != null) {
+                    scanningOverlay.setMode(ScanningOverlayView.OverlayMode.INGREDIENTS);
+                    scanningOverlay.startScanning();
+                }
             });
         } else {
             currentMode = ScanMode.BARCODE;
             modeTextView.setText("Barcode Mode");
             modeToggleButton.setImageResource(R.drawable.ic_scan);
             runOnUiThread(() -> {
-                graphicOverlay.setVisibility(View.VISIBLE);
-                if (scanningOverlay != null) scanningOverlay.stopScanning();
+                if (scanningOverlay != null) {
+                    scanningOverlay.setMode(ScanningOverlayView.OverlayMode.BARCODE);
+                    scanningOverlay.startScanning();
+                }
             });
         }
         
@@ -208,57 +213,96 @@ public class ScanBarcodeActivity extends AppCompatActivity {
             }
 
             InputImage inputImage = InputImage.fromMediaImage(image.getImage(), image.getImageInfo().getRotationDegrees());
-            graphicOverlay.setImageSourceInfo(inputImage.getWidth(), inputImage.getHeight(), false);
+            runOnUiThread(() -> {
+                if (scanningOverlay != null) {
+                    scanningOverlay.setImageSourceInfo(inputImage.getWidth(), inputImage.getHeight(), false);
+                }
+            });
 
             if (currentMode == ScanMode.BARCODE) {
                 runOnUiThread(() -> {
-                    graphicOverlay.setVisibility(View.VISIBLE);
-                    if (scanningOverlay != null) scanningOverlay.stopScanning();
+                    if (scanningOverlay != null) {
+                        scanningOverlay.setMode(ScanningOverlayView.OverlayMode.BARCODE);
+                        scanningOverlay.startScanning();
+                    }
                 });
                 barcodeScanner.process(inputImage).addOnSuccessListener(barcodes -> {
-                    graphicOverlay.setDrawStaticFrame(barcodes.isEmpty());
                     if (!barcodes.isEmpty()) {
                         Barcode barcode = barcodes.get(0);
-                        barcodeGraphic.update(barcode);
+                        String barcodeValue = barcode.getRawValue();
+                        Rect barcodeBox = barcode.getBoundingBox();
+                        runOnUiThread(() -> {
+                            if (scanningOverlay != null) {
+                                scanningOverlay.updateBarcode(barcodeBox, barcodeValue != null);
+                            }
+                        });
 
-                        if (!isScanLocked) {
+                        if (!isScanLocked && barcodeValue != null) {
                             isScanLocked = true;
-                            launchRunnable = () -> handleBarcode(barcode.getRawValue());
+                            launchRunnable = () -> handleBarcode(barcodeValue);
                             launchHandler.postDelayed(launchRunnable, 300);
                         }
                     } else {
-                        barcodeGraphic.hide();
+                        runOnUiThread(() -> {
+                            if (scanningOverlay != null) {
+                                scanningOverlay.updateBarcode(null, false);
+                            }
+                        });
                     }
                 }).addOnCompleteListener(task -> image.close());
             } else {
                 runOnUiThread(() -> {
-                    graphicOverlay.setVisibility(View.GONE);
-                    if (scanningOverlay != null) scanningOverlay.startScanning();
+                    if (scanningOverlay != null) {
+                        scanningOverlay.setMode(ScanningOverlayView.OverlayMode.INGREDIENTS);
+                        scanningOverlay.startScanning();
+                    }
                 });
                 textRecognizer.process(inputImage).addOnSuccessListener(text -> {
-                    // "Spatial AI" approach: instead of flattening all text, look at blocks
-                    // This helps separate the nutrition table from the ingredients list
                     String bestBlockText = "";
                     int bestConfidence = 0;
+                    int bestIndex = -1;
+                    List<Rect> textBoxes = new ArrayList<>();
                     
                     for (com.google.mlkit.vision.text.Text.TextBlock block : text.getTextBlocks()) {
                         String blockText = block.getText();
                         int confidence = getIngredientConfidence(blockText);
                         
-                        if (confidence > bestConfidence) {
-                            bestConfidence = confidence;
+                        // Also check for product title confidence to help recognize the item from the front
+                        int titleConfidence = getProductTitleConfidence(blockText);
+                        int effectiveConfidence = Math.max(confidence, titleConfidence);
+                        
+                        Rect blockBox = block.getBoundingBox();
+                        int mappedIndex = -1;
+                        if (blockBox != null) {
+                            mappedIndex = textBoxes.size();
+                            textBoxes.add(blockBox);
+                        }
+                        
+                        if (effectiveConfidence > bestConfidence) {
+                            bestConfidence = effectiveConfidence;
                             bestBlockText = blockText;
+                            bestIndex = mappedIndex;
                         }
                     }
 
-                    if (bestConfidence > 5) { // Lowered threshold to be more responsive
+                    final int mappedBestIndex = bestIndex;
+                    runOnUiThread(() -> {
+                        if (scanningOverlay != null) {
+                            scanningOverlay.updateTextBlocks(textBoxes, mappedBestIndex);
+                        }
+                    });
+
+                    // Trigger if we have enough confidence in ingredients OR product title
+                    if (bestConfidence > 25) {
                         if (!isScanLocked) {
                             isScanLocked = true;
-                            final String resultText = text.getText(); 
+                            // Pass all detected text to give the AI maximum context (ingredients + front branding)
+                            final String fullContextText = text.getText();
                             Bitmap rawBitmap = BitmapUtils.getBitmap(image);
-                            final Bitmap bitmap = (rawBitmap != null) ? BitmapUtils.cropCenter(rawBitmap, 0.4f) : null;
-                            launchRunnable = () -> handleIngredients(resultText, bitmap);
-                            launchHandler.postDelayed(launchRunnable, 500);
+                            // Use a much larger crop (90%) to ensure front of pack branding is visible to the AI
+                            final Bitmap bitmap = (rawBitmap != null) ? BitmapUtils.cropCenter(rawBitmap, 0.90f) : null;
+                            launchRunnable = () -> handleIngredients(fullContextText, bitmap);
+                            launchHandler.postDelayed(launchRunnable, 700);
                         }
                     }
                 }).addOnCompleteListener(task -> image.close());
@@ -278,29 +322,65 @@ public class ScanBarcodeActivity extends AppCompatActivity {
         String lower = text.toLowerCase();
         int score = 0;
         
-        // Product name keywords or brand indicators
-        String[] identityMarkers = {"bottle", "can", "pack", "brand", "original", "natural", "organic", "product of"};
-        for (String m : identityMarkers) {
-            if (lower.contains(m)) score += 15;
-        }
-
         // Primary marker: The word "ingredients" is essential for this mode
         if (lower.contains("ingredients") || lower.contains("ingrédients") || lower.contains("ingredientes")) {
-            score += 70;
+            score += 75;
         } else if (lower.contains("contains:") || lower.contains("contient:") || lower.contains("contiene:")) {
-            score += 40;
+            score += 45;
         }
         
-        String[] markers = {"water", "sugar", "sucrose", "syrup", "flour", "oil", "salt", "acid", "flavor", "gum", "lecithin", "starch"};
+        String[] markers = {
+                "water", "sugar", "sucrose", "syrup", "flour", "oil", "salt", "acid",
+                "flavor", "gum", "lecithin", "starch", "dextrose", "maltodextrin",
+                "citric", "natural flavor", "preservative", "color", "soy", "milk", "wheat"
+        };
         for (String m : markers) {
-            if (lower.contains(m)) score += 10;
+            if (lower.contains(m)) score += 12;
         }
         
-        // Commas and semicolons are high indicators of a list
-        if (lower.contains(",")) score += 10;
-        if (lower.contains(";")) score += 5;
+        score += Math.min(35, countOccurrences(lower, ',') * 4);
+        score += Math.min(15, countOccurrences(lower, ';') * 5);
+
+        String[] nutritionMarkers = {"calories", "serving size", "total fat", "cholesterol", "daily value"};
+        for (String marker : nutritionMarkers) {
+            if (lower.contains(marker)) score -= 20;
+        }
+
+        if (lower.length() < 18) score -= 15;
         
         return score;
+    }
+
+    private int getProductTitleConfidence(String text) {
+        if (text == null || text.length() < 3) return 0;
+        String lower = text.toLowerCase();
+        int score = 0;
+
+        // Common product attributes found on the front
+        String[] frontKeywords = {"organic", "natural", "premium", "original", "classic", "roasted", "salted", "unsweetened", "flavored"};
+        for (String kw : frontKeywords) {
+            if (lower.contains(kw)) score += 15;
+        }
+
+        // Product names are often capitalized
+        int caps = 0;
+        for (char c : text.toCharArray()) if (Character.isUpperCase(c)) caps++;
+        if (text.length() > 5 && (float)caps / text.length() > 0.3f) score += 25;
+
+        // Short lines are more likely to be titles than ingredient lists
+        if (text.length() < 60 && !text.contains(",")) score += 15;
+
+        return score;
+    }
+
+    private int countOccurrences(String text, char target) {
+        int count = 0;
+        for (int i = 0; i < text.length(); i++) {
+            if (text.charAt(i) == target) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private void handleIngredients(String text, Bitmap bitmap) {
@@ -311,25 +391,17 @@ public class ScanBarcodeActivity extends AppCompatActivity {
         String processedText = text;
         String lowerText = text.toLowerCase();
         
-        // Try to find the start of the list - must find a valid header
+        // We keep the full text to allow the AI to see product names/branding before the ingredients.
+        // But we still want to ensure we've captured the core ingredients list.
         String[] markers = {"ingredients:", "ingredients", "contains:", "ingrédients:", "ingredientes:", "carbonated water", "water,"};
-        int bestStartIndex = -1;
-        
+        boolean foundIngredients = false;
         for (String marker : markers) {
-            int index = lowerText.indexOf(marker);
-            if (index != -1) {
-                if (bestStartIndex == -1 || index < bestStartIndex) {
-                    bestStartIndex = index;
-                }
+            if (lowerText.contains(marker)) {
+                foundIngredients = true;
+                break;
             }
         }
 
-        // If we didn't find any start marker but confidence was high, we still trigger 
-        // to let the AI's computer vision identify the product.
-        if (bestStartIndex != -1) {
-            processedText = text.substring(bestStartIndex);
-        }
-        
         isScanLocked = true;
         
         // Trim UI noise often found when scanning a screen/webpage
@@ -490,9 +562,10 @@ public class ScanBarcodeActivity extends AppCompatActivity {
             }
         }
 
-        if (graphicOverlay != null) {
-            barcodeGraphic.hide();
-            graphicOverlay.setDrawStaticFrame(true);
+        if (scanningOverlay != null) {
+            scanningOverlay.setMode(ScanningOverlayView.OverlayMode.BARCODE);
+            scanningOverlay.clearDetections();
+            scanningOverlay.startScanning();
         }
     }
 

@@ -18,6 +18,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication"
+        android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
         <activity
@@ -58,9 +59,27 @@
             android:exported="false" />
 
         <activity
+            android:name=".AdditiveDatabaseActivity"
+            android:exported="false"
+            android:label="@string/additive_database"
+            android:theme="@style/Theme.MyApplication" />
+
+        <activity
             android:name=".IngredientAnalysisActivity"
             android:exported="false"
-            android:label="Ingredient Analysis"
+            android:label="@string/ingredient_analysis"
+            android:theme="@style/Theme.MyApplication" />
+
+        <activity
+            android:name=".SourceViewerActivity"
+            android:exported="false"
+            android:label="@string/source_viewer"
+            android:theme="@style/Theme.MyApplication" />
+
+        <activity
+            android:name=".WebViewActivity"
+            android:exported="false"
+            android:label="@string/scientific_source"
             android:theme="@style/Theme.MyApplication" />
 
     </application>

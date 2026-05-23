@@ -18,7 +18,7 @@
 
     <style name="ModernTitleLarge" parent="TextAppearance.Material3.TitleLarge">
         <item name="android:textStyle">bold</item>
-        <item name="android:letterSpacing">0.02</item>
+        <item name="android:letterSpacing">0</item>
     </style>
 
     <style name="ModernCardStyle" parent="Widget.Material3.CardView.Elevated">

@@ -285,4 +285,10 @@ public class Nutriments {
         this.docosahexaenoicAcid = docosahexaenoicAcid;
         this.carbonFootprint = carbonFootprint;
     }
+
+    @Override
+    public String toString() {
+        return "Energy: " + energy + "kcal, Fat: " + fat + "g, SatFat: " + saturatedFat + 
+               "g, Carbs: " + carbohydrates + "g, Sugars: " + sugars + "g, Protein: " + proteins + "g, Salt: " + salt + "g";
+    }
 }

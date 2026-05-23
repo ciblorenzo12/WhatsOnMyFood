@@ -1,31 +1,37 @@
 package com.example.myapplication;
 
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.LinearGradient;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.RadialGradient;
 import android.graphics.RectF;
 import android.graphics.Shader;
+import android.graphics.SweepGradient;
+import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.view.View;
-import android.view.animation.AccelerateDecelerateInterpolator;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 public class BitwiseAiSpriteView extends View {
 
-    private final Paint planetPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint orbitPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint starPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint auraPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint corePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint ringPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint highlightPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint glintPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF ringRect = new RectF();
+    private final Matrix matrix = new Matrix();
 
-    private float pulseScale = 1f;
-    private float orbitRotation = 0f;
-
-    private final RectF orbitRect = new RectF();
+    private long startTimeMs;
+    private RadialGradient auraGradient;
+    private LinearGradient coreGradient;
+    private RadialGradient highlightGradient;
+    private SweepGradient ringGradient;
 
     public BitwiseAiSpriteView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
@@ -33,120 +39,137 @@ public class BitwiseAiSpriteView extends View {
     }
 
     private void init() {
-        setLayerType(LAYER_TYPE_SOFTWARE, null); // smoother glow rendering
+        setWillNotDraw(false);
 
-        planetPaint.setColor(Color.parseColor("#7C4DFF"));
+        ringPaint.setStyle(Paint.Style.STROKE);
+        ringPaint.setStrokeCap(Paint.Cap.ROUND);
+        ringPaint.setStrokeWidth(3.2f);
 
-        orbitPaint.setStyle(Paint.Style.STROKE);
-        orbitPaint.setStrokeWidth(4f);
-        orbitPaint.setColor(Color.parseColor("#00E5FF"));
-        orbitPaint.setAlpha(180);
-
-        starPaint.setColor(Color.WHITE);
-        starPaint.setAlpha(220);
-
-        highlightPaint.setColor(Color.WHITE);
-        highlightPaint.setAlpha(120);
-
-        // Pulse animation
-        ValueAnimator pulseAnimator = ValueAnimator.ofFloat(0.92f, 1.08f);
-        pulseAnimator.setDuration(1400);
-        pulseAnimator.setRepeatMode(ValueAnimator.REVERSE);
-        pulseAnimator.setRepeatCount(ValueAnimator.INFINITE);
-        pulseAnimator.setInterpolator(new AccelerateDecelerateInterpolator());
-        pulseAnimator.addUpdateListener(animation -> {
-            pulseScale = (float) animation.getAnimatedValue();
-            invalidate();
-        });
-        pulseAnimator.start();
-
-        // Orbit rotation animation
-        ValueAnimator orbitAnimator = ValueAnimator.ofFloat(0f, 360f);
-        orbitAnimator.setDuration(5000);
-        orbitAnimator.setRepeatCount(ValueAnimator.INFINITE);
-        orbitAnimator.addUpdateListener(animation -> {
-            orbitRotation = (float) animation.getAnimatedValue();
-            invalidate();
-        });
-        orbitAnimator.start();
+        highlightPaint.setStyle(Paint.Style.FILL);
+        glintPaint.setStyle(Paint.Style.FILL);
+        startTimeMs = SystemClock.uptimeMillis();
     }
 
     @Override
-    protected void onDraw(Canvas canvas) {
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        if (w <= 0 || h <= 0) {
+            auraGradient = null;
+            coreGradient = null;
+            highlightGradient = null;
+            ringGradient = null;
+            auraPaint.setShader(null);
+            corePaint.setShader(null);
+            highlightPaint.setShader(null);
+            ringPaint.setShader(null);
+            return;
+        }
+        float cx = w / 2f;
+        float cy = h / 2f;
+        float radius = Math.min(w, h) * 0.22f;
+
+        auraGradient = new RadialGradient(
+                cx,
+                cy,
+                radius * 2.7f,
+                new int[]{0x9957D8FF, 0x55D7B8FF, 0x00FFFFFF},
+                new float[]{0f, 0.58f, 1f},
+                Shader.TileMode.CLAMP
+        );
+        auraPaint.setShader(auraGradient);
+
+        coreGradient = new LinearGradient(
+                cx - radius,
+                cy - radius,
+                cx + radius,
+                cy + radius,
+                new int[]{
+                        Color.parseColor("#F7FBFF"),
+                        Color.parseColor("#A9E7FF"),
+                        Color.parseColor("#8D7CFF"),
+                        Color.parseColor("#FF9DDA")
+                },
+                new float[]{0f, 0.34f, 0.7f, 1f},
+                Shader.TileMode.CLAMP
+        );
+        corePaint.setShader(coreGradient);
+
+        highlightGradient = new RadialGradient(
+                cx - radius * 0.35f,
+                cy - radius * 0.45f,
+                radius * 0.75f,
+                new int[]{0xDFFFFFFF, 0x40FFFFFF, 0x00FFFFFF},
+                new float[]{0f, 0.55f, 1f},
+                Shader.TileMode.CLAMP
+        );
+        highlightPaint.setShader(highlightGradient);
+
+        ringGradient = new SweepGradient(
+                cx,
+                cy,
+                new int[]{
+                        Color.parseColor("#8EA2FF"),
+                        Color.parseColor("#57D8FF"),
+                        Color.parseColor("#F7C4FF"),
+                        Color.parseColor("#FFD7A8"),
+                        Color.parseColor("#8EA2FF")
+                },
+                null
+        );
+        ringPaint.setShader(ringGradient);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (isShown()) {
+            postInvalidateOnAnimation();
+        }
+    }
+
+    @Override
+    protected void onVisibilityChanged(View changedView, int visibility) {
+        super.onVisibilityChanged(changedView, visibility);
+        if (visibility == VISIBLE && isShown()) {
+            postInvalidateOnAnimation();
+        }
+    }
+
+    @Override
+    protected void onDraw(@NonNull Canvas canvas) {
         super.onDraw(canvas);
 
         float width = getWidth();
         float height = getHeight();
-
+        if (width <= 0f || height <= 0f) return;
         float cx = width / 2f;
         float cy = height / 2f;
+        float radius = Math.min(width, height) * 0.22f;
+        float elapsed = (SystemClock.uptimeMillis() - startTimeMs) / 1000f;
+        float pulse = 0.5f + 0.5f * (float) Math.sin(elapsed * 2.85f);
+        float rotation = (elapsed * 50f) % 360f;
+        float breath = 1f + pulse * 0.08f;
 
-        // Important: keep everything INSIDE the square container
-        float safeRadius = Math.min(width, height) * 0.18f;
+        auraPaint.setAlpha((int) (190 + pulse * 45));
+        canvas.drawCircle(cx, cy, radius * 2.1f * breath, auraPaint);
 
-        // ===== GLOW =====
-        float glowRadius = safeRadius * 2.1f * pulseScale;
+        canvas.drawCircle(cx, cy, radius * breath, corePaint);
 
-        RadialGradient gradient = new RadialGradient(
-                cx,
-                cy,
-                glowRadius,
-                new int[]{
-                        Color.parseColor("#7C4DFF"),
-                        Color.parseColor("#00E5FF"),
-                        Color.TRANSPARENT
-                },
-                new float[]{0.15f, 0.55f, 1f},
-                Shader.TileMode.CLAMP
-        );
+        if (ringGradient != null) {
+            matrix.setRotate(rotation, cx, cy);
+            ringGradient.setLocalMatrix(matrix);
+        }
+        ringRect.set(cx - radius * 1.35f, cy - radius * 1.35f, cx + radius * 1.35f, cy + radius * 1.35f);
+        ringPaint.setAlpha(180);
+        canvas.drawArc(ringRect, rotation, 250f, false, ringPaint);
 
-        glowPaint.setShader(gradient);
+        canvas.drawCircle(cx - radius * 0.24f, cy - radius * 0.28f, radius * 0.62f, highlightPaint);
 
-        canvas.drawCircle(
-                cx,
-                cy,
-                glowRadius,
-                glowPaint
-        );
+        glintPaint.setColor(0xCCFFFFFF);
+        canvas.drawCircle(cx + radius * 0.48f, cy - radius * 0.45f, radius * (0.09f + pulse * 0.025f), glintPaint);
 
-        // ===== ORBIT =====
-        orbitRect.set(
-                cx - safeRadius * 1.5f,
-                cy - safeRadius * 0.9f,
-                cx + safeRadius * 1.5f,
-                cy + safeRadius * 0.9f
-        );
-
-        canvas.save();
-        canvas.rotate(orbitRotation, cx, cy);
-        canvas.drawOval(orbitRect, orbitPaint);
-
-        // Orbiting moon
-        float moonX = cx + safeRadius * 1.5f;
-
-        canvas.drawCircle(
-                moonX,
-                cy,
-                safeRadius * 0.14f,
-                starPaint
-        );
-
-        canvas.restore();
-
-        // ===== PLANET CORE =====
-        canvas.drawCircle(
-                cx,
-                cy,
-                safeRadius * pulseScale,
-                planetPaint
-        );
-
-        // ===== PLANET HIGHLIGHT =====
-        canvas.drawCircle(
-                cx - safeRadius * 0.25f,
-                cy - safeRadius * 0.25f,
-                safeRadius * 0.22f,
-                highlightPaint
-        );
+        if (isShown()) {
+            postInvalidateOnAnimation();
+        }
     }
 }

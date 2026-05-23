@@ -8,7 +8,6 @@ import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.StyleSpan;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.Gravity;
@@ -24,7 +23,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
@@ -33,12 +31,19 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.myapplication.analysis.AnalysisResult;
 import com.example.myapplication.analysis.AnalysisResultAdapter;
+import com.example.myapplication.analysis.AiSummaryFormatter;
+import com.example.myapplication.analysis.BitwiseAiCore;
 import com.example.myapplication.analysis.OpenAIAnalysisService;
 import com.example.myapplication.analysis.ProductAnalysisReport;
 import com.example.myapplication.analysis.rules.RuleEngine;
+import com.example.myapplication.api.SecureAiService;
+import com.example.myapplication.utils.GlassMotion;
+import com.example.myapplication.utils.LinkHandler;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
@@ -46,9 +51,10 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class ProductDetailsActivity extends AppCompatActivity {
+public class ProductDetailsActivity extends BaseActivity {
 
     public static final String EXTRA_BARCODE = "com.example.myapplication.BARCODE";
+    private static final String AI_CACHE_PREFIX = "BITWISE_AI_CACHE_V2:";
 
     private ProductRepository productRepository;
     private ExecutorService executorService;
@@ -65,8 +71,13 @@ public class ProductDetailsActivity extends AppCompatActivity {
     private RecyclerView analysisRecyclerView;
     private View aiSummaryLayout;
     private View aiSummaryContainer;
+    private View detailsLayout;
     private AiGlowView aiCardGlow;
     private TextView aiSummaryTextView;
+    private TextView aiSourcesTextView;
+    private View aiSourcesDivider;
+    private View aiSourcesLabel;
+    private View loadingOverlay;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,13 +116,19 @@ public class ProductDetailsActivity extends AppCompatActivity {
         servingSizeTextView = findViewById(R.id.serving_size_text_view);
         healthScoreTextView = findViewById(R.id.health_score_text_view);
         removeFromPantryButton = findViewById(R.id.remove_from_pantry_button);
+        GlassMotion.attachPress(removeFromPantryButton);
         collapsingToolbarLayout = findViewById(R.id.collapsing_toolbar);
         nutritionFactsTable = findViewById(R.id.nutrition_facts_table);
         analysisRecyclerView = findViewById(R.id.analysis_recycler_view);
+        detailsLayout = findViewById(R.id.details_layout);
         aiSummaryLayout = findViewById(R.id.ai_summary_layout);
         aiSummaryContainer = findViewById(R.id.ai_summary_container);
         aiCardGlow = findViewById(R.id.ai_card_glow);
         aiSummaryTextView = findViewById(R.id.ai_summary_text_view);
+        aiSourcesTextView = findViewById(R.id.ai_sources_text_view);
+        aiSourcesDivider = findViewById(R.id.ai_sources_divider);
+        aiSourcesLabel = findViewById(R.id.ai_sources_label);
+        loadingOverlay = findViewById(R.id.loading_overlay);
         analysisRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         nutriscoreTextView.setOnClickListener(v -> showScoreExplanation("Nutri-Score", "A nutritional rating system."));
@@ -139,10 +156,12 @@ public class ProductDetailsActivity extends AppCompatActivity {
     }
 
     private void loadProductDetails(String barcode) {
+        if (loadingOverlay != null) loadingOverlay.setVisibility(View.VISIBLE);
         productRepository.getProductByBarcode(barcode, new ProductRepository.RepositoryCallback<ProductRepository.ProductResult>() {
             @Override
             public void onComplete(ProductRepository.ProductResult result) {
                 runOnUiThread(() -> {
+                    if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
                     if (result != null && result.productWithDetails != null) {
                         displayProductDetails(result.productWithDetails);
                     } else {
@@ -153,7 +172,10 @@ public class ProductDetailsActivity extends AppCompatActivity {
 
             @Override
             public void onError(Exception e) {
-                runOnUiThread(() -> showErrorState("Error fetching product: " + e.getMessage(), null));
+                runOnUiThread(() -> {
+                    if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
+                    showErrorState("Error fetching product: " + e.getMessage(), null);
+                });
             }
         });
     }
@@ -178,20 +200,9 @@ public class ProductDetailsActivity extends AppCompatActivity {
 
         currentReport = ruleEngine.analyze(productDetails);
         if (currentReport != null) {
-            int scoreToDisplay = currentReport.getOverallScore();
-            String scoreSuffix = "";
-            if (productDetails.product.healthScore != null) {
-                scoreToDisplay = productDetails.product.healthScore;
-                scoreSuffix = " (AI Verified)";
-                healthScoreTextView.setTextColor(ContextCompat.getColor(this, R.color.ai_accent));
-            }
-            healthScoreTextView.setText(String.format("Health Score: %d/100%s", scoreToDisplay, scoreSuffix));
+            applyRuleBasedScore(productDetails, currentReport);
             analysisRecyclerView.setAdapter(new AnalysisResultAdapter(currentReport.getResults()));
             displayHighlightedIngredients(productDetails, currentReport);
-        } else {
-            healthScoreTextView.setText("Health Score: N/A");
-            analysisRecyclerView.setAdapter(null);
-            ingredientsTextView.setText("Could not analyze ingredients.");
         }
 
         setScoreTextView(nutriscoreTextView, productDetails.product.nutriscoreGrade, "Nutri-Score");
@@ -204,133 +215,308 @@ public class ProductDetailsActivity extends AppCompatActivity {
         servingSizeTextView.setText(productDetails.product.servingSize != null ? productDetails.product.servingSize : "");
 
         displayNutriments(productDetails.nutriments);
+        GlassMotion.enter(detailsLayout, 0L);
 
-        // Start AI Reasoning in background
         performAiReasoning(productDetails);
     }
 
     private void performAiReasoning(ProductWithDetails product) {
         if (aiSummaryContainer == null) return;
-
-        // If we already have AI insight and a stored health score, we can skip re-analyzing unless needed.
-        if (product.product.aiInsight != null && !product.product.aiInsight.isEmpty() && product.product.healthScore != null) {
-            aiSummaryContainer.setVisibility(View.VISIBLE);
-            animateText(aiSummaryTextView, product.product.aiInsight);
-            healthScoreTextView.setText(String.format("Health Score: %d/100 (AI Verified)", product.product.healthScore));
-            return;
-        }
-
-        StringBuilder productData = new StringBuilder();
-        productData.append("Name: ").append(product.product.productName).append("\n");
-        productData.append("Brand: ").append(product.product.brands).append("\n");
-        productData.append("Categories: ").append(product.product.categories).append("\n");
-        if (product.ingredients != null) {
-            productData.append("Ingredients: ");
-            for (Ingredient ing : product.ingredients) {
-                productData.append(ing.text).append(", ");
-            }
-        }
-        if (product.nutriments != null) {
-            productData.append("\nNutriments: ").append(product.nutriments.toString());
-        }
+        if (displayCachedAiInsight(product)) return;
 
         aiSummaryContainer.setVisibility(View.VISIBLE);
-        aiSummaryTextView.setText("AI is reasoning with rules...");
-
+        GlassMotion.enter(aiSummaryContainer, 120L);
+        aiSummaryTextView.setText(R.string.bitwise_reasoning);
         AiGlowManager.startGlow(this);
 
-        List<String> rules = ruleEngine.getRuleDescriptions();
+        StringBuilder productData = new StringBuilder();
+        productData.append("response_language: ").append(LanguageManager.getLanguageName(this)).append("\n");
+        productData.append("Name: ").append(product.product.productName).append("\n");
+        productData.append("Brand: ").append(product.product.brands).append("\n");
+        productData.append("baseline_health_score: ").append(currentReport != null ? currentReport.getOverallScore() : 100).append("\n");
+        productData.append("Ingredients: ").append(formatIngredientsForAi(product)).append("\n");
+        if (product.nutriments != null) {
+            productData.append("\nNutrition Facts (per 100g): ").append(product.nutriments.toString());
+        }
 
-        new OpenAIAnalysisService().analyzeWithRules(productData.toString(), rules, null, new OpenAIAnalysisService.AnalysisCallback() {
+        BitwiseAiCore.startAnalysis(this, productData.toString(), null, new BitwiseAiCore.AiCallback() {
             @Override
-            public void onResult(String jsonResult) {
-                try {
-                    org.json.JSONObject obj = new org.json.JSONObject(jsonResult);
-                    String summary = obj.optString("summary", "");
-                    int score = obj.optInt("score", -1);
-                    
-                    // Extract AI findings for highlighting
-                    org.json.JSONArray findings = obj.optJSONArray("findings");
-                    List<String> aiTriggers = new ArrayList<>();
-                    if (findings != null) {
-                        for (int i = 0; i < findings.length(); i++) {
-                            org.json.JSONObject finding = findings.getJSONObject(i);
-                            String triggeringIngredient = finding.optString("triggering_ingredient", "");
-                            if (!triggeringIngredient.isEmpty()) {
-                                aiTriggers.add(triggeringIngredient);
+            public void onResult(String result) {
+                runOnUiThread(() -> {
+                    try {
+                        org.json.JSONObject obj = new org.json.JSONObject(result);
+
+                        String aiName = obj.optString("product_name", "").trim();
+                        String aiBrand = obj.optString("brand", "").trim();
+                        String summary = com.example.myapplication.analysis.AiSummaryFormatter.format(obj.optString("summary", ""));
+
+                        if (!aiName.isEmpty()) {
+                            productNameTextView.setText(aiName);
+                        }
+
+                        if (!aiBrand.isEmpty()) {
+                            productBrandTextView.setText(aiBrand);
+                        }
+
+                        // Sources
+                        org.json.JSONArray sourcesArr = obj.optJSONArray("sources");
+                        android.text.SpannableStringBuilder sourcesBuilder = new android.text.SpannableStringBuilder();
+                        if (sourcesArr != null) {
+                            for (int i = 0; i < sourcesArr.length(); i++) {
+                                org.json.JSONObject sourceObj = sourcesArr.optJSONObject(i);
+                                if (sourceObj != null) {
+                                    String sName = sourceObj.optString("name", "Source");
+                                    String url = sourceObj.optString("url", "");
+                                    int start = sourcesBuilder.length();
+                                    sourcesBuilder.append("\u2022 ").append(sName).append("\n");
+                                    int end = sourcesBuilder.length() - 1;
+                                    if (!url.isEmpty()) {
+                                        String visualQuote = sourceObj.optString("visual_quote", "");
+                                        sourcesBuilder.setSpan(new android.text.style.ClickableSpan() {
+                                            @Override
+                                            public void onClick(@androidx.annotation.NonNull View widget) {
+                                                LinkHandler.openLink(ProductDetailsActivity.this, url, sName, visualQuote);
+                                            }
+                                        }, start + 2, end, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                    }
+                                }
                             }
                         }
-                    }
 
-                    if (currentReport != null && !aiTriggers.isEmpty()) {
-                        currentReport.setAiTriggeringIngredients(aiTriggers);
-                    }
-
-                    if (!summary.isEmpty()) {
-                        productRepository.updateProductAiInsight(product.product.barcode, summary);
-                        runOnUiThread(() -> {
-                            aiSummaryContainer.setVisibility(View.VISIBLE);
-                            aiSummaryContainer.setAlpha(0f);
-                            aiSummaryContainer.setTranslationY(20f);
-                            aiSummaryContainer.animate()
-                                .alpha(1f)
-                                .translationY(0f)
-                                .setDuration(500)
-                                .setInterpolator(new android.view.animation.DecelerateInterpolator())
-                                .start();
+                        if (!summary.isEmpty()) {
+                            String cachedInsight = buildAiInsightCache(summary, sourcesArr);
+                            productRepository.updateProductAiInsight(product.product.barcode, cachedInsight);
+                            product.product.aiInsight = cachedInsight;
+                            setResult(RESULT_OK, new Intent().putExtra(PantryActivity.RESULT_DATA_CHANGED, true));
                             animateText(aiSummaryTextView, summary);
-                            
-                            // Re-highlight if we got new insights (if we had a way to get ingredients from AI)
-                            if (currentReport != null) {
-                                displayHighlightedIngredients(product, currentReport);
+                            displaySources(sourcesArr);
+                        }
+
+                        // Findings
+                        org.json.JSONArray aiFindings = obj.optJSONArray("findings");
+                        if (aiFindings != null && aiFindings.length() > 0) {
+                            List<AnalysisResult> aiResults = new ArrayList<>();
+                            for (int i = 0; i < aiFindings.length(); i++) {
+                                org.json.JSONObject f = aiFindings.optJSONObject(i);
+                                if (f != null) {
+                                    AnalysisResult res = new AnalysisResult(f.optString("rule"),
+                                        f.optString("impact").equalsIgnoreCase("negative") ? AnalysisResult.WarningLevel.SEVERE : AnalysisResult.WarningLevel.INFO,
+                                        0, f.optString("triggering_ingredient"), f.optString("explanation"));
+                                    res.setSourceUrl(f.optString("source_url", ""));
+                                    res.setVisualQuote(f.optString("visual_quote", ""));
+                                    aiResults.add(res);
+                                }
                             }
-                        });
+                            if (currentReport != null && currentReport.getResults() != null) {
+                                List<AnalysisResult> combinedResults = new ArrayList<>(currentReport.getResults());
+                                combinedResults.addAll(aiResults);
+                                analysisRecyclerView.setAdapter(new AnalysisResultAdapter(combinedResults));
+                            } else {
+                                analysisRecyclerView.setAdapter(new AnalysisResultAdapter(aiResults));
+                            }
+                        }
+                    } catch (Exception e) {
+                        aiSummaryTextView.setText(result);
                     }
-
-                    if (score != -1) {
-                        productRepository.updateProductHealthScore(product.product.barcode, score);
-                        runOnUiThread(() -> {
-                            healthScoreTextView.setText(String.format("Health Score: %d/100 (AI Verified)", score));
-                            healthScoreTextView.setTextColor(ContextCompat.getColor(ProductDetailsActivity.this, R.color.ai_accent));
-                        });
-                    }
-                    
-                    // Note: In a future update, we could also display the specific 'findings' in the analysisRecyclerView
-
-                } catch (Exception e) {
-                    runOnUiThread(() -> {
-                        AiGlowManager.stopGlow(ProductDetailsActivity.this);
-                        aiSummaryLayout.setVisibility(View.GONE);
-                    });
-                }
+                });
             }
 
             @Override
             public void onError(Throwable t) {
                 runOnUiThread(() -> {
-                    AiGlowManager.stopGlow(ProductDetailsActivity.this);
-                    aiSummaryContainer.setVisibility(View.GONE);
+                    aiSummaryTextView.setText("Bitwise AI Error: " + t.getMessage());
                 });
             }
         });
     }
 
+    private boolean displayCachedAiInsight(ProductWithDetails product) {
+        if (product == null
+                || product.product == null
+                || product.product.aiInsight == null
+                || product.product.aiInsight.trim().isEmpty()) {
+            return false;
+        }
+
+        CachedAiInsight cachedInsight = parseCachedAiInsight(product.product.aiInsight);
+        if (isProbablyIncomplete(cachedInsight.summary)) {
+            return false;
+        }
+
+        aiSummaryContainer.clearAnimation();
+        aiSummaryContainer.setVisibility(View.VISIBLE);
+        aiSummaryContainer.setAlpha(1f);
+        aiSummaryContainer.setTranslationY(0f);
+        GlassMotion.enter(aiSummaryContainer, 80L);
+        aiSummaryTextView.setText(android.text.Html.fromHtml(cachedInsight.summary, android.text.Html.FROM_HTML_MODE_COMPACT));
+        displaySources(cachedInsight.sources);
+
+        if (currentReport != null) {
+            applyRuleBasedScore(product, currentReport);
+        }
+
+        AiGlowManager.stopGlow(this);
+        return true;
+    }
+
+    private void applyRuleBasedScore(ProductWithDetails product, ProductAnalysisReport report) {
+        if (product == null || product.product == null || report == null) return;
+
+        int ruleScore = report.getOverallScore();
+        product.product.healthScore = ruleScore;
+        productRepository.updateProductHealthScore(product.product.barcode, ruleScore);
+        setResult(RESULT_OK, new Intent().putExtra(PantryActivity.RESULT_DATA_CHANGED, true));
+
+        healthScoreTextView.setText(getString(R.string.health_score_rule_based, ruleScore));
+        healthScoreTextView.setTextColor(ContextCompat.getColor(this, R.color.ai_accent));
+    }
+
+    private String buildAiInsightCache(String summary, org.json.JSONArray sources) {
+        try {
+            org.json.JSONObject cache = new org.json.JSONObject();
+            cache.put("summary", summary != null ? summary : "");
+            cache.put("sources", sources != null ? sources : new org.json.JSONArray());
+            return AI_CACHE_PREFIX + cache.toString();
+        } catch (Exception e) {
+            return summary != null ? summary : "";
+        }
+    }
+
+    private CachedAiInsight parseCachedAiInsight(String storedInsight) {
+        if (storedInsight != null && storedInsight.startsWith(AI_CACHE_PREFIX)) {
+            try {
+                org.json.JSONObject cache = new org.json.JSONObject(storedInsight.substring(AI_CACHE_PREFIX.length()));
+                return new CachedAiInsight(cache.optString("summary", ""), cache.optJSONArray("sources"));
+            } catch (Exception ignored) {
+            }
+        }
+        return new CachedAiInsight(storedInsight != null ? storedInsight : "", null);
+    }
+
+    private boolean isProbablyIncomplete(String html) {
+        if (html == null || html.trim().isEmpty()) {
+            return true;
+        }
+        String text = android.text.Html.fromHtml(html, android.text.Html.FROM_HTML_MODE_COMPACT).toString().trim();
+        return !(text.endsWith(".") || text.endsWith("!") || text.endsWith("?"));
+    }
+
+    private void displaySources(org.json.JSONArray sources) {
+        if (aiSourcesTextView == null) return;
+
+        SpannableStringBuilder builder = new SpannableStringBuilder();
+        if (sources != null) {
+            for (int i = 0; i < sources.length(); i++) {
+                org.json.JSONObject sourceObj = sources.optJSONObject(i);
+                if (sourceObj == null) continue;
+
+                String name = sourceObj.optString("name", "Source").trim();
+                String url = sourceObj.optString("url", "").trim();
+                String visualQuote = sourceObj.optString("visual_quote", "");
+                if (url.isEmpty()) continue;
+
+                int start = builder.length();
+                builder.append("\u2022 ").append(name.isEmpty() ? "Source" : name).append("\n");
+                int end = builder.length() - 1;
+                builder.setSpan(new android.text.style.ClickableSpan() {
+                    @Override
+                    public void onClick(@NonNull View widget) {
+                        LinkHandler.openLink(ProductDetailsActivity.this, url, name, visualQuote);
+                    }
+                }, start + 2, end, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                builder.setSpan(new android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, R.color.colorPrimary)), start + 2, end, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+        }
+
+        boolean hasSources = builder.length() > 0;
+        aiSourcesTextView.setText(builder);
+        aiSourcesTextView.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+        aiSourcesTextView.setVisibility(hasSources ? View.VISIBLE : View.GONE);
+        if (aiSourcesDivider != null) aiSourcesDivider.setVisibility(hasSources ? View.VISIBLE : View.GONE);
+        if (aiSourcesLabel != null) aiSourcesLabel.setVisibility(hasSources ? View.VISIBLE : View.GONE);
+    }
+
+    private static class CachedAiInsight {
+        final String summary;
+        final org.json.JSONArray sources;
+
+        CachedAiInsight(String summary, org.json.JSONArray sources) {
+            this.summary = summary;
+            this.sources = sources;
+        }
+    }
+
+    private String formatIngredientsForAi(ProductWithDetails product) {
+        if (product == null || product.ingredients == null || product.ingredients.isEmpty()) {
+            return "Not listed";
+        }
+
+        StringBuilder builder = new StringBuilder();
+        for (Ingredient ingredient : product.ingredients) {
+            if (ingredient != null && ingredient.text != null && !ingredient.text.trim().isEmpty()) {
+                if (builder.length() > 0) builder.append(", ");
+                builder.append(ingredient.text.trim());
+            }
+        }
+        return builder.length() == 0 ? "Not listed" : builder.toString();
+    }
+
     private void animateText(TextView textView, String text) {
         final int[] index = {0};
-        final long delay = 8;
+        final long delay = 16;
+        final int charsPerTick = 14;
         Handler handler = new Handler(Looper.getMainLooper());
+        final android.text.Spanned htmlText = android.text.Html.fromHtml(text, android.text.Html.FROM_HTML_MODE_COMPACT);
+        final String rawText = htmlText.toString();
         textView.setText("");
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (index[0] < text.length()) {
-                    textView.append(String.valueOf(text.charAt(index[0]++)));
+                if (index[0] < rawText.length()) {
+                    index[0] = Math.min(rawText.length(), index[0] + charsPerTick);
+                    textView.setText(htmlText.subSequence(0, index[0]));
                     handler.postDelayed(this, delay);
                 } else {
+                    textView.setText(htmlText);
                     AiGlowManager.stopGlow(ProductDetailsActivity.this);
+                    makeLinksClickable(textView);
                 }
             }
         }, delay);
+    }
+
+    private String formatAiSummary(String raw) {
+        if (raw == null) return "";
+        if (raw.length() >= 0) return AiSummaryFormatter.format(raw);
+
+        return raw
+                .replace("###", "<br><br><b>")
+                .replace("**", "")
+                .replaceAll("(?m)^-\\s+", "\u2022 ")
+                .replace("\n\n", "<br><br>")
+                .replace("\n", "<br>")
+                .replace("Overview", "<b>📋 Product Overview</b><br>")
+                .replace("Ingredient Insights", "<br><br><b>🧪 Ingredient Insights</b><br>")
+                .replace("Nutrition Summary", "<br><br><b>🥗 Nutrition Summary</b><br>")
+                .replace("Potential Benefits", "<br><br><b>✅ Potential Benefits</b><br>")
+                .replace("Things To Consider", "<br><br><b>⚠️ Things To Consider</b><br>")
+                .replace("Final Summary", "<br><br><b>🧠 Final Summary</b><br>");
+    }
+
+    private void makeLinksClickable(TextView textView) {
+        CharSequence currentText = textView.getText();
+        String text = currentText.toString();
+        SpannableStringBuilder spannableBuilder = new SpannableStringBuilder(currentText);
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("((http|https)://[a-zA-Z0-9\\-.]+\\.[a-zA-Z]{2,3}(/\\S*)?)", java.util.regex.Pattern.CASE_INSENSITIVE);
+        java.util.regex.Matcher matcher = pattern.matcher(text);
+        while (matcher.find()) {
+            final String url = matcher.group();
+            spannableBuilder.setSpan(new android.text.style.ClickableSpan() {
+                @Override public void onClick(@NonNull View widget) { LinkHandler.openLink(ProductDetailsActivity.this, url, "Scientific Source", url); }
+            }, matcher.start(), matcher.end(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        textView.setText(spannableBuilder);
+        textView.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
     }
 
     private void displayHighlightedIngredients(ProductWithDetails productDetails, ProductAnalysisReport report) {
@@ -339,38 +525,17 @@ public class ProductDetailsActivity extends AppCompatActivity {
             return;
         }
         SpannableStringBuilder builder = new SpannableStringBuilder();
-        List<String> aiTriggers = report.getAiTriggeringIngredients();
-
         for (Ingredient ingredient : productDetails.ingredients) {
             if (ingredient.text != null) {
                 SpannableString spannable = new SpannableString(ingredient.text);
-                boolean highlighted = false;
-
-                // Check manual rule triggers
                 for(AnalysisResult res : report.getResults()){
                     if(res.getTriggeringIngredient() != null && ingredient.text.toLowerCase().contains(res.getTriggeringIngredient().toLowerCase())){
-                        if (res.getLevel() == AnalysisResult.WarningLevel.POSITIVE) {
-                            spannable.setSpan(new BackgroundColorSpan(0x3300FF00), 0, spannable.length(), 0); // Green for positive
-                        } else {
-                            spannable.setSpan(new BackgroundColorSpan(0x33FF0000), 0, spannable.length(), 0); // Red for others
-                        }
+                        int color = res.getLevel() == AnalysisResult.WarningLevel.POSITIVE ? 0x3300FF00 : 0x33FF0000;
+                        spannable.setSpan(new BackgroundColorSpan(color), 0, spannable.length(), 0);
                         spannable.setSpan(new StyleSpan(Typeface.BOLD), 0, spannable.length(), 0);
-                        highlighted = true;
                         break;
                     }
                 }
-
-                // Check AI triggers
-                if (!highlighted && aiTriggers != null) {
-                    for (String trigger : aiTriggers) {
-                        if (ingredient.text.toLowerCase().contains(trigger.toLowerCase())) {
-                            spannable.setSpan(new BackgroundColorSpan(0x337C4DFF), 0, spannable.length(), 0); // AI Purple tint
-                            spannable.setSpan(new StyleSpan(Typeface.BOLD), 0, spannable.length(), 0);
-                            break;
-                        }
-                    }
-                }
-
                 builder.append(spannable).append("\n");
             }
         }
@@ -427,22 +592,12 @@ public class ProductDetailsActivity extends AppCompatActivity {
     private int getScoreColor(String score) {
         if (score == null) return ContextCompat.getColor(this, R.color.score_unknown);
         switch (score.toLowerCase()) {
-            case "a":
-            case "1":
-                return ContextCompat.getColor(this, R.color.nutriscore_a);
-            case "b":
-                return ContextCompat.getColor(this, R.color.nutriscore_b);
-            case "c":
-            case "2":
-                return ContextCompat.getColor(this, R.color.nutriscore_c);
-            case "d":
-            case "3":
-                return ContextCompat.getColor(this, R.color.nutriscore_d);
-            case "e":
-            case "4":
-                return ContextCompat.getColor(this, R.color.nutriscore_e);
-            default:
-                return ContextCompat.getColor(this, R.color.score_unknown);
+            case "a": case "1": return ContextCompat.getColor(this, R.color.nutriscore_a);
+            case "b": return ContextCompat.getColor(this, R.color.nutriscore_b);
+            case "c": case "2": return ContextCompat.getColor(this, R.color.nutriscore_c);
+            case "d": case "3": return ContextCompat.getColor(this, R.color.nutriscore_d);
+            case "e": case "4": return ContextCompat.getColor(this, R.color.nutriscore_e);
+            default: return ContextCompat.getColor(this, R.color.score_unknown);
         }
     }
 

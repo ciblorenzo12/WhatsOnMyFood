@@ -16,7 +16,7 @@
             android:id="@+id/add_product_toolbar"
             android:layout_width="0dp"
             android:layout_height="?attr/actionBarSize"
-            app:title="Add a New Product"
+            app:title="@string/add_new_product"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
@@ -25,7 +25,7 @@
             android:id="@+id/barcode_label"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Barcode"
+            android:text="@string/barcode"
             android:layout_marginTop="16dp"
             app:layout_constraintTop_toBottomOf="@id/add_product_toolbar"
             app:layout_constraintStart_toStartOf="parent"/>
@@ -54,7 +54,7 @@
                 android:id="@+id/product_name_edit_text"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Product Name" />
+                android:hint="@string/product_name" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -71,7 +71,7 @@
                 android:id="@+id/brand_edit_text"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Brand" />
+                android:hint="@string/brand" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -89,7 +89,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="top"
-                android:hint="Ingredients (comma-separated)"
+                android:hint="@string/ingredients_comma_separated"
                 android:inputType="textMultiLine"
                 android:minLines="3" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -99,7 +99,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="Submit Product"
+            android:text="@string/submit_product"
             app:layout_constraintTop_toBottomOf="@id/ingredients_layout"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />

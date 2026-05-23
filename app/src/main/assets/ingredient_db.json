@@ -1,0 +1,50 @@
+[
+  {
+    "name": "Aspartame",
+    "purpose": "Artificial sweetener",
+    "health_note": "Generally recognized as safe, but debated. Must be avoided by individuals with phenylketonuria (PKU).",
+    "category": "Sweetener"
+  },
+  {
+    "name": "Monosodium Glutamate (MSG)",
+    "purpose": "Flavor enhancer",
+    "health_note": "Considered safe by FDA, though some people report sensitivity symptoms.",
+    "category": "Flavor Enhancer"
+  },
+  {
+    "name": "Sodium Benzoate",
+    "purpose": "Preservative",
+    "health_note": "Inhibits growth of mold and bacteria. Some studies suggest a link to hyperactivity when combined with food dyes.",
+    "category": "Preservative"
+  },
+  {
+    "name": "High Fructose Corn Syrup",
+    "purpose": "Sweetener",
+    "health_note": "Linked to obesity and insulin resistance when consumed in high amounts.",
+    "category": "Sweetener"
+  },
+  {
+    "name": "Carrageenan",
+    "purpose": "Thickener/Stabilizer",
+    "health_note": "Derived from seaweed. Some concerns about digestive inflammation in sensitive individuals.",
+    "category": "Thickener"
+  },
+  {
+    "name": "Yellow 5 (Tartrazine)",
+    "purpose": "Food coloring",
+    "health_note": "May cause allergic reactions in some people and linked to hyperactivity in children.",
+    "category": "Colorant"
+  },
+  {
+    "name": "Titanium Dioxide",
+    "purpose": "Whiting agent",
+    "health_note": "Recently banned in the EU as a food additive due to concerns about DNA damage.",
+    "category": "Colorant"
+  },
+  {
+    "name": "Xanthan Gum",
+    "purpose": "Stabilizer/Thickener",
+    "health_note": "Generally safe. Can act as a prebiotic or a laxative in very high doses.",
+    "category": "Thickener"
+  }
+]

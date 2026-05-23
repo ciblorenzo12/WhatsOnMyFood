@@ -4,14 +4,15 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/glass_activity_background"
     tools:context=".PantryActivity">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/pantry_toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorPrimary"
-        app:title="My Pantry"
+        android:background="@drawable/glass_toolbar"
+        app:title="@string/my_pantry"
         app:titleTextColor="@android:color/white"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -19,10 +20,27 @@
         android:id="@+id/pantry_recycler_view"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:paddingTop="10dp"
+        android:paddingBottom="24dp"
         app:layout_constraintTop_toBottomOf="@id/pantry_toolbar"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         tools:listitem="@layout/pantry_list_item" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/ingredient_db_fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:contentDescription="@string/additive_database"
+        android:src="@android:drawable/ic_menu_search"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:backgroundTint="@color/ai_accent"
+        app:tint="@android:color/white" />
+
+    <include layout="@layout/layout_loading_overlay" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

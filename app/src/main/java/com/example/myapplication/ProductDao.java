@@ -26,6 +26,9 @@ public interface ProductDao {
 
     @Transaction
     public default void insertProductWithDetails(ProductWithDetails productWithDetails) {
+        if (productWithDetails.product == null || !productWithDetails.product.isValid()) {
+            return;
+        }
         insertProduct(productWithDetails.product);
         if (productWithDetails.nutriments != null) {
             insertNutriments(productWithDetails.nutriments);

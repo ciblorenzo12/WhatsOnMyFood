@@ -3,13 +3,17 @@
     <item
         android:id="@+id/navigation_pantry"
         android:icon="@drawable/ic_pantry"
-        android:title="Pantry" />
+        android:title="@string/pantry" />
+    <item
+        android:id="@+id/navigation_database"
+        android:icon="@drawable/ic_database"
+        android:title="@string/additive_database_nav" />
     <item
         android:id="@+id/navigation_scan"
         android:icon="@drawable/ic_scan"
-        android:title="Scan Me!!" />
+        android:title="@string/scan_me" />
     <item
         android:id="@+id/navigation_profile"
         android:icon="@drawable/ic_profile"
-        android:title="Profile" />
+        android:title="@string/profile" />
 </menu>

@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -12,7 +13,6 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
 
 import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract;
@@ -23,17 +23,17 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class SignInActivity extends AppCompatActivity {
+public class SignInActivity extends BaseActivity {
 
     private static final String TAG = "SignInActivity";
 
     private TextInputEditText emailEditText, passwordEditText;
     private Spinner languageSpinner;
     private FirebaseAuth mAuth;
+    private boolean languageSpinnerReady;
 
     // Launcher for the FirebaseUI sign-in flow (used for Google Sign-In)
     private final ActivityResultLauncher<Intent> signInLauncher = registerForActivityResult(
@@ -76,6 +76,7 @@ public class SignInActivity extends AppCompatActivity {
     }
 
     private void startGoogleSignIn() {
+        saveSelectedLanguage();
         List<AuthUI.IdpConfig> providers = Collections.singletonList(
                 new AuthUI.IdpConfig.GoogleBuilder().build());
 
@@ -87,16 +88,33 @@ public class SignInActivity extends AppCompatActivity {
     }
 
     private void setupLanguageSpinner() {
-        List<LanguageItem> languageList = new ArrayList<>();
-        languageList.add(new LanguageItem("English", android.R.drawable.ic_dialog_map));
-        languageList.add(new LanguageItem("Spanish", android.R.drawable.ic_dialog_map));
-        languageList.add(new LanguageItem("French", android.R.drawable.ic_dialog_map));
-
+        List<LanguageItem> languageList = LanguageManager.getSupportedLanguages();
         LanguageSpinnerAdapter adapter = new LanguageSpinnerAdapter(this, languageList);
         languageSpinner.setAdapter(adapter);
+        languageSpinner.setSelection(LanguageManager.getLanguagePosition(this));
+        languageSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (!languageSpinnerReady) {
+                    languageSpinnerReady = true;
+                    return;
+                }
+
+                LanguageItem selectedLanguage = (LanguageItem) parent.getItemAtPosition(position);
+                if (selectedLanguage != null && !selectedLanguage.getLanguageCode().equals(LanguageManager.getLanguageCode(SignInActivity.this))) {
+                    LanguageManager.setLanguageCode(SignInActivity.this, selectedLanguage.getLanguageCode());
+                    recreate();
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
     }
 
     private void signInUser() {
+        saveSelectedLanguage();
         String email = emailEditText.getText().toString().trim();
         String password = passwordEditText.getText().toString().trim();
 
@@ -116,6 +134,7 @@ public class SignInActivity extends AppCompatActivity {
     }
 
     private void registerUser() {
+        saveSelectedLanguage();
         String email = emailEditText.getText().toString().trim();
         String password = passwordEditText.getText().toString().trim();
 
@@ -192,5 +211,12 @@ public class SignInActivity extends AppCompatActivity {
         Intent intent = new Intent(this, MainActivity.class);
         startActivity(intent);
         finish();
+    }
+
+    private void saveSelectedLanguage() {
+        LanguageItem selectedLanguage = (LanguageItem) languageSpinner.getSelectedItem();
+        if (selectedLanguage != null) {
+            LanguageManager.setLanguageCode(this, selectedLanguage.getLanguageCode());
+        }
     }
 }

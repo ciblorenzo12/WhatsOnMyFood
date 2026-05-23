@@ -5,30 +5,35 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.RectF;
 import android.graphics.SweepGradient;
 import android.util.AttributeSet;
 import android.view.View;
 
+import androidx.annotation.Nullable;
+
 /**
- * Ultra-vivid "Liquid Neon" effect inspired by premium AI interfaces.
- * Uses high-saturation colors and hardware-accelerated drawing.
+ * Soft aurora treatment for Bitwise thinking states.
+ * Draws a calm animated border and edge glow instead of a loud neon outline.
  */
 public class AiGlowView extends View {
-    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Path path = new Path();
+    private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint bloomPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint sheenPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF bounds = new RectF();
     private final Matrix matrix = new Matrix();
-    private SweepGradient shader;
+    private final Path sheenPath = new Path();
+    private SweepGradient gradient;
     private long startTime;
+    private boolean screenBorder;
 
-    // HIGH-VIBRANCY VIVID PALETTE - Pure neon hues for maximum "pop"
     private final int[] colors = {
-            0xFFFF00FF, // Neon Magenta
-            0xFF007AFF, // Electric Blue (Apple style)
-            0xFF00FFFF, // Vivid Cyan
-            0xFFAF52DE, // Vibrant Purple
-            0xFFFF2D55, // Vivid Pink/Red
-            0xFF00FF00, // Electric Green
-            0xFFFF00FF  // Back to Magenta
+            0xFF7C8CFF,
+            0xFF5EE6FF,
+            0xFFE8D7FF,
+            0xFFFF8FD8,
+            0xFFFFD3A5,
+            0xFF7C8CFF
     };
 
     public AiGlowView(Context context) {
@@ -36,89 +41,154 @@ public class AiGlowView extends View {
         init();
     }
 
-    public AiGlowView(Context context, AttributeSet attrs) {
+    public AiGlowView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         init();
     }
 
     private void init() {
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeCap(Paint.Cap.ROUND);
-        paint.setStrokeJoin(Paint.Join.ROUND);
+        setWillNotDraw(false);
+
+        strokePaint.setStyle(Paint.Style.STROKE);
+        strokePaint.setStrokeCap(Paint.Cap.ROUND);
+        strokePaint.setStrokeJoin(Paint.Join.ROUND);
+
+        bloomPaint.setStyle(Paint.Style.STROKE);
+        bloomPaint.setStrokeCap(Paint.Cap.ROUND);
+        bloomPaint.setStrokeJoin(Paint.Join.ROUND);
+
+        sheenPaint.setStyle(Paint.Style.STROKE);
+        sheenPaint.setStrokeCap(Paint.Cap.ROUND);
+        sheenPaint.setStrokeWidth(2f);
+        sheenPaint.setColor(0x88FFFFFF);
+
         startTime = System.currentTimeMillis();
+    }
+
+    public void setScreenBorder(boolean screenBorder) {
+        this.screenBorder = screenBorder;
+        invalidate();
     }
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        shader = new SweepGradient(w / 2f, h / 2f, colors, null);
-        paint.setShader(shader);
+        if (w <= 0 || h <= 0) {
+            gradient = null;
+            strokePaint.setShader(null);
+            bloomPaint.setShader(null);
+            return;
+        }
+        gradient = new SweepGradient(w / 2f, h / 2f, colors, null);
+        strokePaint.setShader(gradient);
+        bloomPaint.setShader(gradient);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (isShown()) {
+            postInvalidateOnAnimation();
+        }
+    }
+
+    @Override
+    protected void onVisibilityChanged(View changedView, int visibility) {
+        super.onVisibilityChanged(changedView, visibility);
+        if (visibility == VISIBLE && isShown()) {
+            postInvalidateOnAnimation();
+        }
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        long elapsed = System.currentTimeMillis() - startTime;
-        float time = elapsed / 1000f;
+        if (gradient == null) return;
 
-        float w = getWidth();
-        float h = getHeight();
+        float elapsed = (System.currentTimeMillis() - startTime) / 1000f;
+        float width = getWidth();
+        float height = getHeight();
+        if (width <= 0f || height <= 0f) return;
+        float minSide = Math.min(width, height);
+        boolean fullScreen = screenBorder || getId() == R.id.loading_glow || (width >= dp(280f) && height >= dp(420f));
 
-        // 1. Energetic rotation for vivid color mixing
-        matrix.setRotate(time * 45f, w / 2f, h / 2f);
-        shader.setLocalMatrix(matrix);
+        matrix.setRotate(elapsed * 18f, width / 2f, height / 2f);
+        gradient.setLocalMatrix(matrix);
 
-        // 2. Pronounced "Breathing" scale
-        float scale = 1.0f + (float) Math.sin(time * 1.5f) * 0.03f;
-        canvas.scale(scale, scale, w / 2f, h / 2f);
+        float inset = fullScreen ? dp(10f) : dp(12f);
+        float radius = fullScreen ? dp(30f) : Math.min(dp(28f), minSide * 0.18f);
+        bounds.set(inset, inset, width - inset, height - inset);
 
-        // --- Intensified Multi-Pass Vivid Glow ---
-        
-        // Pass 1: The "Bloom" (Wide, higher opacity for vivid bleed)
-        drawOrganicPath(canvas, time, 160f, 80, 50f);
+        float breath = 0.5f + 0.5f * (float) Math.sin(elapsed * 1.6f);
 
-        // Pass 2: The "Secondary Core" (Medium, vibrant saturation)
-        drawOrganicPath(canvas, time * 1.3f, 70f, 160, 30f);
+        bloomPaint.setStrokeWidth(fullScreen ? dp(34f) : dp(18f));
+        bloomPaint.setAlpha((int) (fullScreen ? 34 + breath * 18 : 74 + breath * 16));
+        canvas.drawRoundRect(bounds, radius, radius, bloomPaint);
 
-        // Pass 3: The "Vivid Edge" (Thick, fully opaque neon line)
-        drawOrganicPath(canvas, time * 0.9f, 20f, 255, 18f);
+        bloomPaint.setStrokeWidth(fullScreen ? dp(18f) : dp(10f));
+        bloomPaint.setAlpha((int) (fullScreen ? 42 + breath * 18 : 86 + breath * 18));
+        canvas.drawRoundRect(bounds, radius, radius, bloomPaint);
 
-        postInvalidateOnAnimation();
+        strokePaint.setStrokeWidth(fullScreen ? dp(2.6f) : dp(3.4f));
+        strokePaint.setAlpha((int) (fullScreen ? 128 + breath * 48 : 150 + breath * 60));
+        canvas.drawRoundRect(bounds, radius, radius, strokePaint);
+
+        drawTravelingSheen(canvas, elapsed, bounds, radius, fullScreen);
+
+        if (isShown()) {
+            postInvalidateOnAnimation();
+        }
     }
 
-    private void drawOrganicPath(Canvas canvas, float time, float strokeWidth, int alpha, float amplitude) {
-        paint.setStrokeWidth(strokeWidth);
-        paint.setAlpha(alpha);
-        
-        path.reset();
-        float w = getWidth();
-        float h = getHeight();
-        float step = 50f; 
+    private void drawTravelingSheen(Canvas canvas, float time, RectF rect, float radius, boolean fullScreen) {
+        float perimeter = 2f * (rect.width() + rect.height());
+        float distance = (time * (fullScreen ? dp(150f) : dp(110f))) % perimeter;
+        float segment = fullScreen ? dp(210f) : dp(90f);
 
-        // Generate smooth liquid boundary
-        path.moveTo(0, getModernWave(0, time, amplitude));
-        for (float x = 0; x <= w; x += step) {
-            path.lineTo(x, getModernWave(x, time, amplitude));
-        }
-        
-        for (float y = 0; y <= h; y += step) {
-            path.lineTo(w - getModernWave(y, time + 1.2f, amplitude), y);
-        }
-        
-        for (float x = w; x >= 0; x -= step) {
-            path.lineTo(x, h - getModernWave(x, time + 2.4f, amplitude));
-        }
-        
-        for (float y = h; y >= 0; y -= step) {
-            path.lineTo(getModernWave(y, time + 3.6f, amplitude), y);
-        }
+        sheenPaint.setStrokeWidth(fullScreen ? dp(2.4f) : dp(2f));
+        sheenPaint.setAlpha(fullScreen ? 104 : 86);
+        sheenPath.reset();
 
-        path.close();
-        canvas.drawPath(path, paint);
+        addBorderSegment(sheenPath, rect, radius, distance, segment);
+        canvas.drawPath(sheenPath, sheenPaint);
     }
 
-    private float getModernWave(float pos, float time, float amp) {
-        return (float) ((Math.sin(pos * 0.006 + time * 1.3) * 0.7 + 
-                         Math.cos(pos * 0.01 - time * 1.1) * 0.3) * amp + amp * 1.5f);
+    private void addBorderSegment(Path path, RectF rect, float radius, float start, float length) {
+        float perimeter = 2f * (rect.width() + rect.height());
+        float end = start + length;
+        float step = dp(8f);
+
+        for (float d = start; d <= end; d += step) {
+            float normalized = d % perimeter;
+            float x;
+            float y;
+
+            if (normalized < rect.width()) {
+                x = rect.left + normalized;
+                y = rect.top;
+            } else if (normalized < rect.width() + rect.height()) {
+                x = rect.right;
+                y = rect.top + normalized - rect.width();
+            } else if (normalized < rect.width() * 2f + rect.height()) {
+                x = rect.right - (normalized - rect.width() - rect.height());
+                y = rect.bottom;
+            } else {
+                x = rect.left;
+                y = rect.bottom - (normalized - rect.width() * 2f - rect.height());
+            }
+
+            x = Math.max(rect.left + radius * 0.35f, Math.min(rect.right - radius * 0.35f, x));
+            y = Math.max(rect.top + radius * 0.35f, Math.min(rect.bottom - radius * 0.35f, y));
+
+            if (d == start) {
+                path.moveTo(x, y);
+            } else {
+                path.lineTo(x, y);
+            }
+        }
+    }
+
+    private float dp(float value) {
+        return value * getResources().getDisplayMetrics().density;
     }
 }

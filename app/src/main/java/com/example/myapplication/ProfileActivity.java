@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.MenuItem;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Spinner;
@@ -16,7 +17,6 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import com.google.android.material.textfield.TextInputEditText;
@@ -27,10 +27,9 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.squareup.picasso.Picasso;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class ProfileActivity extends AppCompatActivity {
+public class ProfileActivity extends BaseActivity {
 
     private static final String TAG = "ProfileActivity";
 
@@ -40,6 +39,7 @@ public class ProfileActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private FirebaseUser currentUser;
     private StorageReference storageReference;
+    private boolean languageSpinnerReady;
 
     private final ActivityResultLauncher<String> imagePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
@@ -132,21 +132,43 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void setupLanguageSpinner() {
-        List<LanguageItem> languageList = new ArrayList<>();
-        languageList.add(new LanguageItem("English", android.R.drawable.ic_dialog_map));
-        languageList.add(new LanguageItem("Spanish", android.R.drawable.ic_dialog_map));
-        languageList.add(new LanguageItem("French", android.R.drawable.ic_dialog_map));
-
+        List<LanguageItem> languageList = LanguageManager.getSupportedLanguages();
         LanguageSpinnerAdapter adapter = new LanguageSpinnerAdapter(this, languageList);
         languageSpinner.setAdapter(adapter);
+        languageSpinner.setSelection(LanguageManager.getLanguagePosition(this));
+        languageSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, android.view.View view, int position, long id) {
+                if (!languageSpinnerReady) {
+                    languageSpinnerReady = true;
+                    return;
+                }
+
+                LanguageItem selectedLanguage = (LanguageItem) parent.getItemAtPosition(position);
+                if (selectedLanguage != null && !selectedLanguage.getLanguageCode().equals(LanguageManager.getLanguageCode(ProfileActivity.this))) {
+                    LanguageManager.setLanguageCode(ProfileActivity.this, selectedLanguage.getLanguageCode());
+                    Toast.makeText(ProfileActivity.this, getString(R.string.language_updated), Toast.LENGTH_SHORT).show();
+                    recreate();
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
     }
 
     private void updateUserProfile() {
         String displayName = nameEditText.getText().toString().trim();
+        LanguageItem selectedLanguage = (LanguageItem) languageSpinner.getSelectedItem();
 
         if (TextUtils.isEmpty(displayName)) {
             nameEditText.setError("Display name cannot be empty.");
             return;
+        }
+
+        if (selectedLanguage != null) {
+            LanguageManager.setLanguageCode(this, selectedLanguage.getLanguageCode());
         }
 
         UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
@@ -157,9 +179,9 @@ public class ProfileActivity extends AppCompatActivity {
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         Log.d(TAG, "User profile updated.");
-                        Toast.makeText(this, "Display name updated successfully.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, getString(R.string.profile_updated), Toast.LENGTH_SHORT).show();
                     } else {
-                        Toast.makeText(this, "Failed to update display name.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, getString(R.string.profile_update_failed), Toast.LENGTH_SHORT).show();
                     }
                 });
     }

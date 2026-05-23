@@ -9,6 +9,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.myapplication.utils.GlassMotion;
 import com.google.android.material.card.MaterialCardView;
 import com.squareup.picasso.Picasso;
 
@@ -39,6 +40,7 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
     public void onBindViewHolder(@NonNull PantryViewHolder holder, int position) {
         Product product = products.get(position);
         holder.bind(product, listener);
+        GlassMotion.enter(holder.cardView, Math.min(position * 35L, 220L));
     }
 
     @Override
@@ -73,6 +75,7 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
             productQuantityTextView = itemView.findViewById(R.id.product_quantity_text_view);
             aiVerifiedBadge = itemView.findViewById(R.id.ai_verified_badge);
             cardView = itemView.findViewById(R.id.card_view);
+            GlassMotion.attachPress(cardView);
         }
 
         public void bind(final Product product, final OnItemClickListener listener) {

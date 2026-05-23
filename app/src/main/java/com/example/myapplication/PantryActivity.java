@@ -7,18 +7,19 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.myapplication.utils.GlassMotion;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -33,7 +34,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class PantryActivity extends AppCompatActivity {
+public class PantryActivity extends BaseActivity {
 
     public static final String RESULT_DATA_CHANGED = "com.example.myapplication.DATA_CHANGED";
 
@@ -44,6 +45,7 @@ public class PantryActivity extends AppCompatActivity {
     private List<Product> pantryProducts;
     private String currentExportType = "";
     private FirebaseUser currentUser;
+    private View loadingOverlay;
 
     private final ActivityResultLauncher<Intent> detailsActivityLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -76,6 +78,7 @@ public class PantryActivity extends AppCompatActivity {
 
         Toolbar toolbar = findViewById(R.id.pantry_toolbar);
         setSupportActionBar(toolbar);
+        GlassMotion.enter(toolbar, 0L);
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
@@ -92,7 +95,12 @@ public class PantryActivity extends AppCompatActivity {
         executorService = Executors.newSingleThreadExecutor();
 
         recyclerView = findViewById(R.id.pantry_recycler_view);
+        loadingOverlay = findViewById(R.id.loading_overlay);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        findViewById(R.id.ingredient_db_fab).setOnClickListener(v -> {
+            startActivity(new Intent(PantryActivity.this, AdditiveDatabaseActivity.class));
+        });
 
         loadPantryItems();
         setupSwipeToDelete(recyclerView);
@@ -131,9 +139,11 @@ public class PantryActivity extends AppCompatActivity {
 
     private void loadPantryItems() {
         if (currentUser == null) return;
+        if (loadingOverlay != null) loadingOverlay.setVisibility(View.VISIBLE);
         executorService.execute(() -> {
             pantryProducts = db.productDao().getPantryProducts(currentUser.getUid());
             runOnUiThread(() -> {
+                if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
                 if (adapter == null) {
                     adapter = new PantryAdapter(pantryProducts, product -> {
                         Intent intent = new Intent(PantryActivity.this, ProductDetailsActivity.class);
@@ -141,6 +151,7 @@ public class PantryActivity extends AppCompatActivity {
                         detailsActivityLauncher.launch(intent);
                     });
                     recyclerView.setAdapter(adapter);
+                    GlassMotion.enter(recyclerView, 80L);
                 } else {
                     adapter.updateList(pantryProducts);
                 }

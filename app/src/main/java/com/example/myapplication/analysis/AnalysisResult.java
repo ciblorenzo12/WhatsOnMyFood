@@ -13,6 +13,8 @@ public class AnalysisResult {
     private final int scorePenalty;
     private final String triggeringIngredient;
     private final String explanation;
+    private String sourceUrl;
+    private String visualQuote;
 
     public AnalysisResult(String message, WarningLevel level, int scorePenalty, @Nullable String triggeringIngredient, String explanation) {
         this.message = message;
@@ -20,6 +22,22 @@ public class AnalysisResult {
         this.scorePenalty = scorePenalty;
         this.triggeringIngredient = triggeringIngredient;
         this.explanation = explanation;
+    }
+
+    public void setSourceUrl(String sourceUrl) {
+        this.sourceUrl = sourceUrl;
+    }
+
+    public String getSourceUrl() {
+        return sourceUrl;
+    }
+
+    public void setVisualQuote(String visualQuote) {
+        this.visualQuote = visualQuote;
+    }
+
+    public String getVisualQuote() {
+        return visualQuote;
     }
 
     public String getMessage() {
