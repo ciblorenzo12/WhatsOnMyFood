@@ -4,6 +4,7 @@ import com.example.myapplication.Ingredient;
 import com.example.myapplication.Nutriments;
 import com.example.myapplication.Product;
 import com.example.myapplication.ProductWithDetails;
+import com.example.myapplication.analysis.AnalysisResult;
 import com.example.myapplication.analysis.ProductAnalysisReport;
 
 import org.junit.Before;
@@ -27,6 +28,7 @@ public class RuleEngineTest {
     private static class ProductBuilder {
         private final String barcode;
         private List<Ingredient> ingredients = Collections.emptyList();
+        private String labels;
         private String novaGroup;
         private final Double[] nutrientValues = new Double[67];
 
@@ -45,6 +47,11 @@ public class RuleEngineTest {
             return this;
         }
 
+        public ProductBuilder withLabels(String labels) {
+            this.labels = labels;
+            return this;
+        }
+
         public ProductBuilder withAddedSugars(double value) { nutrientValues[10] = value; return this; }
         public ProductBuilder withSugars(double value) { nutrientValues[9] = value; return this; }
         public ProductBuilder withSaturatedFat(double value) { nutrientValues[3] = value; return this; }
@@ -52,7 +59,7 @@ public class RuleEngineTest {
 
         public ProductWithDetails build() {
             ProductWithDetails product = new ProductWithDetails();
-            product.product = new Product(barcode, "Test Product", "Test Brand", null, null, null, null, null, null, null, novaGroup, null);
+            product.product = new Product(barcode, "Test Product", "Test Brand", null, null, labels, null, null, null, null, novaGroup, null);
             product.ingredients = ingredients;
             product.nutriments = new Nutriments(barcode,
                 nutrientValues[0], nutrientValues[1], nutrientValues[2], nutrientValues[3], 
@@ -98,7 +105,7 @@ public class RuleEngineTest {
         );
         ProductWithDetails product = new ProductBuilder("bad_barcode")
                 .withIngredients(ingredients)
-                .withAddedSugars(15.0)
+                .withAddedSugars(51.0)
                 .withSugars(25.0)
                 .withNovaGroup("4")
                 .build();
@@ -120,7 +127,7 @@ public class RuleEngineTest {
         );
         ProductWithDetails product = new ProductBuilder("worst_barcode")
                 .withIngredients(ingredients)
-                .withAddedSugars(35.0)
+                .withAddedSugars(51.0)
                 .withSaturatedFat(25.0)
                 .withSodium(2.0) // 2g of Sodium = 5g of Salt
                 .withNovaGroup("4")
@@ -131,5 +138,57 @@ public class RuleEngineTest {
 
         // ASSERT
         assertEquals("The score should be clamped at 0 and not go negative", 0, report.getOverallScore());
+    }
+
+    @Test
+    public void analyze_withMultipleOrganicIngredients_reportsOrganicOnlyOnce() {
+        List<Ingredient> ingredients = Arrays.asList(
+                new Ingredient("organic_barcode", "Organic oats", 1),
+                new Ingredient("organic_barcode", "Organic cane sugar", 2),
+                new Ingredient("organic_barcode", "Organic cinnamon", 3)
+        );
+        ProductWithDetails product = new ProductBuilder("organic_barcode")
+                .withIngredients(ingredients)
+                .build();
+
+        ProductAnalysisReport report = ruleEngine.analyze(product);
+        long organicCount = report.getResults().stream()
+                .filter(result -> "Contains organic ingredients".equals(result.getMessage()))
+                .count();
+
+        assertEquals(1, organicCount);
+    }
+
+    @Test
+    public void analyze_withMilkWithoutOrganicOrNonGmoClaim_reportsSevereFinding() {
+        ProductWithDetails product = new ProductBuilder("milk_barcode")
+                .withIngredients(Collections.singletonList(new Ingredient("milk_barcode", "Milk", 1)))
+                .build();
+
+        ProductAnalysisReport report = ruleEngine.analyze(product);
+        AnalysisResult milkResult = report.getResults().stream()
+                .filter(result -> "Conventional milk without organic/Non-GMO claim".equals(result.getMessage()))
+                .findFirst()
+                .orElse(null);
+
+        assertNotNull(milkResult);
+        assertEquals(AnalysisResult.WarningLevel.SEVERE, milkResult.getLevel());
+    }
+
+    @Test
+    public void analyze_withOrganicMilkClaim_keepsMilkInformational() {
+        ProductWithDetails product = new ProductBuilder("organic_milk_barcode")
+                .withLabels("Organic, Non-GMO")
+                .withIngredients(Collections.singletonList(new Ingredient("organic_milk_barcode", "Milk", 1)))
+                .build();
+
+        ProductAnalysisReport report = ruleEngine.analyze(product);
+        AnalysisResult milkResult = report.getResults().stream()
+                .filter(result -> "Contains milk".equals(result.getMessage()))
+                .findFirst()
+                .orElse(null);
+
+        assertNotNull(milkResult);
+        assertEquals(AnalysisResult.WarningLevel.INFO, milkResult.getLevel());
     }
 }

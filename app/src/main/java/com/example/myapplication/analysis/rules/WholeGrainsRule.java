@@ -23,7 +23,7 @@ public class WholeGrainsRule implements ProductAnalysisRule {
                     String lowerCaseIngredient = ingredient.text.toLowerCase();
                     for (String grain : WHOLE_GRAINS) {
                         if (lowerCaseIngredient.contains(grain)) {
-                            results.add(new AnalysisResult("Made with whole grains", AnalysisResult.WarningLevel.INFO, -10, grain, EXPLANATION));
+                            results.add(new AnalysisResult("Made with whole grains", AnalysisResult.WarningLevel.POSITIVE, -10, ingredient.text, EXPLANATION));
                             return results;
                         }
                     }

@@ -38,6 +38,7 @@ public class WebViewActivity extends BaseActivity {
         String url = getIntent().getStringExtra("url");
         sourceName = getIntent().getStringExtra("source_name");
         searchQuery = getIntent().getStringExtra("search_query");
+        setToolbarTitle(displayTitle(url));
 
         if (url != null) {
             // Support PDF viewing via Google Docs viewer
@@ -45,6 +46,7 @@ public class WebViewActivity extends BaseActivity {
                 url = "https://docs.google.com/viewer?embedded=true&url=" + url;
             }
             originalHost = Uri.parse(url).getHost();
+            setToolbarTitle(displayTitle(url));
             setupWebView();
             webView.loadUrl(url);
         }
@@ -63,6 +65,10 @@ public class WebViewActivity extends BaseActivity {
         webView.getSettings().setDatabaseEnabled(true);
         webView.getSettings().setCacheMode(android.webkit.WebSettings.LOAD_DEFAULT);
         
+        // Add a mobile user agent to prevent some sites (like Kroger) from blocking the request
+        String userAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36";
+        webView.getSettings().setUserAgentString(userAgent);
+        
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
@@ -73,7 +79,10 @@ public class WebViewActivity extends BaseActivity {
             public void onPageFinished(WebView view, String url) {
                 progressBar.setVisibility(View.GONE);
                 if (getSupportActionBar() != null) {
-                    getSupportActionBar().setTitle(view.getTitle());
+                    String pageTitle = view.getTitle();
+                    getSupportActionBar().setTitle(pageTitle != null && !pageTitle.trim().isEmpty()
+                            ? pageTitle
+                            : displayTitle(url));
                 }
             }
 
@@ -116,6 +125,23 @@ public class WebViewActivity extends BaseActivity {
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private void setToolbarTitle(String title) {
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle(title);
+        }
+    }
+
+    private String displayTitle(String url) {
+        if (sourceName != null && !sourceName.trim().isEmpty()) {
+            return sourceName.trim();
+        }
+        String host = url != null ? Uri.parse(url).getHost() : "";
+        if (host != null && !host.trim().isEmpty()) {
+            return host.replaceFirst("^www\\.", "");
+        }
+        return getString(R.string.source_viewer);
     }
 
     private void showErrorFallback() {

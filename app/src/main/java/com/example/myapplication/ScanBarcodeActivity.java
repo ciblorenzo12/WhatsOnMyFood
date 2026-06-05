@@ -1,6 +1,8 @@
 package com.example.myapplication;
 
 import android.Manifest;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -56,26 +58,29 @@ public class ScanBarcodeActivity extends BaseActivity {
     }
 
     private PreviewView previewView;
-    private TextView offlineIndicator, modeTextView;
+    private TextView offlineIndicator, modeTextView, statusTextView, modeToggleHintText;
     private ImageButton modeToggleButton;
+    private ToggleButton barcodeAiToggleButton;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private ProcessCameraProvider cameraProvider;
     private ExecutorService cameraExecutor;
     private Camera camera;
     private boolean isScanLocked = false;
+    private boolean barcodeAiEnabled = true;
     private ScanMode currentMode = ScanMode.BARCODE;
     private TextRecognizer textRecognizer;
     private BarcodeScanner barcodeScanner;
 
     private final Handler launchHandler = new Handler(Looper.getMainLooper());
     private Runnable launchRunnable;
+    private AnimatorSet modeToggleGlowAnimator;
 
     private final ActivityResultLauncher<PickVisualMediaRequest> pickMediaLauncher = registerForActivityResult(new ActivityResultContracts.PickVisualMedia(), uri -> {
         if (uri != null) {
             try {
                 Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
                 if (currentMode == ScanMode.INGREDIENTS) {
-                    analyzeUploadedIngredients(bitmap);
+                    decodeBarcodeFromBitmap(bitmap);
                 } else {
                     decodeBarcodeFromBitmap(bitmap);
                 }
@@ -105,8 +110,12 @@ public class ScanBarcodeActivity extends BaseActivity {
 
         previewView = findViewById(R.id.preview_view);
         scanningOverlay = findViewById(R.id.scanning_overlay);
+        offlineIndicator = findViewById(R.id.offline_indicator);
         modeTextView = findViewById(R.id.mode_text_view);
+        statusTextView = findViewById(R.id.status_text_view);
         modeToggleButton = findViewById(R.id.mode_toggle_button);
+        modeToggleHintText = findViewById(R.id.mode_toggle_hint_text);
+        barcodeAiToggleButton = findViewById(R.id.barcode_ai_toggle_button);
         transitionProgressBar = findViewById(R.id.loading_progress_bar);
         cameraExecutor = Executors.newSingleThreadExecutor();
 
@@ -122,7 +131,17 @@ public class ScanBarcodeActivity extends BaseActivity {
                 .build();
         barcodeScanner = BarcodeScanning.getClient(options);
 
-        modeToggleButton.setOnClickListener(v -> toggleScanMode());
+        modeToggleButton.setOnClickListener(v -> {
+            hideModeToggleHint();
+            toggleScanMode();
+        });
+        if (barcodeAiToggleButton != null) {
+            barcodeAiToggleButton.setChecked(barcodeAiEnabled);
+            barcodeAiToggleButton.setOnCheckedChangeListener((buttonView, isChecked) -> barcodeAiEnabled = isChecked);
+        }
+
+        ImageButton backButton = findViewById(R.id.back_button);
+        backButton.setOnClickListener(v -> navigateBack());
 
         ImageButton importButton = findViewById(R.id.import_button);
         importButton.setOnClickListener(v -> {
@@ -136,6 +155,8 @@ public class ScanBarcodeActivity extends BaseActivity {
         } else {
             requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA);
         }
+
+        launchHandler.postDelayed(this::showModeToggleHintIfNeeded, 900);
     }
 
     @Override
@@ -153,6 +174,8 @@ public class ScanBarcodeActivity extends BaseActivity {
         if (cameraProvider != null) {
             cameraProvider.unbindAll();
         }
+        launchHandler.removeCallbacksAndMessages(null);
+        stopModeToggleGlow();
     }
 
     private void startCamera() {
@@ -170,8 +193,11 @@ public class ScanBarcodeActivity extends BaseActivity {
     private void toggleScanMode() {
         if (currentMode == ScanMode.BARCODE) {
             currentMode = ScanMode.INGREDIENTS;
-            modeTextView.setText("Ingredient Mode");
+            modeTextView.setText(R.string.ingredient_mode);
+            if (statusTextView != null) statusTextView.setText(R.string.point_camera_ingredients);
             modeToggleButton.setImageResource(R.drawable.ic_ingredients_list);
+            modeToggleButton.setContentDescription(getString(R.string.ingredient_mode));
+            if (barcodeAiToggleButton != null) barcodeAiToggleButton.setVisibility(View.GONE);
             runOnUiThread(() -> {
                 if (scanningOverlay != null) {
                     scanningOverlay.setMode(ScanningOverlayView.OverlayMode.INGREDIENTS);
@@ -180,8 +206,11 @@ public class ScanBarcodeActivity extends BaseActivity {
             });
         } else {
             currentMode = ScanMode.BARCODE;
-            modeTextView.setText("Barcode Mode");
+            modeTextView.setText(R.string.barcode_mode);
+            if (statusTextView != null) statusTextView.setText(R.string.point_camera_barcode);
             modeToggleButton.setImageResource(R.drawable.ic_scan);
+            modeToggleButton.setContentDescription(getString(R.string.barcode_mode));
+            if (barcodeAiToggleButton != null) barcodeAiToggleButton.setVisibility(View.VISIBLE);
             runOnUiThread(() -> {
                 if (scanningOverlay != null) {
                     scanningOverlay.setMode(ScanningOverlayView.OverlayMode.BARCODE);
@@ -193,6 +222,74 @@ public class ScanBarcodeActivity extends BaseActivity {
         if (cameraProvider != null) {
             bindCameraUseCases(cameraProvider);
         }
+    }
+
+    private void showModeToggleHintIfNeeded() {
+        if (currentMode != ScanMode.BARCODE || modeToggleButton == null || modeToggleHintText == null) {
+            return;
+        }
+
+        modeToggleHintText.setAlpha(0f);
+        modeToggleHintText.setTranslationY(12f);
+        modeToggleHintText.setVisibility(View.VISIBLE);
+        modeToggleHintText.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(220L)
+                .start();
+        startModeToggleGlow();
+
+        launchHandler.postDelayed(() -> {
+            if (currentMode == ScanMode.BARCODE) {
+                hideModeToggleHint();
+            }
+        }, 6500L);
+    }
+
+    private void startModeToggleGlow() {
+        stopModeToggleGlow();
+        if (modeToggleButton == null) return;
+        modeToggleButton.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+
+        ObjectAnimator scaleX = ObjectAnimator.ofFloat(modeToggleButton, View.SCALE_X, 1f, 1.08f, 1f);
+        ObjectAnimator scaleY = ObjectAnimator.ofFloat(modeToggleButton, View.SCALE_Y, 1f, 1.08f, 1f);
+        ObjectAnimator alpha = ObjectAnimator.ofFloat(modeToggleButton, View.ALPHA, 1f, 0.92f, 1f);
+        scaleX.setRepeatCount(ObjectAnimator.INFINITE);
+        scaleY.setRepeatCount(ObjectAnimator.INFINITE);
+        alpha.setRepeatCount(ObjectAnimator.INFINITE);
+
+        modeToggleGlowAnimator = new AnimatorSet();
+        modeToggleGlowAnimator.playTogether(scaleX, scaleY, alpha);
+        modeToggleGlowAnimator.setDuration(900L);
+        modeToggleGlowAnimator.start();
+    }
+
+    private void stopModeToggleGlow() {
+        if (modeToggleGlowAnimator != null) {
+            modeToggleGlowAnimator.cancel();
+            modeToggleGlowAnimator = null;
+        }
+        if (modeToggleButton != null) {
+            modeToggleButton.animate().cancel();
+            modeToggleButton.setScaleX(1f);
+            modeToggleButton.setScaleY(1f);
+            modeToggleButton.setAlpha(1f);
+            modeToggleButton.setLayerType(View.LAYER_TYPE_NONE, null);
+        }
+    }
+
+    private void hideModeToggleHint() {
+        if (modeToggleHintText == null || modeToggleHintText.getVisibility() != View.VISIBLE) {
+            stopModeToggleGlow();
+            return;
+        }
+        stopModeToggleGlow();
+        modeToggleHintText.animate()
+                .alpha(0f)
+                .translationY(8f)
+                .setDuration(180L)
+                .withEndAction(() -> modeToggleHintText.setVisibility(View.GONE))
+                .start();
     }
 
     @SuppressLint({"UnsafeOptInUsageError", "ClickableViewAccessibility"})
@@ -220,12 +317,6 @@ public class ScanBarcodeActivity extends BaseActivity {
             });
 
             if (currentMode == ScanMode.BARCODE) {
-                runOnUiThread(() -> {
-                    if (scanningOverlay != null) {
-                        scanningOverlay.setMode(ScanningOverlayView.OverlayMode.BARCODE);
-                        scanningOverlay.startScanning();
-                    }
-                });
                 barcodeScanner.process(inputImage).addOnSuccessListener(barcodes -> {
                     if (!barcodes.isEmpty()) {
                         Barcode barcode = barcodes.get(0);
@@ -251,25 +342,14 @@ public class ScanBarcodeActivity extends BaseActivity {
                     }
                 }).addOnCompleteListener(task -> image.close());
             } else {
-                runOnUiThread(() -> {
-                    if (scanningOverlay != null) {
-                        scanningOverlay.setMode(ScanningOverlayView.OverlayMode.INGREDIENTS);
-                        scanningOverlay.startScanning();
-                    }
-                });
                 textRecognizer.process(inputImage).addOnSuccessListener(text -> {
-                    String bestBlockText = "";
-                    int bestConfidence = 0;
+                    int bestIngredientConfidence = 0;
                     int bestIndex = -1;
                     List<Rect> textBoxes = new ArrayList<>();
                     
                     for (com.google.mlkit.vision.text.Text.TextBlock block : text.getTextBlocks()) {
                         String blockText = block.getText();
-                        int confidence = getIngredientConfidence(blockText);
-                        
-                        // Also check for product title confidence to help recognize the item from the front
-                        int titleConfidence = getProductTitleConfidence(blockText);
-                        int effectiveConfidence = Math.max(confidence, titleConfidence);
+                        int ingredientConfidence = getIngredientConfidence(blockText);
                         
                         Rect blockBox = block.getBoundingBox();
                         int mappedIndex = -1;
@@ -278,9 +358,8 @@ public class ScanBarcodeActivity extends BaseActivity {
                             textBoxes.add(blockBox);
                         }
                         
-                        if (effectiveConfidence > bestConfidence) {
-                            bestConfidence = effectiveConfidence;
-                            bestBlockText = blockText;
+                        if (ingredientConfidence > bestIngredientConfidence) {
+                            bestIngredientConfidence = ingredientConfidence;
                             bestIndex = mappedIndex;
                         }
                     }
@@ -292,15 +371,13 @@ public class ScanBarcodeActivity extends BaseActivity {
                         }
                     });
 
-                    // Trigger if we have enough confidence in ingredients OR product title
-                    if (bestConfidence > 25) {
+                    // Ingredient Mode should launch from an actual ingredient label, not front-package branding.
+                    if (bestIngredientConfidence > 25) {
                         if (!isScanLocked) {
                             isScanLocked = true;
-                            // Pass all detected text to give the AI maximum context (ingredients + front branding)
                             final String fullContextText = text.getText();
                             Bitmap rawBitmap = BitmapUtils.getBitmap(image);
-                            // Use a much larger crop (90%) to ensure front of pack branding is visible to the AI
-                            final Bitmap bitmap = (rawBitmap != null) ? BitmapUtils.cropCenter(rawBitmap, 0.90f) : null;
+                            final Bitmap bitmap = rawBitmap;
                             launchRunnable = () -> handleIngredients(fullContextText, bitmap);
                             launchHandler.postDelayed(launchRunnable, 700);
                         }
@@ -351,28 +428,6 @@ public class ScanBarcodeActivity extends BaseActivity {
         return score;
     }
 
-    private int getProductTitleConfidence(String text) {
-        if (text == null || text.length() < 3) return 0;
-        String lower = text.toLowerCase();
-        int score = 0;
-
-        // Common product attributes found on the front
-        String[] frontKeywords = {"organic", "natural", "premium", "original", "classic", "roasted", "salted", "unsweetened", "flavored"};
-        for (String kw : frontKeywords) {
-            if (lower.contains(kw)) score += 15;
-        }
-
-        // Product names are often capitalized
-        int caps = 0;
-        for (char c : text.toCharArray()) if (Character.isUpperCase(c)) caps++;
-        if (text.length() > 5 && (float)caps / text.length() > 0.3f) score += 25;
-
-        // Short lines are more likely to be titles than ingredient lists
-        if (text.length() < 60 && !text.contains(",")) score += 15;
-
-        return score;
-    }
-
     private int countOccurrences(String text, char target) {
         int count = 0;
         for (int i = 0; i < text.length(); i++) {
@@ -391,8 +446,6 @@ public class ScanBarcodeActivity extends BaseActivity {
         String processedText = text;
         String lowerText = text.toLowerCase();
         
-        // We keep the full text to allow the AI to see product names/branding before the ingredients.
-        // But we still want to ensure we've captured the core ingredients list.
         String[] markers = {"ingredients:", "ingredients", "contains:", "ingrédients:", "ingredientes:", "carbonated water", "water,"};
         boolean foundIngredients = false;
         for (String marker : markers) {
@@ -528,7 +581,7 @@ public class ScanBarcodeActivity extends BaseActivity {
             cameraProvider.unbindAll();
         }
 
-        ProductDetailsFragment fragment = ProductDetailsFragment.newInstance(barcode);
+        ProductDetailsFragment fragment = ProductDetailsFragment.newInstance(barcode, barcodeAiEnabled);
         
         getSupportFragmentManager().registerFragmentLifecycleCallbacks(new FragmentManager.FragmentLifecycleCallbacks() {
             @Override
@@ -555,8 +608,11 @@ public class ScanBarcodeActivity extends BaseActivity {
         // Reset to Barcode Mode after a successful scan
         if (currentMode != ScanMode.BARCODE) {
             currentMode = ScanMode.BARCODE;
-            modeTextView.setText("Barcode Mode");
+            modeTextView.setText(R.string.barcode_mode);
+            if (statusTextView != null) statusTextView.setText(R.string.point_camera_barcode);
             modeToggleButton.setImageResource(R.drawable.ic_scan);
+            modeToggleButton.setContentDescription(getString(R.string.barcode_mode));
+            if (barcodeAiToggleButton != null) barcodeAiToggleButton.setVisibility(View.VISIBLE);
             if (cameraProvider != null) {
                 bindCameraUseCases(cameraProvider);
             }

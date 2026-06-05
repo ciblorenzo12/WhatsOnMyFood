@@ -27,6 +27,9 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.squareup.picasso.Picasso;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.List;
 
 public class ProfileActivity extends BaseActivity {
@@ -92,27 +95,86 @@ public class ProfileActivity extends BaseActivity {
     private void loadUserProfile() {
         nameEditText.setText(currentUser.getDisplayName());
         emailEditText.setText(currentUser.getEmail());
-        
-        Uri photoUrl = currentUser.getPhotoUrl();
-        if (photoUrl != null) {
-            String highResUrl = photoUrl.toString().replace("=s96-c", "=s300-c"); // 300 is enough for a profile pic
+
+        // Check local cache first for faster loading
+        File localFile = new File(getFilesDir(), "profile_cache_" + currentUser.getUid() + ".jpg");
+        if (localFile.exists()) {
             Picasso.get()
-                    .load(highResUrl)
+                    .load(localFile)
                     .placeholder(R.drawable.ic_launcher_background)
                     .resize(300, 300)
                     .centerCrop()
                     .into(profileImageView);
+            Log.d(TAG, "Loaded profile picture from local cache.");
+        } else {
+            Uri photoUrl = currentUser.getPhotoUrl();
+            if (photoUrl != null) {
+                String highResUrl = photoUrl.toString().replace("=s96-c", "=s300-c");
+                Picasso.get()
+                        .load(highResUrl)
+                        .placeholder(R.drawable.ic_launcher_background)
+                        .resize(300, 300)
+                        .centerCrop()
+                        .into(profileImageView);
+                Log.d(TAG, "Loaded profile picture from URL.");
+            }
+        }
+    }
+
+    private void saveImageLocally(Uri imageUri) {
+        try {
+            InputStream inputStream = getContentResolver().openInputStream(imageUri);
+            android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeStream(inputStream);
+            File localFile = new File(getFilesDir(), "profile_cache_" + currentUser.getUid() + ".jpg");
+            try (FileOutputStream out = new FileOutputStream(localFile)) {
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, out);
+            }
+            if (inputStream != null) inputStream.close();
+            Log.d(TAG, "Saved profile picture to local cache.");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to save image locally", e);
         }
     }
 
     private void uploadImageToFirebase(Uri imageUri) {
-        final StorageReference profileImageRef = storageReference.child("profile_images/" + currentUser.getUid() + ".jpg");
+        // Ensure path is correct and bucket is default
+        final String path = "profile_images/" + currentUser.getUid() + ".jpg";
+        final StorageReference profileImageRef = storageReference.child(path);
 
+        // Save locally immediately for offline access
+        saveImageLocally(imageUri);
+
+        Log.d(TAG, "Uploading to: " + path);
         profileImageRef.putFile(imageUri)
-                .addOnSuccessListener(taskSnapshot -> profileImageRef.getDownloadUrl().addOnSuccessListener(downloadUri -> {
-                    updateUserProfilePhoto(downloadUri);
-                }))
-                .addOnFailureListener(e -> Toast.makeText(ProfileActivity.this, "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                .addOnProgressListener(snapshot -> {
+                    double progress = (100.0 * snapshot.getBytesTransferred()) / snapshot.getTotalByteCount();
+                    Log.d(TAG, "Upload progress: " + progress + "%");
+                })
+                .continueWithTask(task -> {
+                    if (!task.isSuccessful()) {
+                        if (task.getException() != null) throw task.getException();
+                        throw new Exception("Upload task failed");
+                    }
+                    Log.d(TAG, "Upload successful, getting download URL...");
+                    return profileImageRef.getDownloadUrl();
+                })
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Uri downloadUri = task.getResult();
+                        Log.d(TAG, "Download URL obtained: " + downloadUri);
+                        updateUserProfilePhoto(downloadUri);
+                    } else {
+                        Exception e = task.getException();
+                        String errorMsg = e != null ? e.getMessage() : "Unknown error";
+                        Log.e(TAG, "Final step failed: " + errorMsg, e);
+                        
+                        String helpfulMsg = "Upload failed: " + errorMsg;
+                        if (errorMsg != null && errorMsg.contains("Object does not exist")) {
+                            helpfulMsg = "Error: Storage object not found. Please ensure Firebase Storage is enabled in the console and rules allow writes.";
+                        }
+                        Toast.makeText(ProfileActivity.this, helpfulMsg, Toast.LENGTH_LONG).show();
+                    }
+                });
     }
 
     private void updateUserProfilePhoto(Uri photoUrl) {

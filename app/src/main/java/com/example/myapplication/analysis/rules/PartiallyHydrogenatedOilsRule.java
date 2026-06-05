@@ -10,9 +10,14 @@ import java.util.List;
 
 public class PartiallyHydrogenatedOilsRule implements ProductAnalysisRule {
 
-    private static final List<String> TRANS_FATS = Arrays.asList("partially hydrogenated oil", "shortening");
+    private static final List<String> TRANS_FATS = Arrays.asList(
+            "partially hydrogenated oil",
+            "partially hydrogenated",
+            "hydrogenated vegetable oil",
+            "fully hydrogenated oil"
+    );
 
-    private static final String EXPLANATION = "❌ Contains partially hydrogenated oils, a source of industrial trans fats. These fats raise LDL (“bad”) cholesterol and are strongly linked with higher heart disease risk. Many countries have effectively banned them, so if they still appear on a label, it’s a product to avoid.";
+    private static final String EXPLANATION = "Contains hydrogenated or partially hydrogenated oil, a trans-fat concern. This is different from plain canola, sunflower, soybean, corn, or vegetable oil, which are refined oils but not automatically hydrogenated.";
 
     @Override
     public List<AnalysisResult> evaluate(ProductWithDetails productWithDetails) {

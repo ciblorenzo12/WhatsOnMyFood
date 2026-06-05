@@ -12,34 +12,36 @@ public class ArtificialSweetenersRule implements ProductAnalysisRule {
 
     private static final List<String> ARTIFICIAL_SWEETENERS = Arrays.asList("sucralose", "acesulfame potassium", "aspartame", "saccharin", "neotame", "advantame");
     private static final List<String> SUGAR_ALCOHOLS = Arrays.asList("sorbitol", "maltitol", "xylitol", "erythritol");
-    private static final String EXPLANATION_ARTIFICIAL = "⚠️ Contains artificial sweeteners (like sucralose / aspartame). These reduce calories but their long-term impact on metabolism and gut microbiome is still being debated. Some people also experience headaches or digestive issues. If you’re aiming for ‘clean’ eating, you might prefer products that aren’t artificially sweetened.";
-    private static final String EXPLANATION_ALCOHOLS = "⚠️ Contains sugar alcohols (like sorbitol / erythritol), which can cause digestive issues for some people.";
+    private static final String EXPLANATION_ARTIFICIAL = "Contains an artificial sweetener. This is a caution signal for people who prefer minimally processed products, but it should be explained separately from added sugar.";
+    private static final String EXPLANATION_ALCOHOLS = "Contains a sugar alcohol. Sugar alcohols are lower-sugar sweeteners and can be useful in some products, but they may cause digestive discomfort for sensitive people.";
 
     @Override
     public List<AnalysisResult> evaluate(ProductWithDetails productWithDetails) {
         List<AnalysisResult> results = new ArrayList<>();
-        if (productWithDetails != null && productWithDetails.ingredients != null) {
-            for (Ingredient ingredient : productWithDetails.ingredients) {
-                if (ingredient.text != null) {
-                    String lowerCaseIngredient = ingredient.text.toLowerCase();
-                    for (String sweetener : ARTIFICIAL_SWEETENERS) {
-                        if (lowerCaseIngredient.contains(sweetener)) {
-                            results.add(new AnalysisResult("Contains " + sweetener, AnalysisResult.WarningLevel.WARNING, 10, sweetener, EXPLANATION_ARTIFICIAL));
-                        }
-                    }
-                    for (String alcohol : SUGAR_ALCOHOLS) {
-                        if (lowerCaseIngredient.contains(alcohol)) {
-                            results.add(new AnalysisResult("Contains " + alcohol, AnalysisResult.WarningLevel.INFO, 10, alcohol, EXPLANATION_ALCOHOLS));
-                        }
-                    }
+        if (productWithDetails == null || productWithDetails.ingredients == null) {
+            return results;
+        }
+
+        for (Ingredient ingredient : productWithDetails.ingredients) {
+            if (ingredient == null || ingredient.text == null) continue;
+            String lowerCaseIngredient = ingredient.text.toLowerCase();
+            for (String sweetener : ARTIFICIAL_SWEETENERS) {
+                if (lowerCaseIngredient.contains(sweetener)) {
+                    results.add(new AnalysisResult("Contains " + sweetener, AnalysisResult.WarningLevel.WARNING, 5, sweetener, EXPLANATION_ARTIFICIAL));
+                }
+            }
+            for (String alcohol : SUGAR_ALCOHOLS) {
+                if (lowerCaseIngredient.contains(alcohol)) {
+                    results.add(new AnalysisResult("Contains " + alcohol, AnalysisResult.WarningLevel.INFO, 0, alcohol, EXPLANATION_ALCOHOLS));
                 }
             }
         }
+
         return results;
     }
 
     @Override
     public String getRuleDescription() {
-        return "Detects artificial sweeteners (sucralose, aspartame) and sugar alcohols. These can affect metabolism, gut microbiome, and cause digestive issues.";
+        return "Detects artificial sweeteners and sugar alcohols, separating caution signals from neutral informational notes.";
     }
 }

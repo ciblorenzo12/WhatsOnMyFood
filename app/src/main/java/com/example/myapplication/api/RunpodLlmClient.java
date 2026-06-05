@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import com.example.myapplication.BuildConfig;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -23,7 +24,6 @@ import okhttp3.Response;
 
 public class RunpodLlmClient {
     private static final String TAG = "RunpodLlmClient";
-    private static final String BASE_URL = "https://759we6edvskr25-8000.proxy.runpod.net/";
     private static final String APP_TOKEN = "R7qK2mZ9vP4xT0aLN6cY1sD8wF3hJ5bG";
 
     private final OkHttpClient client;
@@ -42,10 +42,6 @@ public class RunpodLlmClient {
                 .writeTimeout(5, TimeUnit.SECONDS)
                 .retryOnConnectionFailure(true)
                 .build();
-    }
-
-    public Call askBitwise(String prompt, LlmCallback callback) {
-        return askBitwise(prompt, null, callback);
     }
 
     public Call askBitwise(String prompt, Bitmap bitmap, LlmCallback callback) {
@@ -70,7 +66,7 @@ public class RunpodLlmClient {
             imagePart.addProperty("type", "image_url");
             JsonObject imageUrl = new JsonObject();
             imageUrl.addProperty("url", "data:image/jpeg;base64," + encodeImage(bitmap));
-            imageUrl.addProperty("detail", "low"); // Faster processing
+            imageUrl.addProperty("detail", "high");
             imagePart.add("image_url", imageUrl);
             contentArray.add(imagePart);
 
@@ -92,7 +88,7 @@ public class RunpodLlmClient {
         );
 
         Request request = new Request.Builder()
-                .url(BASE_URL + "v1/chat/completions")
+                .url(baseUrl() + "v1/chat/completions")
                 .header("X-APP-TOKEN", APP_TOKEN)
                 .post(body)
                 .build();
@@ -140,10 +136,19 @@ public class RunpodLlmClient {
         mainHandler.post(() -> callback.onError(msg));
     }
 
+    private String baseUrl() {
+        String configured = BuildConfig.BITWISE_LLM_BASE_URL;
+        if (configured == null || configured.trim().isEmpty()) {
+            configured = "https://x7amycb9govesb-8787.proxy.runpod.net/";
+        }
+        configured = configured.trim();
+        return configured.endsWith("/") ? configured : configured + "/";
+    }
+
     private String encodeImage(Bitmap bitmap) {
         // 1. Scale down image to reduce payload size and speed up upload/processing
-        int maxWidth = 640;
-        int maxHeight = 640;
+        int maxWidth = 960;
+        int maxHeight = 960;
         float ratio = Math.min((float) maxWidth / bitmap.getWidth(), (float) maxHeight / bitmap.getHeight());
         int width = Math.round(ratio * bitmap.getWidth());
         int height = Math.round(ratio * bitmap.getHeight());
@@ -151,7 +156,7 @@ public class RunpodLlmClient {
         Bitmap scaled = Bitmap.createScaledBitmap(bitmap, width, height, true);
 
         java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
-        scaled.compress(Bitmap.CompressFormat.JPEG, 50, outputStream);
+        scaled.compress(Bitmap.CompressFormat.JPEG, 82, outputStream);
         byte[] bytes = outputStream.toByteArray();
         return android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP);
     }

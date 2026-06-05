@@ -176,12 +176,25 @@
                 </com.google.android.material.card.MaterialCardView>
             </FrameLayout>
 
-            <!-- Analysis Results -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/analysis_recycler_view"
+            <HorizontalScrollView
+                android:id="@+id/certificate_badges_scroll_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp" />
+                android:layout_marginBottom="16dp"
+                android:clipToPadding="false"
+                android:overScrollMode="never"
+                android:scrollbars="none"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:id="@+id/certificate_badges_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="92dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    tools:ignore="UselessParent" />
+            </HorizontalScrollView>
 
             <!-- Scores Section -->
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -214,6 +227,15 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
             </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <include layout="@layout/layout_retailer_commerce" />
+
+            <!-- Analysis Results -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/analysis_recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp" />
 
             <TextView
                 android:id="@+id/serving_size_label"
@@ -280,13 +302,21 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp" />
+
+            <Button
+                android:id="@+id/update_product_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="24dp"
+                android:text="@string/update_product" />
             
             <Button
                 android:id="@+id/remove_from_pantry_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="12dp"
                 android:text="@string/remove_from_pantry"
                 android:visibility="gone" />
         </LinearLayout>

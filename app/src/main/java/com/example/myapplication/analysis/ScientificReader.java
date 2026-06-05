@@ -49,11 +49,8 @@ public class ScientificReader {
                     contentBody = articles.first();
                 }
 
-                // 4. Extract and clean the text
                 String rawText = contentBody.text();
                 
-                // Optimized for speed: Capture only the most relevant first 1000 words
-                // This is usually more than enough for the AI to find the safety verdict
                 String processedText = rawText.length() > 4000 ? rawText.substring(0, 4000) : rawText;
 
                 callback.onContentRead(processedText);

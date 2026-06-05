@@ -16,7 +16,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -32,34 +34,39 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.myapplication.analysis.AnalysisResult;
 import com.example.myapplication.analysis.AnalysisResultAdapter;
+import com.example.myapplication.analysis.AnalysisResultDeduplicator;
 import com.example.myapplication.analysis.AiSummaryFormatter;
+import com.example.myapplication.analysis.HealthVerdict;
 import com.example.myapplication.analysis.OpenAIAnalysisService;
 import com.example.myapplication.analysis.ProductAnalysisReport;
 import com.example.myapplication.analysis.rules.RuleEngine;
-import com.example.myapplication.api.SecureAiService;
+import com.example.myapplication.retail.RetailerCommerceViewBinder;
+import com.example.myapplication.retail.RetailerRepository;
 import com.example.myapplication.utils.GlassMotion;
 import com.example.myapplication.utils.LinkHandler;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.squareup.picasso.Picasso;
 
 import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
     private static final String ARG_BARCODE = "barcode";
-    private static final String AI_CACHE_PREFIX = "BITWISE_AI_CACHE_V2:";
+    private static final String ARG_AI_ENABLED = "ai_enabled";
+    private static final String AI_CACHE_PREFIX = "BITWISE_AI_CACHE_V7:";
+    private static final String AI_CACHE_LEGACY_PREFIX = "BITWISE_AI_CACHE_";
 
     private ProductRepository productRepository;
+    private RetailerRepository retailerRepository;
     private ExecutorService executorService;
     private AppDatabase db;
     private RuleEngine ruleEngine;
@@ -68,24 +75,34 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     private ImageView productImageView;
     private TextView productNameTextView, productBrandTextView, packagingTextView, labelsTextView, ingredientsTextView;
     private TextView nutriscoreTextView, novaTextView, ecoscoreTextView, categoriesTextView, servingSizeTextView, healthScoreTextView;
+    private View labelsLabel;
+    private HorizontalScrollView certificateBadgesScrollView;
+    private LinearLayout certificateBadgesContainer;
     private TextView aiSummaryTextView;
     private View aiSummaryLayout;
     private View aiSummaryContainer;
     private View detailsLayout;
     private AiGlowView aiCardGlow;
+    private android.widget.Button updateProductButton;
     private android.widget.Button removeFromPantryButton;
     private TableLayout nutritionFactsTable;
     private RecyclerView analysisRecyclerView;
     private View loadingOverlay;
+    private RetailerCommerceViewBinder retailerCommerceViewBinder;
 
     private TextView aiSourcesTextView;
     private View aiSourcesDivider;
     private View aiSourcesLabel;
 
     public static ProductDetailsFragment newInstance(String barcode) {
+        return newInstance(barcode, true);
+    }
+
+    public static ProductDetailsFragment newInstance(String barcode, boolean aiEnabled) {
         ProductDetailsFragment fragment = new ProductDetailsFragment();
         Bundle args = new Bundle();
         args.putString(ARG_BARCODE, barcode);
+        args.putBoolean(ARG_AI_ENABLED, aiEnabled);
         fragment.setArguments(args);
         return fragment;
     }
@@ -94,6 +111,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         productRepository = new ProductRepository(requireActivity().getApplication());
+        retailerRepository = new RetailerRepository(requireActivity().getApplication());
         executorService = Executors.newSingleThreadExecutor();
         db = AppDatabase.getDatabase(requireContext());
         ruleEngine = new RuleEngine();
@@ -132,7 +150,10 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         productNameTextView = view.findViewById(R.id.product_name_text_view);
         productBrandTextView = view.findViewById(R.id.product_brand_text_view);
         packagingTextView = view.findViewById(R.id.packaging_text_view);
+        labelsLabel = view.findViewById(R.id.labels_label);
         labelsTextView = view.findViewById(R.id.labels_text_view);
+        certificateBadgesScrollView = view.findViewById(R.id.certificate_badges_scroll_view);
+        certificateBadgesContainer = view.findViewById(R.id.certificate_badges_container);
         ingredientsTextView = view.findViewById(R.id.ingredients_text_view);
         nutriscoreTextView = view.findViewById(R.id.nutriscore_text_view);
         novaTextView = view.findViewById(R.id.nova_text_view);
@@ -148,11 +169,31 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         aiSourcesTextView = view.findViewById(R.id.ai_sources_text_view);
         aiSourcesDivider = view.findViewById(R.id.ai_sources_divider);
         aiSourcesLabel = view.findViewById(R.id.ai_sources_label);
+        updateProductButton = view.findViewById(R.id.update_product_button);
         removeFromPantryButton = view.findViewById(R.id.remove_from_pantry_button);
+        GlassMotion.attachPress(updateProductButton);
         GlassMotion.attachPress(removeFromPantryButton);
         nutritionFactsTable = view.findViewById(R.id.nutrition_facts_table);
         analysisRecyclerView = view.findViewById(R.id.analysis_recycler_view);
         loadingOverlay = view.findViewById(R.id.loading_overlay);
+        retailerCommerceViewBinder = new RetailerCommerceViewBinder(
+                requireContext(),
+                view,
+                retailerRepository,
+                new RetailerCommerceViewBinder.Host() {
+                    @Override
+                    public void runOnUiThread(Runnable runnable) {
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(runnable);
+                        }
+                    }
+
+                    @Override
+                    public boolean isActive() {
+                        return isAdded() && getActivity() != null;
+                    }
+                }
+        );
         analysisRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         nutriscoreTextView.setOnClickListener(v -> showScoreExplanation("Nutri-Score", "A nutritional rating system."));
@@ -167,6 +208,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         String barcode = getArguments() != null ? getArguments().getString(ARG_BARCODE) : null;
         if (barcode != null) {
             loadProductDetails(barcode);
+            updateProductButton.setOnClickListener(v -> updateProductFromSources(barcode));
             removeFromPantryButton.setOnClickListener(v -> {
                 executorService.execute(() -> {
                     db.productDao().deletePantryProduct(barcode, currentUser.getUid());
@@ -189,6 +231,9 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         if (productRepository != null) {
             productRepository.close();
         }
+        if (retailerRepository != null) {
+            retailerRepository.close();
+        }
         if (executorService != null && !executorService.isShutdown()) {
             executorService.shutdown();
         }
@@ -196,6 +241,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
     private void loadProductDetails(String barcode) {
         if (loadingOverlay != null) loadingOverlay.setVisibility(View.VISIBLE);
+        showCachedProductWhileRefreshing(barcode);
         productRepository.getProductByBarcode(barcode, new ProductRepository.RepositoryCallback<ProductRepository.ProductResult>() {
             @Override
             public void onComplete(ProductRepository.ProductResult result) {
@@ -225,6 +271,76 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         });
     }
 
+    private void showCachedProductWhileRefreshing(String barcode) {
+        executorService.execute(() -> {
+            ProductWithDetails cachedProduct = db.productDao().getProductWithDetails(barcode);
+            if (cachedProduct == null
+                    || cachedProduct.product == null
+                    || isLikelyWarningOnlyIngredientCache(cachedProduct)
+                    || getActivity() == null
+                    || !isAdded()) {
+                return;
+            }
+
+            getActivity().runOnUiThread(() -> {
+                if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
+                displayProductDetails(cachedProduct, false);
+            });
+        });
+    }
+
+    private boolean isLikelyWarningOnlyIngredientCache(ProductWithDetails product) {
+        if (product == null || product.ingredients == null || product.ingredients.size() != 1) {
+            return false;
+        }
+        Ingredient ingredient = product.ingredients.get(0);
+        if (ingredient == null || ingredient.text == null) {
+            return true;
+        }
+        String normalized = ingredient.text.toLowerCase(Locale.US).replaceAll("[^a-z0-9]+", " ").trim();
+        return normalized.equals("phenylalanine")
+                || normalized.equals("no calories")
+                || normalized.equals("no sugar")
+                || normalized.equals("zero calories")
+                || normalized.equals("zero sugar");
+    }
+
+    private void updateProductFromSources(String barcode) {
+        if (loadingOverlay != null) loadingOverlay.setVisibility(View.VISIBLE);
+        if (updateProductButton != null) updateProductButton.setEnabled(false);
+
+        productRepository.refreshProductByBarcode(barcode, new ProductRepository.RepositoryCallback<ProductRepository.ProductResult>() {
+            @Override
+            public void onComplete(ProductRepository.ProductResult result) {
+                if (getActivity() == null || !isAdded()) return;
+                getActivity().runOnUiThread(() -> {
+                    if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
+                    if (updateProductButton != null) updateProductButton.setEnabled(true);
+                    if (result != null && result.productWithDetails != null) {
+                        displayProductDetails(result.productWithDetails);
+                        Toast.makeText(getContext(), R.string.product_updated, Toast.LENGTH_SHORT).show();
+                        executorService.execute(() -> {
+                            db.productDao().insertPantry(new Pantry(barcode, currentUser.getUid()));
+                            checkIfProductInPantry(barcode);
+                        });
+                    } else {
+                        Toast.makeText(getContext(), R.string.product_update_failed, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+
+            @Override
+            public void onError(Exception e) {
+                if (getActivity() == null || !isAdded()) return;
+                getActivity().runOnUiThread(() -> {
+                    if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
+                    if (updateProductButton != null) updateProductButton.setEnabled(true);
+                    Toast.makeText(getContext(), getString(R.string.product_update_failed_with_reason, e.getMessage()), Toast.LENGTH_LONG).show();
+                });
+            }
+        });
+    }
+
     private void checkIfProductInPantry(String barcode) {
         executorService.execute(() -> {
             Pantry pantryItem = db.productDao().findPantryItemByBarcode(barcode, currentUser.getUid());
@@ -237,14 +353,28 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     private ProductAnalysisReport currentReport;
 
     private void displayProductDetails(ProductWithDetails productDetails) {
+        displayProductDetails(productDetails, true);
+    }
+
+    private void displayProductDetails(ProductWithDetails productDetails, boolean allowAiInsight) {
         if (productDetails.product.imageUrl != null && !productDetails.product.imageUrl.isEmpty()) {
             Picasso.get().load(productDetails.product.imageUrl).into(productImageView);
         }
 
-        productNameTextView.setText(productDetails.product.productName != null ? productDetails.product.productName : "N/A");
+        productNameTextView.setText(displayProductName(productDetails.product.productName));
         productBrandTextView.setText(productDetails.product.brands != null ? productDetails.product.brands : "");
+        if (retailerCommerceViewBinder != null) {
+            retailerCommerceViewBinder.bind(productDetails);
+        }
         packagingTextView.setText(productDetails.product.packaging != null ? productDetails.product.packaging : "");
-        labelsTextView.setText(productDetails.product.labels != null ? productDetails.product.labels : "");
+        ProductCertificateBadgeRenderer.bind(
+                requireContext(),
+                labelsLabel,
+                labelsTextView,
+                certificateBadgesScrollView,
+                certificateBadgesContainer,
+                productDetails.product.labels
+        );
         categoriesTextView.setText(productDetails.product.categories != null ? productDetails.product.categories : "");
         servingSizeTextView.setText(productDetails.product.servingSize != null ? productDetails.product.servingSize : "");
 
@@ -254,7 +384,8 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
             analysisRecyclerView.setAdapter(new AnalysisResultAdapter(currentReport.getResults()));
             displayHighlightedIngredients(productDetails, currentReport);
         } else {
-            healthScoreTextView.setText("Health Score: N/A");
+            healthScoreTextView.setText("Needs Review");
+            healthScoreTextView.setTextColor(ContextCompat.getColor(requireContext(), R.color.score_unknown));
             analysisRecyclerView.setAdapter(null);
             ingredientsTextView.setText("Could not analyze ingredients.");
         }
@@ -266,8 +397,24 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         displayNutriments(productDetails.nutriments);
         GlassMotion.enter(detailsLayout, 0L);
 
-        // Start AI reasoning automatically
-        fetchAiInsight(productDetails);
+        if (allowAiInsight && isAiEnabled()) {
+            fetchAiInsight(productDetails);
+        } else if (!allowAiInsight || !isAiEnabled()) {
+            hideAiInsight();
+        }
+    }
+
+    private boolean isAiEnabled() {
+        return getArguments() == null || getArguments().getBoolean(ARG_AI_ENABLED, true);
+    }
+
+    private void hideAiInsight() {
+        if (aiSummaryContainer != null) {
+            aiSummaryContainer.setVisibility(View.GONE);
+        }
+        if (getActivity() != null) {
+            AiGlowManager.stopGlow(getActivity());
+        }
     }
 
     private void fetchAiInsight(ProductWithDetails productDetails) {
@@ -281,9 +428,8 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
         StringBuilder productData = new StringBuilder();
         productData.append("response_language: ").append(LanguageManager.getLanguageName(requireContext())).append("\n");
-        productData.append("Name: ").append(productDetails.product.productName).append("\n");
+        productData.append("Name: ").append(isMeaningfulProductName(productDetails.product.productName) ? productDetails.product.productName : "").append("\n");
         productData.append("Brand: ").append(productDetails.product.brands).append("\n");
-        productData.append("baseline_health_score: ").append(currentReport != null ? currentReport.getOverallScore() : 100).append("\n");
         productData.append("Ingredients: ").append(formatIngredientsForAi(productDetails)).append("\n");
         if (productDetails.nutriments != null) {
             productData.append("\nNutrition: ").append(productDetails.nutriments.toString());
@@ -297,13 +443,13 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                     try {
                         org.json.JSONObject obj = new org.json.JSONObject(result);
 
-                        // 1. Autopopulate
                         String aiName = obj.optString("product_name", "");
                         String aiBrand = obj.optString("brand", "");
                         String summary = AiSummaryFormatter.format(obj.optString("summary", ""));
-                        int score = currentReport != null ? currentReport.getOverallScore() : -1;
+                        String aiVerdict = obj.optString("verdict", "");
+                        String aiVerdictReason = obj.optString("verdict_reason", "");
 
-                        if (!aiName.isEmpty() && !aiName.equalsIgnoreCase("Name")) productNameTextView.setText(aiName);
+                        if (isMeaningfulProductName(aiName)) productNameTextView.setText(aiName);
                         if (!aiBrand.isEmpty() && !aiBrand.equalsIgnoreCase("Brand")) productBrandTextView.setText(aiBrand);
 
                         // 2. Nutrition table
@@ -324,26 +470,29 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                                 org.json.JSONObject f = aiFindings.optJSONObject(i);
                                 if (f != null) {
                                     aiResults.add(new AnalysisResult(f.optString("rule"),
-                                        f.optString("impact").equalsIgnoreCase("negative") ? AnalysisResult.WarningLevel.SEVERE : AnalysisResult.WarningLevel.INFO,
+                                        parseAiWarningLevel(f.optString("impact")),
                                         0, f.optString("triggering_ingredient"), f.optString("explanation")));
                                 }
                             }
                             if (currentReport != null && currentReport.getResults() != null) {
                                 List<AnalysisResult> combinedResults = new ArrayList<>(currentReport.getResults());
                                 combinedResults.addAll(aiResults);
+                                combinedResults = AnalysisResultDeduplicator.deduplicate(combinedResults);
                                 analysisRecyclerView.setAdapter(new AnalysisResultAdapter(combinedResults));
+                                applyHealthVerdict(productDetails, currentReport, combinedResults, aiVerdict, aiVerdictReason);
                             } else {
-                                analysisRecyclerView.setAdapter(new AnalysisResultAdapter(aiResults));
+                                List<AnalysisResult> dedupedAiResults = AnalysisResultDeduplicator.deduplicate(aiResults);
+                                analysisRecyclerView.setAdapter(new AnalysisResultAdapter(dedupedAiResults));
+                                applyHealthVerdict(productDetails, null, dedupedAiResults, aiVerdict, aiVerdictReason);
                             }
+                        } else {
+                            applyHealthVerdict(productDetails, currentReport, currentReport != null ? currentReport.getResults() : null, aiVerdict, aiVerdictReason);
                         }
                         if (currentReport != null) {
-                            applyRuleBasedScore(productDetails, currentReport);
                             displayHighlightedIngredients(productDetails, currentReport);
                         }
 
-                        // 4. Update Summary
                         if (!summary.isEmpty()) {
-                            // Sources Parsing
                             org.json.JSONArray sourcesArr = obj.optJSONArray("sources");
                             android.text.SpannableStringBuilder sourcesBuilder = new android.text.SpannableStringBuilder();
                             if (sourcesArr != null) {
@@ -373,16 +522,16 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                             }
                             if (getActivity() != null && isAdded()) {
                                 getActivity().runOnUiThread(() -> {
-                                    updateAiUI(productDetails, summary, score, sourcesArr);
+                                    updateAiUI(productDetails, summary, sourcesArr);
                                 });
                             }
                         } else {
-                            updateAiUI(productDetails, result, score, null);
+                            updateAiUI(productDetails, result, null);
                         }
 
                     } catch (Exception e) {
                         String summaryFallback = result.replaceAll("\"[a-z_]+\":", "").replaceAll("[{}\\[\\]\"]", "").trim();
-                        updateAiUI(productDetails, summaryFallback, -1, null);
+                        updateAiUI(productDetails, summaryFallback, null);
                     }
                 });
             }
@@ -435,13 +584,52 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     }
 
     private void applyRuleBasedScore(ProductWithDetails product, ProductAnalysisReport report) {
-        if (product == null || product.product == null || report == null || getContext() == null) return;
+        applyHealthVerdict(product, report, report.getResults(), null, null);
+    }
 
-        int ruleScore = report.getOverallScore();
-        product.product.healthScore = ruleScore;
-        productRepository.updateProductHealthScore(product.product.barcode, ruleScore);
-        healthScoreTextView.setText(getString(R.string.health_score_rule_based, ruleScore));
-        healthScoreTextView.setTextColor(ContextCompat.getColor(requireContext(), R.color.ai_accent));
+    private void applyHealthVerdict(ProductWithDetails product, ProductAnalysisReport report, List<AnalysisResult> results, String aiVerdict, String aiVerdictReason) {
+        if (product == null || product.product == null || getContext() == null) return;
+
+        if (report != null) {
+            int ruleScore = report.getOverallScore();
+            product.product.healthScore = ruleScore;
+            productRepository.updateProductHealthScore(product.product.barcode, ruleScore);
+        }
+        HealthVerdict verdict = HealthVerdict.fromAiVerdict(aiVerdict, aiVerdictReason, results, getIngredientCount(product));
+        healthScoreTextView.setText(verdict.getLabel());
+        healthScoreTextView.setTextColor(getVerdictColor(verdict));
+    }
+
+    private int getIngredientCount(ProductWithDetails product) {
+        return product != null && product.ingredients != null ? product.ingredients.size() : 0;
+    }
+
+    private int getVerdictColor(HealthVerdict verdict) {
+        if (getContext() == null) return 0xFF9CA3AF;
+        if (verdict == null) return ContextCompat.getColor(requireContext(), R.color.score_unknown);
+        switch (verdict.getStatus()) {
+            case HEALTHY:
+                return ContextCompat.getColor(requireContext(), R.color.nutriscore_a);
+            case NOT_HEALTHY:
+                return ContextCompat.getColor(requireContext(), R.color.nutriscore_e);
+            default:
+                return ContextCompat.getColor(requireContext(), R.color.score_unknown);
+        }
+    }
+
+    private AnalysisResult.WarningLevel parseAiWarningLevel(String impact) {
+        if (impact == null) return AnalysisResult.WarningLevel.INFO;
+        String normalized = impact.trim().toLowerCase(Locale.US);
+        if (normalized.equals("positive") || normalized.equals("good") || normalized.equals("benefit")) {
+            return AnalysisResult.WarningLevel.POSITIVE;
+        }
+        if (normalized.equals("negative") || normalized.equals("severe") || normalized.equals("bad")) {
+            return AnalysisResult.WarningLevel.SEVERE;
+        }
+        if (normalized.equals("warning") || normalized.equals("caution") || normalized.equals("moderate")) {
+            return AnalysisResult.WarningLevel.WARNING;
+        }
+        return AnalysisResult.WarningLevel.INFO;
     }
 
     private String buildAiInsightCache(String summary, org.json.JSONArray sources) {
@@ -462,6 +650,9 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                 return new CachedAiInsight(cache.optString("summary", ""), cache.optJSONArray("sources"));
             } catch (Exception ignored) {
             }
+        }
+        if (storedInsight != null && storedInsight.startsWith(AI_CACHE_LEGACY_PREFIX)) {
+            return new CachedAiInsight("", null);
         }
         return new CachedAiInsight(storedInsight != null ? storedInsight : "", null);
     }
@@ -536,7 +727,23 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         return builder.length() == 0 ? "Not listed" : builder.toString();
     }
 
-    private void updateAiUI(ProductWithDetails product, String text, int score, org.json.JSONArray sources) {
+    private String displayProductName(String value) {
+        return isMeaningfulProductName(value) ? value.trim() : "Product name unavailable";
+    }
+
+    private boolean isMeaningfulProductName(String value) {
+        if (value == null || value.trim().isEmpty()) return false;
+        String normalized = value.trim().toLowerCase(Locale.US).replaceAll("[^a-z0-9]+", " ").trim();
+        return !normalized.equals("scanned product")
+                && !normalized.equals("scanned")
+                && !normalized.equals("product")
+                && !normalized.equals("name")
+                && !normalized.equals("unknown")
+                && !normalized.equals("unknown product")
+                && !normalized.equals("n a");
+    }
+
+    private void updateAiUI(ProductWithDetails product, String text, org.json.JSONArray sources) {
         if (getActivity() == null || !isAdded()) return;
         String cachedInsight = buildAiInsightCache(text, sources);
         productRepository.updateProductAiInsight(product.product.barcode, cachedInsight);
@@ -614,25 +821,21 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                 SpannableString spannable = new SpannableString(ingredient.text);
                 boolean highlighted = false;
 
-                // Check manual rule triggers
-                for(AnalysisResult res : report.getResults()){
-                    if(res.getTriggeringIngredient() != null && ingredient.text.toLowerCase().contains(res.getTriggeringIngredient().toLowerCase())){
-                        if (res.getLevel() == AnalysisResult.WarningLevel.POSITIVE) {
-                            spannable.setSpan(new BackgroundColorSpan(0x3300FF00), 0, spannable.length(), 0); // Green for positive
-                        } else {
-                            spannable.setSpan(new BackgroundColorSpan(0x33FF0000), 0, spannable.length(), 0); // Red for others
-                        }
-                        spannable.setSpan(new StyleSpan(Typeface.BOLD), 0, spannable.length(), 0);
-                        highlighted = true;
-                        break;
+                AnalysisResult highlightResult = findIngredientHighlightResult(ingredient.text, report.getResults());
+                if (highlightResult != null) {
+                    if (highlightResult.getLevel() == AnalysisResult.WarningLevel.POSITIVE) {
+                        spannable.setSpan(new BackgroundColorSpan(0x3300FF00), 0, spannable.length(), 0); // Green for positive
+                    } else {
+                        spannable.setSpan(new BackgroundColorSpan(0x33FF0000), 0, spannable.length(), 0); // Red for others
                     }
+                    spannable.setSpan(new StyleSpan(Typeface.BOLD), 0, spannable.length(), 0);
+                    highlighted = true;
                 }
 
-                // Check AI triggers
                 if (!highlighted && aiTriggers != null) {
                     for (String trigger : aiTriggers) {
-                        if (ingredient.text.toLowerCase().contains(trigger.toLowerCase())) {
-                            spannable.setSpan(new BackgroundColorSpan(0x337C4DFF), 0, spannable.length(), 0); // AI Purple tint
+                        if (matchesTrigger(ingredient.text, trigger)) {
+                            spannable.setSpan(new BackgroundColorSpan(0x337C4DFF), 0, spannable.length(), 0);
                             spannable.setSpan(new StyleSpan(Typeface.BOLD), 0, spannable.length(), 0);
                             break;
                         }
@@ -643,6 +846,70 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
             }
         }
         ingredientsTextView.setText(builder);
+    }
+
+    private AnalysisResult findIngredientHighlightResult(String ingredientText, List<AnalysisResult> results) {
+        AnalysisResult best = null;
+        if (ingredientText == null || results == null) return null;
+        for (AnalysisResult result : results) {
+            if (result == null || !matchesTrigger(ingredientText, result.getTriggeringIngredient())) {
+                continue;
+            }
+            if (best == null || ingredientHighlightPriority(ingredientText, result) > ingredientHighlightPriority(ingredientText, best)) {
+                best = result;
+            }
+        }
+        return best;
+    }
+
+    private boolean matchesTrigger(String ingredientText, String trigger) {
+        if (trigger == null || trigger.trim().isEmpty()) return false;
+        String normalizedIngredient = ingredientText.toLowerCase(Locale.US);
+        if (isNutritionClaimNotIngredient(normalizedIngredient)) return false;
+        for (String part : trigger.split("[,;]")) {
+            String normalizedTrigger = part.trim().toLowerCase(Locale.US);
+            if (!normalizedTrigger.isEmpty() && ingredientTriggerMatches(normalizedIngredient, normalizedTrigger)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean ingredientTriggerMatches(String normalizedIngredient, String normalizedTrigger) {
+        return normalizedIngredient.equals(normalizedTrigger)
+                || normalizedIngredient.matches(".*\\b" + java.util.regex.Pattern.quote(normalizedTrigger) + "\\b.*")
+                || normalizedTrigger.matches(".*\\b" + java.util.regex.Pattern.quote(normalizedIngredient) + "\\b.*");
+    }
+
+    private boolean isNutritionClaimNotIngredient(String normalizedIngredient) {
+        return normalizedIngredient.matches("^(no|zero)\\s+(added\\s+)?(sugar|calories)\\b.*")
+                || normalizedIngredient.matches("^sugar\\s*free\\b.*")
+                || normalizedIngredient.matches("^\\d+\\s*(g|mg)?\\s*(added\\s+)?sugar\\b.*");
+    }
+
+    private int ingredientHighlightPriority(String ingredientText, AnalysisResult result) {
+        String normalizedIngredient = ingredientText.toLowerCase(Locale.US);
+        boolean organicOverride = normalizedIngredient.contains("organic") && !containsRefinedOilRisk(normalizedIngredient);
+        if (organicOverride && result.getLevel() == AnalysisResult.WarningLevel.POSITIVE) {
+            return 100;
+        }
+        if (result.getLevel() == AnalysisResult.WarningLevel.SEVERE) return 80;
+        if (result.getLevel() == AnalysisResult.WarningLevel.WARNING) return 70;
+        if (result.getLevel() == AnalysisResult.WarningLevel.POSITIVE) return 60;
+        return 20;
+    }
+
+    private boolean containsRefinedOilRisk(String normalizedIngredient) {
+        return normalizedIngredient.contains("vegetable oil")
+                || normalizedIngredient.contains("sunflower oil")
+                || normalizedIngredient.contains("canola oil")
+                || normalizedIngredient.contains("soybean oil")
+                || normalizedIngredient.contains("corn oil")
+                || normalizedIngredient.contains("palm oil")
+                || normalizedIngredient.contains("palm kernel oil")
+                || normalizedIngredient.contains("shortening")
+                || normalizedIngredient.contains("partially hydrogenated")
+                || normalizedIngredient.contains("hydrogenated oil");
     }
 
     private void displayNutriments(Nutriments nutriments) {

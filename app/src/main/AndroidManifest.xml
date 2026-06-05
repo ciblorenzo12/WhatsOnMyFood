@@ -8,21 +8,43 @@
 
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <queries>
+        <package android:name="com.walmart.android" />
+        <package android:name="com.target.ui" />
+        <package android:name="com.amazon.mShop.android.shopping" />
+        <package android:name="com.kroger.mobile" />
+        <package android:name="com.instacart.client" />
+        <package android:name="com.publix.main" />
+        <package android:name="com.instacart.client.publix" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
 
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/app_logo_rounded"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@drawable/app_logo_rounded"
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication"
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
+
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+
         <activity
-            android:name=".SignInActivity"
+            android:name=".SplashActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
             <intent-filter>
@@ -30,6 +52,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".SignInActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MyApplication" />
 
         <activity
             android:name=".MainActivity"
@@ -79,9 +106,14 @@
         <activity
             android:name=".WebViewActivity"
             android:exported="false"
-            android:label="@string/scientific_source"
+            android:label="@string/source_viewer"
             android:theme="@style/Theme.MyApplication" />
 
+        <activity
+            android:name=".retail.MarketplaceActivity"
+            android:exported="false"
+            android:label="@string/marketplace_comparison"
+            android:theme="@style/Theme.MyApplication" />
     </application>
 
 </manifest>

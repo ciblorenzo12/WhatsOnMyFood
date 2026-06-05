@@ -97,7 +97,7 @@ public class SourceViewerActivity extends BaseActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
-            finish();
+            navigateBack();
             return true;
         }
         return super.onOptionsItemSelected(item);

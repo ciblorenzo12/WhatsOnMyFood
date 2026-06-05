@@ -37,7 +37,7 @@ public class AddedSugarRuleTest {
     }
 
     @Test
-    public void evaluate_withAddedSugar_returnsSevereResultWithCorrectPenalty() {
+    public void evaluate_withAddedSugarUnderDailyValue_returnsPositiveResult() {
         // Arrange
         ProductWithDetails product = new ProductWithDetails();
         product.nutriments = createNutrimentsWithAddedSugar(10.0); // 10g of added sugar
@@ -47,6 +47,22 @@ public class AddedSugarRuleTest {
 
         // Assert
         assertFalse("Rule should trigger for added sugar", results.isEmpty());
+        assertEquals(1, results.size());
+        assertEquals(AnalysisResult.WarningLevel.POSITIVE, results.get(0).getLevel());
+        assertEquals(0, results.get(0).getScorePenalty());
+    }
+
+    @Test
+    public void evaluate_withAddedSugarAboveDailyValue_returnsSevereResultWithCorrectPenalty() {
+        // Arrange
+        ProductWithDetails product = new ProductWithDetails();
+        product.nutriments = createNutrimentsWithAddedSugar(51.0);
+
+        // Act
+        List<AnalysisResult> results = rule.evaluate(product);
+
+        // Assert
+        assertFalse("Rule should trigger for added sugar above the daily value", results.isEmpty());
         assertEquals(1, results.size());
         assertEquals(AnalysisResult.WarningLevel.SEVERE, results.get(0).getLevel());
         assertEquals(50, results.get(0).getScorePenalty());

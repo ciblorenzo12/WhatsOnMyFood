@@ -30,13 +30,19 @@
     <string name="add_new_product">Add a New Product</string>
     <string name="product_name">Product Name</string>
     <string name="brand">Brand</string>
+    <string name="brand_unknown">Brand Unknown</string>
     <string name="ingredients_comma_separated">Ingredients (comma-separated)</string>
     <string name="submit_product">Submit Product</string>
+    <string name="product_name_required">Product name is required.</string>
+    <string name="product_saved_locally">Product saved locally.</string>
+    <string name="failed_to_save_product">Failed to save product.</string>
+    <string name="manually_added">Manually Added</string>
     <string name="analysis_results">Analysis Results</string>
     <string name="ingredient_analysis">Ingredient Analysis</string>
     <string name="identifying_product">Identifying Product...</string>
     <string name="ai_vision_active">AI Vision Active</string>
     <string name="score">SCORE</string>
+    <string name="verdict">VERDICT</string>
     <string name="scientific_sources">SCIENTIFIC SOURCES</string>
     <string name="ingredients_list">Ingredients List</string>
     <string name="scan_next">Scan Next</string>
@@ -47,23 +53,65 @@
     <string name="categories">Categories</string>
     <string name="packaging">Packaging</string>
     <string name="labels_certifications_awards">Labels, Certifications, Awards</string>
+    <string name="update_product">Update product</string>
+    <string name="product_updated">Product updated.</string>
+    <string name="product_update_failed">Could not update product.</string>
+    <string name="product_update_failed_with_reason">Could not update product: %1$s</string>
     <string name="remove_from_pantry">Remove from Pantry</string>
+    <string name="commerce_title">Where can I buy this?</string>
+    <string name="commerce_subtitle">Check nearby store searches for this product and compare healthier options from the same category.</string>
+    <string name="where_to_buy">Where to Buy</string>
+    <string name="better_alternatives">Better Alternatives</string>
+    <string name="available_near_you">Available Near You</string>
+    <string name="google_maps_preview">Google Maps preview of nearby store</string>
+    <string name="better_alternatives_title">Better Alternatives</string>
+    <string name="checking_retailers">Checking nearby market matches...</string>
+    <string name="finding_better_alternatives">Finding cleaner related products...</string>
+    <string name="no_retailers_found">No retailer matches found yet.</string>
+    <string name="no_alternatives_found">No alternatives found yet.</string>
+    <string name="retailer_lookup_failed">Retailer lookup failed. Please try again.</string>
+    <string name="alternative_lookup_failed">Alternative lookup failed. Please try again.</string>
+    <string name="alternative_healthy_option">Healthy option</string>
+    <string name="alternative_same_category_type">Same category/type</string>
+    <string name="alternative_available_default">Available at Target, Kroger, Walmart, Whole Foods, and Instacart</string>
+    <string name="alternative_available_major_markets">Available at Target, Kroger, Walmart, Whole Foods, Sprouts, and Instacart</string>
+    <string name="alternative_available_health_markets">Available at Whole Foods, Sprouts, Thrive Market, and Instacart</string>
+    <string name="shop_now">Shop</string>
+    <string name="search_store">Search</string>
+    <string name="view_product">View Product</string>
     <string name="offline_cached_data">Offline - Using Cached Data</string>
     <string name="point_camera_barcode">Point the camera at a barcode</string>
+    <string name="point_camera_ingredients">Point the camera at the ingredients list</string>
     <string name="barcode_mode">Barcode Mode</string>
+    <string name="ingredient_mode">Ingredient Mode</string>
+    <string name="barcode_ai_toggle">Barcode AI</string>
+    <string name="barcode_ai_on">AI On</string>
+    <string name="barcode_ai_off">AI Off</string>
+    <string name="mode_toggle_hint">Tap the icon to switch between Barcode Mode and Ingredients Mode.</string>
     <string name="source">Source</string>
     <string name="source_article">Source Article</string>
     <string name="source_viewer">Source Viewer</string>
     <string name="scientific_source">Scientific Source</string>
+    <string name="back">Back</string>
+    <string name="import_image">Import image</string>
     <string name="bitwise_analyzing">Bitwise is analyzing</string>
     <string name="reading_ingredients_sources">Reading ingredients and checking sources...</string>
     <string name="rule_scored">Rule Scored</string>
-    <string name="health_score_rule_based">Health Score: %1$d/100 (Rule-Based)</string>
+    <string name="health_score_rule_based">Verdict: %1$s (Rule-Based)</string>
     <string name="bitwise_reasoning">Bitwise AI is reasoning...</string>
     <string name="analyzing">Analyzing...</string>
     <string name="identifying_ingredients">Identifying ingredients...</string>
     <string name="home_title">Your healthy pantry starts here</string>
     <string name="home_subtitle">Scan labels, review your pantry, and look up ingredients before they end up in your cart.</string>
+    <string name="daily_health_tip">Daily Health Insight</string>
+    <string name="recommended_swaps">Healthy Swaps for You</string>
+    <string name="quick_actions">Quick Access</string>
+    <string name="view_all">View All</string>
+    <string name="start_scanning">Start Scanning</string>
+    <string name="my_pantry_home">My Pantry</string>
+    <string name="ingredient_db_home">Additives</string>
+    <string name="marketplace_home">Marketplace</string>
+    <string name="home">Home</string>
     <string name="additive_database">Additive &amp; Ingredient Database</string>
     <string name="additive_database_nav">Database</string>
     <string name="additive_database_home_blurb">Search preservatives, colors, sweeteners, thickeners, oils, and common label terms.</string>
@@ -73,13 +121,18 @@
     <string name="additive_result_count">%1$d entries</string>
     <string name="no_additives_found">No matching ingredients found.</string>
     <string name="purpose">Purpose:</string>
+    <string name="source_prefix">Source: %1$s</string>
     <string name="health_note">Health Note:</string>
     <string name="not_a_valid_additive">Not a recognized food additive or ingredient.</string>
     <string name="bitwise_searching_for">Bitwise is searching for %1$s...</string>
-
-    <!-- CORRECTED: Added the required string resource for Firebase Auth -->
-    <string name="default_web_client_id" translatable="false">759803394674-kmnvdlbqj7mcqaj1junntc0toqu8r59q.apps.googleusercontent.com</string>
-
+    <string name="marketplace_comparison">Marketplace Comparison</string>
+    <string name="sort_by">Sort by:</string>
+    <string name="view_marketplace_comparison">View Marketplace Comparison</string>
+    <string-array name="sort_options">
+        <item>Cost (Lowest)</item>
+        <item>Distance (Nearest)</item>
+        <item>Health (Best Score)</item>
+    </string-array>
     <array name="com_google_android_gms_fonts_certs">
         <item>@array/com_google_android_gms_fonts_certs_dev</item>
         <item>@array/com_google_android_gms_fonts_certs_prod</item>

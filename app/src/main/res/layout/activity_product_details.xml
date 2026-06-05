@@ -74,6 +74,17 @@
                 android:textSize="16sp"
                 android:layout_marginBottom="16dp" />
 
+            <TextView
+                android:id="@+id/health_score_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="@color/colorPrimary"
+                android:layout_marginBottom="16dp"
+                tools:text="Healthy"/>
+
             <!-- Bitwise AI Insight Card -->
             <FrameLayout
                 android:id="@+id/ai_summary_container"
@@ -171,55 +182,25 @@
                 </com.google.android.material.card.MaterialCardView>
             </FrameLayout>
 
-            <TextView
-                android:id="@+id/ingredients_label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/ingredients"
-                android:textColor="@color/text_primary"
-                android:textStyle="bold"
-                android:textSize="18sp" />
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/ingredients_card"
+            <HorizontalScrollView
+                android:id="@+id/certificate_badges_scroll_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/glass_panel"
-                app:cardCornerRadius="22dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/glass_stroke"
-                app:strokeWidth="1dp">
-                <TextView
-                    android:id="@+id/ingredients_text_view"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/glass_panel"
-                    android:padding="16dp"
-                    android:textSize="15sp"
-                    android:lineSpacingExtra="4dp"
-                    android:textColor="@color/text_secondary"
-                    tools:text="Water, Sugar, Corn Syrup..." />
-            </com.google.android.material.card.MaterialCardView>
+                android:layout_marginBottom="20dp"
+                android:clipToPadding="false"
+                android:overScrollMode="never"
+                android:scrollbars="none"
+                android:visibility="gone"
+                tools:visibility="visible">
 
-            <TextView
-                android:id="@+id/health_score_text_view"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:textSize="28sp"
-                android:textStyle="bold"
-                android:textColor="@color/colorPrimary"
-                android:layout_marginBottom="16dp"
-                tools:text="85/100"/>
-
-            <!-- Analysis Results -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/analysis_recycler_view"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp" />
+                <LinearLayout
+                    android:id="@+id/certificate_badges_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="92dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    tools:ignore="UselessParent" />
+            </HorizontalScrollView>
 
             <!-- Scores Section -->
             <LinearLayout
@@ -253,6 +234,47 @@
                     android:layout_weight="1"
                     android:text="Eco-Score" />
             </LinearLayout>
+
+            <TextView
+                android:id="@+id/ingredients_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/ingredients"
+                android:textColor="@color/text_primary"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/ingredients_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/glass_panel"
+                app:cardCornerRadius="22dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/glass_stroke"
+                app:strokeWidth="1dp">
+                <TextView
+                    android:id="@+id/ingredients_text_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/glass_panel"
+                    android:padding="16dp"
+                    android:textSize="15sp"
+                    android:lineSpacingExtra="4dp"
+                    android:textColor="@color/text_secondary"
+                    tools:text="Water, Sugar, Corn Syrup..." />
+            </com.google.android.material.card.MaterialCardView>
+
+            <include layout="@layout/layout_retailer_commerce" />
+
+            <!-- Analysis Results -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/analysis_recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp" />
 
             <TextView
                 android:id="@+id/serving_size_label"
@@ -335,11 +357,20 @@
                 android:layout_marginBottom="16dp" />
 
             <Button
-                android:id="@+id/remove_from_pantry_button"
+                android:id="@+id/update_product_button"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
                 android:layout_marginTop="24dp"
+                android:text="@string/update_product"
+                app:cornerRadius="16dp" />
+
+            <Button
+                android:id="@+id/remove_from_pantry_button"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_marginTop="12dp"
                 android:text="@string/remove_from_pantry"
                 app:cornerRadius="16dp"
                 android:visibility="gone" />

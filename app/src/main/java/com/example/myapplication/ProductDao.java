@@ -24,14 +24,23 @@ public interface ProductDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertAllIngredients(List<Ingredient> ingredients);
 
+    @Query("DELETE FROM ingredients WHERE barcode = :barcode")
+    void deleteIngredientsForBarcode(String barcode);
+
+    @Query("DELETE FROM nutriments WHERE barcode = :barcode")
+    void deleteNutrimentsForBarcode(String barcode);
+
     @Transaction
     public default void insertProductWithDetails(ProductWithDetails productWithDetails) {
         if (productWithDetails.product == null || !productWithDetails.product.isValid()) {
             return;
         }
         insertProduct(productWithDetails.product);
+        deleteIngredientsForBarcode(productWithDetails.product.barcode);
         if (productWithDetails.nutriments != null) {
             insertNutriments(productWithDetails.nutriments);
+        } else {
+            deleteNutrimentsForBarcode(productWithDetails.product.barcode);
         }
         if (productWithDetails.ingredients != null && !productWithDetails.ingredients.isEmpty()) {
             insertAllIngredients(productWithDetails.ingredients);

@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-// CORRECTED: No longer imports the old AnalysisResult
 public class ArtificialColorsRule implements ProductAnalysisRule {
 
     private static final List<String> ARTIFICIAL_COLORS = Arrays.asList(
@@ -26,7 +25,6 @@ public class ArtificialColorsRule implements ProductAnalysisRule {
                     String lowerCaseIngredient = ingredient.text.toLowerCase();
                     for (String color : ARTIFICIAL_COLORS) {
                         if (lowerCaseIngredient.contains(color)) {
-                            // CORRECTED: Use the actual ingredient text for highlighting
                             results.add(new AnalysisResult("Contains " + color, AnalysisResult.WarningLevel.SEVERE, 20, ingredient.text, EXPLANATION));
                         }
                     }

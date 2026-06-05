@@ -35,6 +35,9 @@ apk/
 *.jks
 *.keystore
 keystore.properties
+*.pem
+.env
+.env.*
 
 # ---- Firebase / Google services ----
 # If you don't want to commit service configs, uncomment:
@@ -44,6 +47,8 @@ keystore.properties
 # ---- Kotlin/Java tooling ----
 *.class
 hs_err_pid*
+*.hprof
+java_pid*.hprof
 
 # ---- Lint / Reports ----
 lint/reports/

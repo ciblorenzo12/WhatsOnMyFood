@@ -3,7 +3,6 @@ package com.example.myapplication;
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
 
-// CORRECTED: Define a composite primary key to make each entry unique per user.
 @Entity(tableName = "pantry", primaryKeys = {"barcode", "userId"})
 public class Pantry {
 

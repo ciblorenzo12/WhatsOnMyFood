@@ -2,6 +2,7 @@ package com.example.myapplication.analysis.rules;
 
 import com.example.myapplication.ProductWithDetails;
 import com.example.myapplication.analysis.AnalysisResult;
+import com.example.myapplication.analysis.AnalysisResultDeduplicator;
 import com.example.myapplication.analysis.ProductAnalysisReport;
 
 import java.util.ArrayList;
@@ -48,24 +49,23 @@ public class RuleEngine {
         );
     }
 
-    // CORRECTED VERSION: The engine now evaluates all rules correctly.
     public ProductAnalysisReport analyze(ProductWithDetails productWithDetails) {
-        int overallScore = 100;
         List<AnalysisResult> allResults = new ArrayList<>();
 
         for (ProductAnalysisRule rule : rules) {
             List<AnalysisResult> currentRuleResults = rule.evaluate(productWithDetails);
             if (currentRuleResults != null && !currentRuleResults.isEmpty()) {
-                // CORRECTED: This loop now correctly iterates over the results
-                // from the CURRENT rule only, applying each penalty just once.
-                for (AnalysisResult result : currentRuleResults) {
-                    overallScore -= result.getScorePenalty();
-                }
                 allResults.addAll(currentRuleResults);
             }
         }
 
-        return new ProductAnalysisReport(Math.max(0, Math.min(100, overallScore)), allResults);
+        List<AnalysisResult> dedupedResults = AnalysisResultDeduplicator.deduplicate(allResults);
+        int overallScore = 100;
+        for (AnalysisResult result : dedupedResults) {
+            overallScore -= result.getScorePenalty();
+        }
+
+        return new ProductAnalysisReport(Math.max(0, Math.min(100, overallScore)), dedupedResults);
     }
 
     public List<String> getRuleDescriptions() {

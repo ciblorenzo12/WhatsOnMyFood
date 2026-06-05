@@ -27,7 +27,7 @@ public class NaturalFlavorRuleTest {
     }
 
     @Test
-    public void evaluate_withSingularNaturalFlavor_returnsSevereResult() {
+    public void evaluate_withSingularNaturalFlavor_returnsWarningResult() {
         // Arrange
         ProductWithDetails product = new ProductWithDetails();
         product.ingredients = Collections.singletonList(new Ingredient("test_barcode", "Contains natural flavor.", 1));
@@ -38,13 +38,13 @@ public class NaturalFlavorRuleTest {
         // Assert
         assertFalse(results.isEmpty());
         assertEquals(1, results.size());
-        assertEquals(AnalysisResult.WarningLevel.SEVERE, results.get(0).getLevel());
-        assertEquals(20, results.get(0).getScorePenalty());
+        assertEquals(AnalysisResult.WarningLevel.WARNING, results.get(0).getLevel());
+        assertEquals(5, results.get(0).getScorePenalty());
         assertEquals("natural flavor", results.get(0).getTriggeringIngredient());
     }
 
     @Test
-    public void evaluate_withPluralNaturalFlavors_returnsSevereResult() {
+    public void evaluate_withPluralNaturalFlavors_returnsWarningResult() {
         // Arrange
         ProductWithDetails product = new ProductWithDetails();
         product.ingredients = Collections.singletonList(new Ingredient("test_barcode", "Water, natural flavors, salt.", 1));
@@ -55,8 +55,8 @@ public class NaturalFlavorRuleTest {
         // Assert
         assertFalse(results.isEmpty());
         assertEquals(1, results.size());
-        assertEquals(AnalysisResult.WarningLevel.SEVERE, results.get(0).getLevel());
-        assertEquals(20, results.get(0).getScorePenalty());
+        assertEquals(AnalysisResult.WarningLevel.WARNING, results.get(0).getLevel());
+        assertEquals(5, results.get(0).getScorePenalty());
         assertEquals("natural flavors", results.get(0).getTriggeringIngredient());
     }
 

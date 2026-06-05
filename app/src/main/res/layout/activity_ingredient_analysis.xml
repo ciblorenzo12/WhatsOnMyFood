@@ -139,16 +139,17 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/score"
+                            android:text="@string/verdict"
                             android:textSize="10sp"
                             android:textColor="@color/text_muted"
                             android:textStyle="bold"/>
                         <TextView
                             android:id="@+id/health_score_text_view"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="--"
-                            android:textSize="24sp"
+                            android:gravity="center"
+                            android:textSize="20sp"
                             android:textColor="@color/colorPrimary"
                             android:textStyle="bold"/>
                     </LinearLayout>
@@ -303,6 +304,8 @@
                     android:textColor="@color/text_secondary"
                     tools:text="Water, Sugar, Corn Syrup..." />
             </com.google.android.material.card.MaterialCardView>
+
+            <include layout="@layout/layout_retailer_commerce" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/analysis_recycler_view"

@@ -27,7 +27,6 @@ public class Product {
     public String aiInsight;
     public Integer healthScore;
 
-    // CORRECTED: Added isFavorite field with a default value.
     @ColumnInfo(defaultValue = "0")
     public boolean isFavorite;
 

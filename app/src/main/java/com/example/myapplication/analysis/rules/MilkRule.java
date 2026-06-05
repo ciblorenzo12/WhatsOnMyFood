@@ -9,28 +9,42 @@ import java.util.List;
 
 public class MilkRule implements ProductAnalysisRule {
 
-    private static final String EXPLANATION = "⚠️ Contains conventional milk. Look for milk that is certified organic, non-GMO, and ideally 100% grass-fed to avoid potential hormones, antibiotics, and inflammatory A1 casein.";
+    private static final String CONVENTIONAL_EXPLANATION = "Contains milk, but the product does not show an organic or Non-GMO dairy claim. Conventional dairy is a watch item because the app cannot confirm cleaner dairy sourcing from this label.";
+    private static final String CLAIMED_EXPLANATION = "Contains milk. This is mainly an allergen and dietary-preference note. The product also shows organic or Non-GMO language, so milk is not treated as the main health concern.";
 
     @Override
     public List<AnalysisResult> evaluate(ProductWithDetails productWithDetails) {
         List<AnalysisResult> results = new ArrayList<>();
-        if (productWithDetails != null && productWithDetails.ingredients != null) {
-            for (Ingredient ingredient : productWithDetails.ingredients) {
-                if (ingredient.text != null) {
-                    String lowerCaseIngredient = ingredient.text.toLowerCase();
-                    if (lowerCaseIngredient.contains("milk")) {
-                        boolean isGoodMilk = lowerCaseIngredient.contains("organic") || 
-                                             lowerCaseIngredient.contains("non-gmo") || 
-                                             lowerCaseIngredient.contains("grass-fed");
+        if (productWithDetails == null || productWithDetails.ingredients == null) {
+            return results;
+        }
 
-                        if (!isGoodMilk) {
-                            results.add(new AnalysisResult("Contains conventional milk", AnalysisResult.WarningLevel.WARNING, 15, "milk", EXPLANATION));
-                            break; // Found it, no need to check further
-                        }
-                    }
+        boolean hasCleanerDairyClaim = hasOrganicOrNonGmoClaim(productWithDetails);
+        for (Ingredient ingredient : productWithDetails.ingredients) {
+            if (ingredient == null || ingredient.text == null) continue;
+            if (ingredient.text.toLowerCase().contains("milk")) {
+                if (hasCleanerDairyClaim || ingredient.text.toLowerCase().contains("organic")) {
+                    results.add(new AnalysisResult("Contains milk", AnalysisResult.WarningLevel.INFO, 0, ingredient.text, CLAIMED_EXPLANATION));
+                } else {
+                    results.add(new AnalysisResult("Conventional milk without organic/Non-GMO claim", AnalysisResult.WarningLevel.SEVERE, 25, ingredient.text, CONVENTIONAL_EXPLANATION));
                 }
+                break;
             }
         }
+
         return results;
+    }
+
+    private boolean hasOrganicOrNonGmoClaim(ProductWithDetails productWithDetails) {
+        if (productWithDetails == null || productWithDetails.product == null) {
+            return false;
+        }
+        String labels = productWithDetails.product.labels == null ? "" : productWithDetails.product.labels.toLowerCase();
+        return labels.contains("organic")
+                || labels.contains("non gmo")
+                || labels.contains("non-gmo")
+                || labels.contains("nongmo")
+                || labels.contains("no gmos")
+                || labels.contains("gmo free");
     }
 }

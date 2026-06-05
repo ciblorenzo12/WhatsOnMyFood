@@ -1,7 +1,9 @@
 package com.example.myapplication;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.TextView;
@@ -11,13 +13,16 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.widget.Toolbar;
 
+import com.example.myapplication.analysis.IngredientTextParser;
 import com.google.android.material.textfield.TextInputEditText;
 
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AddProductActivity extends BaseActivity {
 
     public static final String EXTRA_BARCODE = "com.example.myapplication.EXTRA_BARCODE";
+    private static final String TAG = "AddProductActivity";
 
     private TextInputEditText productNameEditText, brandEditText, ingredientsEditText;
     private TextView barcodeTextView;
@@ -58,27 +63,75 @@ public class AddProductActivity extends BaseActivity {
         String brand = brandEditText.getText().toString().trim();
         String ingredients = ingredientsEditText.getText().toString().trim();
 
-        if (TextUtils.isEmpty(productName) || TextUtils.isEmpty(brand)) {
-            Toast.makeText(this, "Product name and brand are required", Toast.LENGTH_SHORT).show();
+        if (TextUtils.isEmpty(productName)) {
+            Toast.makeText(this, R.string.product_name_required, Toast.LENGTH_SHORT).show();
             return;
         }
+        if (TextUtils.isEmpty(brand)) {
+            brand = getString(R.string.brand_unknown);
+        }
+
+        String finalBrand = brand;
 
         new Thread(() -> {
             try {
-                OpenFoodFactsApiClient apiClient = new OpenFoodFactsApiClient(getCacheDir());
-                boolean success = apiClient.addProduct(barcode, productName, brand, ingredients);
+                ProductWithDetails manualProduct = buildManualProduct(productName, finalBrand, ingredients);
+                ProductDao productDao = AppDatabase.getDatabase(getApplicationContext()).productDao();
+                productDao.insertProductWithDetails(manualProduct);
+                productDao.insertCacheMeta(new CacheMeta(barcode, System.currentTimeMillis()));
                 runOnUiThread(() -> {
-                    if (success) {
-                        Toast.makeText(AddProductActivity.this, "Product submitted successfully!", Toast.LENGTH_LONG).show();
-                        finish();
-                    } else {
-                        Toast.makeText(AddProductActivity.this, "Failed to submit product.", Toast.LENGTH_LONG).show();
-                    }
+                    Toast.makeText(AddProductActivity.this, R.string.product_saved_locally, Toast.LENGTH_LONG).show();
+                    Intent detailsIntent = new Intent(AddProductActivity.this, ProductDetailsActivity.class);
+                    detailsIntent.putExtra(ProductDetailsActivity.EXTRA_BARCODE, barcode);
+                    startActivity(detailsIntent);
+                    finish();
                 });
-            } catch (IOException e) {
-                runOnUiThread(() -> Toast.makeText(AddProductActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                submitToOpenFoodFactsInBackground(productName, finalBrand, ingredients);
+            } catch (Exception e) {
+                Log.e(TAG, "Error saving manual product", e);
+                runOnUiThread(() -> Toast.makeText(AddProductActivity.this, R.string.failed_to_save_product, Toast.LENGTH_LONG).show());
             }
         }).start();
+    }
+
+    private ProductWithDetails buildManualProduct(String productName, String brand, String ingredientsText) {
+        Product product = new Product(
+                barcode,
+                productName,
+                brand,
+                null,
+                null,
+                null,
+                null,
+                getString(R.string.manually_added),
+                null,
+                null,
+                null,
+                null
+        );
+
+        List<Ingredient> ingredients = new ArrayList<>();
+        for (String ingredientText : IngredientTextParser.parseIngredientCandidates(ingredientsText)) {
+            ingredients.add(new Ingredient(barcode, ingredientText, ingredients.size()));
+        }
+
+        ProductWithDetails productWithDetails = new ProductWithDetails();
+        productWithDetails.product = product;
+        productWithDetails.ingredients = ingredients;
+        productWithDetails.nutriments = null;
+        return productWithDetails;
+    }
+
+    private void submitToOpenFoodFactsInBackground(String productName, String brand, String ingredients) {
+        try {
+            OpenFoodFactsApiClient apiClient = new OpenFoodFactsApiClient(
+                    getCacheDir(),
+                    LanguageManager.getLanguageCode(this)
+            );
+            apiClient.addProduct(barcode, productName, brand, ingredients);
+        } catch (Exception e) {
+            Log.w(TAG, "Manual product saved locally but could not be submitted to Open Food Facts", e);
+        }
     }
 
     @Override

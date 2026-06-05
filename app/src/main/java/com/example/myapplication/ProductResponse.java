@@ -9,13 +9,53 @@ public class ProductResponse {
     public static class ProductData {
         @SerializedName("product_name")
         public String productName;
+        @SerializedName("product_name_en")
+        public String productNameEn;
+        @SerializedName("product_name_es")
+        public String productNameEs;
+        @SerializedName("product_name_fr")
+        public String productNameFr;
+        @SerializedName("generic_name")
+        public String genericName;
+        @SerializedName("generic_name_en")
+        public String genericNameEn;
+        @SerializedName("generic_name_es")
+        public String genericNameEs;
+        @SerializedName("generic_name_fr")
+        public String genericNameFr;
         public String brands;
         public String quantity;
         @SerializedName("image_url")
         public String imageUrl;
+        @SerializedName("image_front_url")
+        public String imageFrontUrl;
         public String labels;
+        @SerializedName("labels_en")
+        public String labelsEn;
+        @SerializedName("labels_es")
+        public String labelsEs;
+        @SerializedName("labels_fr")
+        public String labelsFr;
+        @SerializedName("labels_tags")
+        public String[] labelsTags;
         public String packaging;
+        @SerializedName("packaging_en")
+        public String packagingEn;
+        @SerializedName("packaging_es")
+        public String packagingEs;
+        @SerializedName("packaging_fr")
+        public String packagingFr;
         public String categories;
+        @SerializedName("categories_en")
+        public String categoriesEn;
+        @SerializedName("categories_es")
+        public String categoriesEs;
+        @SerializedName("categories_fr")
+        public String categoriesFr;
+        public String countries;
+        @SerializedName("countries_tags")
+        public String[] countriesTags;
+        public String lang;
         @SerializedName("serving_size")
         public String servingSize;
         @SerializedName("nutriscore_grade")
@@ -27,9 +67,23 @@ public class ProductResponse {
         public NutrimentsData nutriments;
         @SerializedName("ingredients_text")
         public String ingredientsText;
-
-        @SerializedName("ingredients_text_with_allergens_en")
+        @SerializedName("ingredients_text_en")
         public String ingredientsTextEn;
+        @SerializedName("ingredients_text_es")
+        public String ingredientsTextEs;
+        @SerializedName("ingredients_text_fr")
+        public String ingredientsTextFr;
+        @SerializedName("ingredients_text_with_allergens_en")
+        public String ingredientsTextWithAllergensEn;
+        @SerializedName("ingredients_text_with_allergens")
+        public String ingredientsTextWithAllergens;
+        @SerializedName("ingredients_text_with_allergens_es")
+        public String ingredientsTextWithAllergensEs;
+        @SerializedName("ingredients_text_with_allergens_fr")
+        public String ingredientsTextWithAllergensFr;
+        public String allergens;
+        @SerializedName("allergens_tags")
+        public String[] allergensTags;
 
         public IngredientsData[] ingredients;
     }
@@ -77,7 +131,6 @@ public class ProductResponse {
         public Double fiber;
         @SerializedName("proteins_100g")
         public Double proteins;
-        // CORRECTED: Added the missing salt field with the correct annotation.
         @SerializedName("salt_100g")
         public Double salt;
         @SerializedName("sodium_100g")

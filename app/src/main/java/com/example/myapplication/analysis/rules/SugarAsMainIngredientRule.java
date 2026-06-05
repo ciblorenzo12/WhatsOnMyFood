@@ -7,6 +7,7 @@ import com.example.myapplication.analysis.AnalysisResult;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 public class SugarAsMainIngredientRule implements ProductAnalysisRule {
 
@@ -17,15 +18,21 @@ public class SugarAsMainIngredientRule implements ProductAnalysisRule {
     public List<AnalysisResult> evaluate(ProductWithDetails productWithDetails) {
         List<AnalysisResult> results = new ArrayList<>();
         if (productWithDetails != null && productWithDetails.ingredients != null) {
+            Double addedSugars = productWithDetails.nutriments == null ? null : productWithDetails.nutriments.addedSugars;
+            if (addedSugars != null && addedSugars > 0 && addedSugars <= AddedSugarRule.FDA_ADDED_SUGAR_DAILY_VALUE_G) {
+                return results;
+            }
             for (int i = 0; i < Math.min(3, productWithDetails.ingredients.size()); i++) {
                 Ingredient ingredient = productWithDetails.ingredients.get(i);
                 if (ingredient.text != null) {
-                    String lowerCaseIngredient = ingredient.text.toLowerCase();
+                    String lowerCaseIngredient = ingredient.text.toLowerCase(Locale.US);
+                    if (isNutritionClaimNotIngredient(lowerCaseIngredient)) {
+                        continue;
+                    }
                     for (String sugarName : SUGAR_NAMES) {
                         if (lowerCaseIngredient.contains(sugarName)) {
-                            // CORRECTED: Use the actual ingredient text for highlighting
                             results.add(new AnalysisResult("Sugar is a main ingredient", AnalysisResult.WarningLevel.SEVERE, 20, ingredient.text, EXPLANATION));
-                            return results; // Stop after finding the first one
+                            return results;
                         }
                     }
                 }
@@ -37,5 +44,11 @@ public class SugarAsMainIngredientRule implements ProductAnalysisRule {
     @Override
     public String getRuleDescription() {
         return "Detects if sugar or sweeteners are among the top three ingredients. High sugar content at the top of the list indicates a low-nutrient product.";
+    }
+
+    private boolean isNutritionClaimNotIngredient(String normalizedIngredient) {
+        return normalizedIngredient.matches("^(no|zero)\\s+(added\\s+)?(sugar|calories)\\b.*")
+                || normalizedIngredient.matches("^sugar\\s*free\\b.*")
+                || normalizedIngredient.matches("^\\d+\\s*(g|mg)?\\s*(added\\s+)?sugar\\b.*");
     }
 }

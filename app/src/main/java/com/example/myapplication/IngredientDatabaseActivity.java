@@ -4,7 +4,6 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.widget.EditText;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -15,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-public class IngredientDatabaseActivity extends AppCompatActivity {
+public class IngredientDatabaseActivity extends BaseActivity {
 
     private List<IngredientInfo> allIngredients = new ArrayList<>();
     private IngredientInfoAdapter adapter;
@@ -85,7 +84,7 @@ public class IngredientDatabaseActivity extends AppCompatActivity {
 
     @Override
     public boolean onSupportNavigateUp() {
-        onBackPressed();
+        navigateBack();
         return true;
     }
 }

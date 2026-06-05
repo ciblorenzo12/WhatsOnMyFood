@@ -75,7 +75,6 @@ public class Nutriments {
     @SerializedName("proteins_100g")
     public Double proteins;
 
-    // CORRECTED: Added the missing salt field.
     @SerializedName("salt_100g")
     public Double salt;
 
@@ -214,7 +213,6 @@ public class Nutriments {
     @SerializedName("carbon-footprint_100g")
     public Double carbonFootprint;
 
-    // Constructor - CORRECTED to include salt
     public Nutriments(@NonNull String barcode, Double energy, Double energyKj, Double fat, Double saturatedFat, Double monounsaturatedFat, Double polyunsaturatedFat, Double transFat, Double cholesterol, Double carbohydrates, Double sugars, Double addedSugars, Double sucrose, Double glucose, Double fructose, Double lactose, Double maltose, Double maltodextrins, Double starch, Double polyols, Double fiber, Double proteins, Double salt, Double sodium, Double alcohol, Double vitaminA, Double vitaminD, Double vitaminE, Double vitaminK, Double vitaminC, Double vitaminB1, Double vitaminB2, Double vitaminPP, Double vitaminB6, Double vitaminB9, Double vitaminB12, Double biotin, Double pantothenicAcid, Double silica, Double bicarbonate, Double potassium, Double chloride, Double calcium, Double phosphorus, Double iron, Double magnesium, Double zinc, Double copper, Double manganese, Double fluoride, Double selenium, Double chromium, Double molybdenum, Double iodine, Double caffeine, Double taurine, Double omega3Fat, Double omega6Fat, Double omega9Fat, Double oleicAcid, Double linoleicAcid, Double gammaLinolenicAcid, Double dihomoGammaLinolenicAcid, Double arachidonicAcid, Double alphaLinolenicAcid, Double eicosapentaenoicAcid, Double docosahexaenoicAcid, Double carbonFootprint) {
         this.barcode = barcode;
         this.energy = energy;

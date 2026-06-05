@@ -4,9 +4,6 @@ import android.graphics.Bitmap;
 import okhttp3.Call;
 import java.util.List;
 
-/**
- * Legacy wrapper for BitwiseAiCore to maintain backward compatibility.
- */
 public class OpenAIAnalysisService {
 
     public interface AnalysisCallback {
@@ -21,7 +18,6 @@ public class OpenAIAnalysisService {
     }
 
     public void analyzeWithRules(String productData, List<String> rules, Bitmap bitmap, AnalysisCallback callback) {
-        // Delegate to the new centralized Core
         BitwiseAiCore.startAnalysis(null, productData, bitmap, new BitwiseAiCore.AiCallback() {
             @Override
             public void onResult(String jsonResult) {
@@ -36,6 +32,5 @@ public class OpenAIAnalysisService {
     }
 
     public void cancelActiveCall() {
-        // Logic handled by individual calls now, but kept for signature compatibility
     }
 }

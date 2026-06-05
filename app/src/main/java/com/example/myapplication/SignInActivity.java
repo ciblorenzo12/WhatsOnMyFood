@@ -34,6 +34,8 @@ public class SignInActivity extends BaseActivity {
     private Spinner languageSpinner;
     private FirebaseAuth mAuth;
     private boolean languageSpinnerReady;
+    private boolean googleSignInInProgress;
+    private boolean launchingMainActivity;
 
     // Launcher for the FirebaseUI sign-in flow (used for Google Sign-In)
     private final ActivityResultLauncher<Intent> signInLauncher = registerForActivityResult(
@@ -62,7 +64,6 @@ public class SignInActivity extends BaseActivity {
         registerButton.setOnClickListener(v -> registerUser());
         forgotPasswordText.setOnClickListener(v -> showForgotPasswordDialog());
 
-        // CORRECTED: Added the missing click listener for the Google Sign-In button
         googleSignInButton.setOnClickListener(v -> startGoogleSignIn());
     }
 
@@ -70,19 +71,22 @@ public class SignInActivity extends BaseActivity {
     protected void onStart() {
         super.onStart();
         FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser != null) {
+        if (currentUser != null && !googleSignInInProgress) {
             launchMainActivity();
         }
     }
 
     private void startGoogleSignIn() {
         saveSelectedLanguage();
+        googleSignInInProgress = true;
         List<AuthUI.IdpConfig> providers = Collections.singletonList(
-                new AuthUI.IdpConfig.GoogleBuilder().build());
+                new AuthUI.IdpConfig.GoogleBuilder()
+                        .build());
 
         Intent signInIntent = AuthUI.getInstance()
                 .createSignInIntentBuilder()
                 .setAvailableProviders(providers)
+                .setCredentialManagerEnabled(false)
                 .build();
         signInLauncher.launch(signInIntent);
     }
@@ -179,6 +183,7 @@ public class SignInActivity extends BaseActivity {
     }
 
     private void onSignInResult(FirebaseAuthUIAuthenticationResult result) {
+        googleSignInInProgress = false;
         IdpResponse response = result.getIdpResponse();
         if (result.getResultCode() == RESULT_OK) {
             FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
@@ -187,8 +192,15 @@ public class SignInActivity extends BaseActivity {
             launchMainActivity();
         } else {
             if (response != null && response.getError() != null) {
-                Log.w(TAG, "Sign-in failed", response.getError());
-                Toast.makeText(this, "Sign-in failed: " + response.getError().getMessage(), Toast.LENGTH_LONG).show();
+                int errorCode = response.getError().getErrorCode();
+                String errorMessage = response.getError().getMessage();
+                Log.e(TAG, "Sign-in failed. Error Code: " + errorCode + ", Message: " + errorMessage);
+                
+                String displayMessage = "Sign-in failed: " + errorMessage;
+                if (errorCode == 10) { // Common code for DEVELOPER_ERROR
+                    displayMessage = "Sign-in failed: Developer Error (10). Check SHA-1 in Firebase Console.";
+                }
+                Toast.makeText(this, displayMessage, Toast.LENGTH_LONG).show();
             } else {
                 Toast.makeText(this, "Sign-in canceled", Toast.LENGTH_SHORT).show();
             }
@@ -208,7 +220,12 @@ public class SignInActivity extends BaseActivity {
     }
 
     private void launchMainActivity() {
+        if (launchingMainActivity) {
+            return;
+        }
+        launchingMainActivity = true;
         Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
     }

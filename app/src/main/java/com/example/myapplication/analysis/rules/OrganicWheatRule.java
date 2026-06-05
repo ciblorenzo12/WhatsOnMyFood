@@ -19,7 +19,7 @@ public class OrganicWheatRule implements ProductAnalysisRule {
                 if (ingredient.text != null) {
                     String lowerCaseIngredient = ingredient.text.toLowerCase();
                     if (lowerCaseIngredient.contains("organic") && lowerCaseIngredient.contains("wheat")) {
-                        results.add(new AnalysisResult("Contains Organic Wheat", AnalysisResult.WarningLevel.POSITIVE, -10, "organic wheat", EXPLANATION));
+                        results.add(new AnalysisResult("Contains Organic Wheat", AnalysisResult.WarningLevel.POSITIVE, -10, ingredient.text, EXPLANATION));
                         // Found it, no need to check further in this product
                         break;
                     }
