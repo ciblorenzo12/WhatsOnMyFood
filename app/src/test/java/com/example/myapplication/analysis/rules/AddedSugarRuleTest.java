@@ -1,6 +1,7 @@
 package com.example.myapplication.analysis.rules;
 
 import com.example.myapplication.Nutriments;
+import com.example.myapplication.Ingredient;
 import com.example.myapplication.ProductWithDetails;
 import com.example.myapplication.analysis.AnalysisResult;
 
@@ -8,6 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Collections;
 
 import static org.junit.Assert.*;
 
@@ -37,7 +39,7 @@ public class AddedSugarRuleTest {
     }
 
     @Test
-    public void evaluate_withAddedSugarUnderDailyValue_returnsPositiveResult() {
+    public void evaluate_withAddedSugarUnderDailyValue_returnsWarningResult() {
         // Arrange
         ProductWithDetails product = new ProductWithDetails();
         product.nutriments = createNutrimentsWithAddedSugar(10.0); // 10g of added sugar
@@ -48,8 +50,20 @@ public class AddedSugarRuleTest {
         // Assert
         assertFalse("Rule should trigger for added sugar", results.isEmpty());
         assertEquals(1, results.size());
-        assertEquals(AnalysisResult.WarningLevel.POSITIVE, results.get(0).getLevel());
-        assertEquals(0, results.get(0).getScorePenalty());
+        assertEquals(AnalysisResult.WarningLevel.WARNING, results.get(0).getLevel());
+        assertEquals(10, results.get(0).getScorePenalty());
+    }
+
+    @Test
+    public void evaluate_withAddedSugarInIngredientText_returnsSevereResult() {
+        ProductWithDetails product = new ProductWithDetails();
+        product.ingredients = Collections.singletonList(new Ingredient("test_barcode", "Sugar (Added Sugar)", 1));
+
+        List<AnalysisResult> results = rule.evaluate(product);
+
+        assertFalse("Rule should trigger from ingredient text", results.isEmpty());
+        assertEquals(AnalysisResult.WarningLevel.SEVERE, results.get(0).getLevel());
+        assertEquals("Sugar (Added Sugar)", results.get(0).getTriggeringIngredient());
     }
 
     @Test

@@ -37,6 +37,7 @@ import com.example.myapplication.analysis.AnalysisResultAdapter;
 import com.example.myapplication.analysis.AnalysisResultDeduplicator;
 import com.example.myapplication.analysis.AiSummaryFormatter;
 import com.example.myapplication.analysis.HealthVerdict;
+import com.example.myapplication.analysis.HealthVerdictExplanationBuilder;
 import com.example.myapplication.analysis.OpenAIAnalysisService;
 import com.example.myapplication.analysis.ProductAnalysisReport;
 import com.example.myapplication.analysis.rules.RuleEngine;
@@ -93,6 +94,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     private TextView aiSourcesTextView;
     private View aiSourcesDivider;
     private View aiSourcesLabel;
+    private HealthVerdict latestVerdict;
 
     public static ProductDetailsFragment newInstance(String barcode) {
         return newInstance(barcode, true);
@@ -570,12 +572,24 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         aiSummaryContainer.setAlpha(1f);
         aiSummaryContainer.setTranslationY(0f);
         GlassMotion.enter(aiSummaryContainer, 80L);
-        aiSummaryTextView.setText(android.text.Html.fromHtml(cachedInsight.summary, android.text.Html.FROM_HTML_MODE_COMPACT));
-        displaySources(cachedInsight.sources);
-
         if (currentReport != null) {
             applyRuleBasedScore(product, currentReport);
         }
+
+        String summary = cachedInsight.summary;
+        org.json.JSONArray sources = cachedInsight.sources;
+        if (latestVerdict != null
+                && latestVerdict.getStatus() == HealthVerdict.Status.NOT_HEALTHY
+                && currentReport != null) {
+            String localExplanation = HealthVerdictExplanationBuilder.buildNotHealthyExplanation(product, currentReport.getResults());
+            if (!localExplanation.isEmpty()) {
+                summary = localExplanation;
+                sources = HealthVerdictExplanationBuilder.buildSources(currentReport.getResults());
+            }
+        }
+
+        aiSummaryTextView.setText(android.text.Html.fromHtml(summary, android.text.Html.FROM_HTML_MODE_COMPACT));
+        displaySources(sources);
 
         if (getActivity() != null) {
             AiGlowManager.stopGlow(getActivity());
@@ -595,9 +609,9 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
             product.product.healthScore = ruleScore;
             productRepository.updateProductHealthScore(product.product.barcode, ruleScore);
         }
-        HealthVerdict verdict = HealthVerdict.fromAiVerdict(aiVerdict, aiVerdictReason, results, getIngredientCount(product));
-        healthScoreTextView.setText(verdict.getLabel());
-        healthScoreTextView.setTextColor(getVerdictColor(verdict));
+        latestVerdict = HealthVerdict.fromAiVerdict(aiVerdict, aiVerdictReason, results, getIngredientCount(product));
+        healthScoreTextView.setText(latestVerdict.getLabel());
+        healthScoreTextView.setTextColor(getVerdictColor(latestVerdict));
     }
 
     private int getIngredientCount(ProductWithDetails product) {
@@ -745,6 +759,18 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
     private void updateAiUI(ProductWithDetails product, String text, org.json.JSONArray sources) {
         if (getActivity() == null || !isAdded()) return;
+        if (currentReport != null) {
+            applyRuleBasedScore(product, currentReport);
+        }
+        if (latestVerdict != null
+                && latestVerdict.getStatus() == HealthVerdict.Status.NOT_HEALTHY
+                && currentReport != null) {
+            String localExplanation = HealthVerdictExplanationBuilder.buildNotHealthyExplanation(product, currentReport.getResults());
+            if (!localExplanation.isEmpty()) {
+                text = localExplanation;
+                sources = HealthVerdictExplanationBuilder.buildSources(currentReport.getResults());
+            }
+        }
         String cachedInsight = buildAiInsightCache(text, sources);
         productRepository.updateProductAiInsight(product.product.barcode, cachedInsight);
         product.product.aiInsight = cachedInsight;
@@ -755,9 +781,6 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         animateText(aiSummaryTextView, text);
         displaySources(sources);
 
-        if (currentReport != null) {
-            applyRuleBasedScore(product, currentReport);
-        }
     }
 
     private void animateText(TextView textView, String text) {

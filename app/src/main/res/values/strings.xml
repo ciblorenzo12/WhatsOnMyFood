@@ -26,6 +26,14 @@
     <string name="scan_me">Scan Me!!</string>
     <string name="export_csv">Export to CSV</string>
     <string name="export_json">Export to JSON</string>
+    <string name="pantry_risk_insights">Pantry Risk Insights</string>
+    <string name="pantry_ar_graphs">AR Graphs</string>
+    <string name="ingredient_concern">Ingredient concern</string>
+    <string name="combined_risk_score">Combined risk: %1$d</string>
+    <string name="ai_risk_score">AI risk: %1$s</string>
+    <string name="user_risk_score">User risk: %1$d</string>
+    <string name="no_pantry_scores">Rate pantry items or run AI analysis to build this graph.</string>
+    <string name="camera_permission_ar">Camera permission is required for AR graphs.</string>
     <string name="barcode">Barcode</string>
     <string name="add_new_product">Add a New Product</string>
     <string name="product_name">Product Name</string>

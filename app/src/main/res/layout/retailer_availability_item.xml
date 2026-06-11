@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="6dp"
+    android:layout_marginBottom="6dp"
+    app:cardBackgroundColor="@color/glass_panel"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/glass_stroke"
+    app:strokeWidth="1dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/glass_panel"
+        android:minHeight="118dp"
+        android:paddingStart="0dp"
+        android:paddingTop="14dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="14dp">
+
+        <View
+            android:id="@+id/retailer_brand_strip"
+            android:layout_width="5dp"
+            android:layout_height="0dp"
+            android:background="@color/colorPrimary"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <FrameLayout
+            android:id="@+id/retailer_logo_tile"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_marginStart="14dp"
+            android:background="@drawable/retail_logo_tile_background"
+            android:elevation="1dp"
+            android:padding="10dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@id/retailer_brand_strip"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/retailer_logo_image_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:adjustViewBounds="true"
+                android:contentDescription="@null"
+                android:scaleType="fitCenter"
+                tools:src="@drawable/retail_logo_walmart" />
+
+            <TextView
+                android:id="@+id/retailer_logo_text_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:text="WF"
+                tools:visibility="visible" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/retailer_name_text_view"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:textColor="@color/text_primary"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toStartOf="@id/retailer_shop_button"
+            app:layout_constraintStart_toEndOf="@id/retailer_logo_tile"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Walmart" />
+
+        <TextView
+            android:id="@+id/retailer_status_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/retail_chip_background"
+            android:paddingStart="9dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="9dp"
+            android:paddingBottom="3dp"
+            android:textColor="@color/colorPrimary"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toStartOf="@id/retailer_shop_button"
+            app:layout_constraintHorizontal_bias="0"
+            app:layout_constraintStart_toStartOf="@id/retailer_name_text_view"
+            app:layout_constraintTop_toBottomOf="@id/retailer_name_text_view"
+            tools:text="Likely match" />
+
+        <TextView
+            android:id="@+id/retailer_meta_text_view"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp"
+            app:layout_constraintEnd_toStartOf="@id/retailer_shop_button"
+            app:layout_constraintStart_toStartOf="@id/retailer_name_text_view"
+            app:layout_constraintTop_toBottomOf="@id/retailer_status_text_view"
+            tools:text="$4.98 | 2.4 mi | Pickup" />
+
+        <TextView
+            android:id="@+id/retailer_note_text_view"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="@color/text_muted"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toStartOf="@id/retailer_shop_button"
+            app:layout_constraintStart_toStartOf="@id/retailer_name_text_view"
+            app:layout_constraintTop_toBottomOf="@id/retailer_meta_text_view"
+            tools:text="Mock availability until provider is enabled." />
+
+        <TextView
+            android:id="@+id/retailer_address_text_view"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/retailer_shop_button"
+            app:layout_constraintStart_toStartOf="@id/retailer_name_text_view"
+            app:layout_constraintTop_toBottomOf="@id/retailer_note_text_view"
+            tools:text="123 Main St, Springfield, IL"
+            tools:visibility="visible" />
+
+        <Button
+            android:id="@+id/retailer_shop_button"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="84dp"
+            android:layout_height="48dp"
+            android:text="@string/shop_now"
+            android:textSize="12sp"
+            app:cornerRadius="14dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>

@@ -1,0 +1,13 @@
+{
+  "name": "your-healthy-pantry-retailer-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "walmart:taxonomy": "node scripts/queryWalmartTaxonomy.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

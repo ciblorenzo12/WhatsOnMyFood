@@ -4,6 +4,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.RatingBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -19,14 +20,20 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
 
     private List<Product> products;
     private final OnItemClickListener listener;
+    private final OnRiskRatingChangeListener riskRatingChangeListener;
 
     public interface OnItemClickListener {
         void onItemClick(Product product);
     }
 
-    public PantryAdapter(List<Product> products, OnItemClickListener listener) {
+    public interface OnRiskRatingChangeListener {
+        void onRiskRatingChanged(Product product, int score);
+    }
+
+    public PantryAdapter(List<Product> products, OnItemClickListener listener, OnRiskRatingChangeListener riskRatingChangeListener) {
         this.products = products;
         this.listener = listener;
+        this.riskRatingChangeListener = riskRatingChangeListener;
     }
 
     @NonNull
@@ -39,7 +46,7 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
     @Override
     public void onBindViewHolder(@NonNull PantryViewHolder holder, int position) {
         Product product = products.get(position);
-        holder.bind(product, listener);
+        holder.bind(product, listener, riskRatingChangeListener);
         GlassMotion.enter(holder.cardView, Math.min(position * 35L, 220L));
     }
 
@@ -65,6 +72,7 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
     static class PantryViewHolder extends RecyclerView.ViewHolder {
         ImageView productImageView;
         TextView productNameTextView, productBrandTextView, productQuantityTextView, aiVerifiedBadge;
+        RatingBar userRiskRatingBar;
         public MaterialCardView cardView; // Expose the foreground view
 
         public PantryViewHolder(@NonNull View itemView) {
@@ -74,14 +82,24 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
             productBrandTextView = itemView.findViewById(R.id.product_brand_text_view);
             productQuantityTextView = itemView.findViewById(R.id.product_quantity_text_view);
             aiVerifiedBadge = itemView.findViewById(R.id.ai_verified_badge);
+            userRiskRatingBar = itemView.findViewById(R.id.user_risk_rating_bar);
             cardView = itemView.findViewById(R.id.card_view);
             GlassMotion.attachPress(cardView);
         }
 
-        public void bind(final Product product, final OnItemClickListener listener) {
+        public void bind(final Product product, final OnItemClickListener listener, final OnRiskRatingChangeListener riskRatingChangeListener) {
             productNameTextView.setText(product.productName);
             productBrandTextView.setText(product.brands);
             productQuantityTextView.setText(product.quantity);
+            userRiskRatingBar.setOnRatingBarChangeListener(null);
+            int userScore = product.userIngredientRiskScore == null ? 0 : product.userIngredientRiskScore;
+            userRiskRatingBar.setRating(userScore / 20f);
+            userRiskRatingBar.setOnRatingBarChangeListener((ratingBar, rating, fromUser) -> {
+                if (!fromUser) return;
+                int score = Math.round(rating * 20f);
+                product.userIngredientRiskScore = score;
+                riskRatingChangeListener.onRiskRatingChanged(product, score);
+            });
 
             if (product.healthScore != null) {
                 aiVerifiedBadge.setVisibility(View.VISIBLE);

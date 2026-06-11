@@ -26,6 +26,8 @@ public class Product {
     public String ecoscoreGrade;
     public String aiInsight;
     public Integer healthScore;
+    @ColumnInfo(defaultValue = "0")
+    public Integer userIngredientRiskScore;
 
     @ColumnInfo(defaultValue = "0")
     public boolean isFavorite;
@@ -48,7 +50,7 @@ public class Product {
         return true;
     }
 
-    public Product(@NonNull String barcode, String productName, String brands, String quantity, String imageUrl, String labels, String packaging, String categories, String servingSize, String nutriscoreGrade, String novaGroup, String ecoscoreGrade, String aiInsight, Integer healthScore) {
+    public Product(@NonNull String barcode, String productName, String brands, String quantity, String imageUrl, String labels, String packaging, String categories, String servingSize, String nutriscoreGrade, String novaGroup, String ecoscoreGrade, String aiInsight, Integer healthScore, Integer userIngredientRiskScore) {
         this.barcode = barcode;
         this.productName = productName;
         this.brands = brands;
@@ -63,7 +65,13 @@ public class Product {
         this.ecoscoreGrade = ecoscoreGrade;
         this.aiInsight = aiInsight;
         this.healthScore = healthScore;
+        this.userIngredientRiskScore = userIngredientRiskScore == null ? 0 : userIngredientRiskScore;
         this.isFavorite = false; // Default value for new products
+    }
+
+    @Ignore
+    public Product(@NonNull String barcode, String productName, String brands, String quantity, String imageUrl, String labels, String packaging, String categories, String servingSize, String nutriscoreGrade, String novaGroup, String ecoscoreGrade, String aiInsight, Integer healthScore) {
+        this(barcode, productName, brands, quantity, imageUrl, labels, packaging, categories, servingSize, nutriscoreGrade, novaGroup, ecoscoreGrade, aiInsight, healthScore, 0);
     }
 
     @Ignore

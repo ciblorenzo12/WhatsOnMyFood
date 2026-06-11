@@ -22,12 +22,27 @@
         android:layout_height="0dp"
         android:clipToPadding="false"
         android:paddingTop="10dp"
-        android:paddingBottom="24dp"
+        android:paddingBottom="132dp"
         app:layout_constraintTop_toBottomOf="@id/pantry_toolbar"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         tools:listitem="@layout/pantry_list_item" />
+
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/pantry_insights_fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="12dp"
+        android:contentDescription="@string/pantry_risk_insights"
+        android:text="@string/pantry_risk_insights"
+        android:textColor="@android:color/white"
+        app:backgroundTint="@color/nutriscore_e"
+        app:icon="@android:drawable/ic_menu_sort_by_size"
+        app:iconTint="@android:color/white"
+        app:layout_constraintBottom_toTopOf="@id/ingredient_db_fab"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/ingredient_db_fab"

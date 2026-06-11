@@ -101,6 +101,9 @@ public class PantryActivity extends BaseActivity {
         findViewById(R.id.ingredient_db_fab).setOnClickListener(v -> {
             startActivity(new Intent(PantryActivity.this, AdditiveDatabaseActivity.class));
         });
+        findViewById(R.id.pantry_insights_fab).setOnClickListener(v -> {
+            startActivity(new Intent(PantryActivity.this, PantryInsightsActivity.class));
+        });
 
         loadPantryItems();
         setupSwipeToDelete(recyclerView);
@@ -117,6 +120,9 @@ public class PantryActivity extends BaseActivity {
         if (item.getItemId() == R.id.action_export_csv) {
             currentExportType = "csv";
             createFile("pantry.csv", "text/csv");
+            return true;
+        } else if (item.getItemId() == R.id.action_pantry_insights) {
+            startActivity(new Intent(this, PantryInsightsActivity.class));
             return true;
         } else if (item.getItemId() == R.id.action_export_json) {
             currentExportType = "json";
@@ -149,7 +155,9 @@ public class PantryActivity extends BaseActivity {
                         Intent intent = new Intent(PantryActivity.this, ProductDetailsActivity.class);
                         intent.putExtra(ProductDetailsActivity.EXTRA_BARCODE, product.barcode);
                         detailsActivityLauncher.launch(intent);
-                    });
+                    }, (product, score) -> executorService.execute(() ->
+                            db.productDao().updateUserIngredientRiskScore(product.barcode, score)
+                    ));
                     recyclerView.setAdapter(adapter);
                     GlassMotion.enter(recyclerView, 80L);
                 } else {

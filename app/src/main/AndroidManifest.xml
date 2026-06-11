@@ -76,6 +76,16 @@
         <activity
             android:name=".PantryActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".PantryInsightsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MyApplication" />
+
+        <activity
+            android:name=".PantryArInsightsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MyApplication" />
             
         <activity
             android:name=".ProfileActivity"

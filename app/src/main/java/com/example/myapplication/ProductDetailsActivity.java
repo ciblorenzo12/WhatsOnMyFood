@@ -37,6 +37,7 @@ import com.example.myapplication.analysis.AnalysisResultDeduplicator;
 import com.example.myapplication.analysis.AiSummaryFormatter;
 import com.example.myapplication.analysis.BitwiseAiCore;
 import com.example.myapplication.analysis.HealthVerdict;
+import com.example.myapplication.analysis.HealthVerdictExplanationBuilder;
 import com.example.myapplication.analysis.OpenAIAnalysisService;
 import com.example.myapplication.analysis.ProductAnalysisReport;
 import com.example.myapplication.analysis.rules.RuleEngine;
@@ -88,6 +89,7 @@ public class ProductDetailsActivity extends BaseActivity {
     private TextView aiSourcesTextView;
     private View aiSourcesDivider;
     private View aiSourcesLabel;
+    private HealthVerdict latestVerdict;
     private View loadingOverlay;
     private RetailerCommerceViewBinder retailerCommerceViewBinder;
     private boolean aiEnabled = true;
@@ -406,6 +408,20 @@ public class ProductDetailsActivity extends BaseActivity {
                         }
 
                         if (!summary.isEmpty()) {
+                            HealthVerdict summaryVerdict = HealthVerdict.fromAiVerdict(
+                                    aiVerdict,
+                                    aiVerdictReason,
+                                    currentReport != null ? currentReport.getResults() : null,
+                                    getIngredientCount(product)
+                            );
+                            if (summaryVerdict.getStatus() == HealthVerdict.Status.NOT_HEALTHY
+                                    && currentReport != null) {
+                                String localExplanation = HealthVerdictExplanationBuilder.buildNotHealthyExplanation(product, currentReport.getResults());
+                                if (!localExplanation.isEmpty()) {
+                                    summary = localExplanation;
+                                    sourcesArr = HealthVerdictExplanationBuilder.buildSources(currentReport.getResults());
+                                }
+                            }
                             String cachedInsight = buildAiInsightCache(summary, sourcesArr);
                             productRepository.updateProductAiInsight(product.product.barcode, cachedInsight);
                             product.product.aiInsight = cachedInsight;
@@ -476,12 +492,24 @@ public class ProductDetailsActivity extends BaseActivity {
         aiSummaryContainer.setAlpha(1f);
         aiSummaryContainer.setTranslationY(0f);
         GlassMotion.enter(aiSummaryContainer, 80L);
-        aiSummaryTextView.setText(android.text.Html.fromHtml(cachedInsight.summary, android.text.Html.FROM_HTML_MODE_COMPACT));
-        displaySources(cachedInsight.sources);
-
         if (currentReport != null) {
             applyRuleBasedScore(product, currentReport);
         }
+
+        String summary = cachedInsight.summary;
+        org.json.JSONArray sources = cachedInsight.sources;
+        if (latestVerdict != null
+                && latestVerdict.getStatus() == HealthVerdict.Status.NOT_HEALTHY
+                && currentReport != null) {
+            String localExplanation = HealthVerdictExplanationBuilder.buildNotHealthyExplanation(product, currentReport.getResults());
+            if (!localExplanation.isEmpty()) {
+                summary = localExplanation;
+                sources = HealthVerdictExplanationBuilder.buildSources(currentReport.getResults());
+            }
+        }
+
+        aiSummaryTextView.setText(android.text.Html.fromHtml(summary, android.text.Html.FROM_HTML_MODE_COMPACT));
+        displaySources(sources);
 
         AiGlowManager.stopGlow(this);
         return true;
@@ -501,9 +529,9 @@ public class ProductDetailsActivity extends BaseActivity {
             setResult(RESULT_OK, new Intent().putExtra(PantryActivity.RESULT_DATA_CHANGED, true));
         }
 
-        HealthVerdict verdict = HealthVerdict.fromAiVerdict(aiVerdict, aiVerdictReason, results, getIngredientCount(product));
-        healthScoreTextView.setText(verdict.getLabel());
-        healthScoreTextView.setTextColor(getVerdictColor(verdict));
+        latestVerdict = HealthVerdict.fromAiVerdict(aiVerdict, aiVerdictReason, results, getIngredientCount(product));
+        healthScoreTextView.setText(latestVerdict.getLabel());
+        healthScoreTextView.setTextColor(getVerdictColor(latestVerdict));
     }
 
     private int getIngredientCount(ProductWithDetails product) {

@@ -64,11 +64,18 @@ public interface ProductDao {
     @Query("SELECT p.* FROM products p INNER JOIN pantry ON p.barcode = pantry.barcode WHERE pantry.userId = :userId")
     List<Product> getPantryProducts(String userId);
 
+    @Transaction
+    @Query("SELECT p.* FROM products p INNER JOIN pantry ON p.barcode = pantry.barcode WHERE pantry.userId = :userId")
+    List<ProductWithDetails> getPantryProductsWithDetails(String userId);
+
     @Query("UPDATE products SET aiInsight = :aiInsight WHERE barcode = :barcode")
     void updateAiInsight(String barcode, String aiInsight);
 
     @Query("UPDATE products SET healthScore = :healthScore WHERE barcode = :barcode")
     void updateHealthScore(String barcode, int healthScore);
+
+    @Query("UPDATE products SET userIngredientRiskScore = :score WHERE barcode = :barcode")
+    void updateUserIngredientRiskScore(String barcode, int score);
     
     // Cache metadata methods
     @Query("SELECT * FROM cache_meta WHERE barcode = :barcode")

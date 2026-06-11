@@ -101,11 +101,38 @@
                 android:layout_height="wrap_content"
                 android:textColor="?android:attr/textColorSecondary"
                 android:textSize="13sp"
-                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintBottom_toTopOf="@+id/ingredient_concern_label"
                 app:layout_constraintEnd_toEndOf="@id/product_name_text_view"
                 app:layout_constraintStart_toStartOf="@id/product_name_text_view"
                 app:layout_constraintTop_toBottomOf="@id/product_brand_text_view"
                 tools:text="Quantity" />
+
+            <TextView
+                android:id="@+id/ingredient_concern_label"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/ingredient_concern"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toTopOf="@+id/user_risk_rating_bar"
+                app:layout_constraintEnd_toEndOf="@id/product_name_text_view"
+                app:layout_constraintStart_toStartOf="@id/product_name_text_view"
+                app:layout_constraintTop_toBottomOf="@id/product_quantity_text_view" />
+
+            <RatingBar
+                android:id="@+id/user_risk_rating_bar"
+                style="?android:attr/ratingBarStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:isIndicator="false"
+                android:numStars="5"
+                android:stepSize="1"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="@id/product_name_text_view"
+                app:layout_constraintTop_toBottomOf="@id/ingredient_concern_label"
+                tools:rating="3" />
 
             <TextView
                 android:id="@+id/ai_verified_badge"

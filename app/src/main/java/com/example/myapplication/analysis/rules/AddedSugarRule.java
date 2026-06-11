@@ -5,6 +5,7 @@ import com.example.myapplication.analysis.AnalysisResult;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class AddedSugarRule implements ProductAnalysisRule {
 
@@ -18,31 +19,57 @@ public class AddedSugarRule implements ProductAnalysisRule {
         if (productWithDetails == null
                 || productWithDetails.nutriments == null
                 || productWithDetails.nutriments.addedSugars == null) {
+            addIngredientTextAddedSugarResult(productWithDetails, results);
             return results;
         }
 
         double addedSugarAmount = productWithDetails.nutriments.addedSugars;
         if (addedSugarAmount <= 0) {
+            addIngredientTextAddedSugarResult(productWithDetails, results);
             return results;
         }
 
         boolean overDailyValue = addedSugarAmount > FDA_ADDED_SUGAR_DAILY_VALUE_G;
-        results.add(new AnalysisResult(
+        AnalysisResult result = new AnalysisResult(
                 overDailyValue ? "Added sugar above daily value" : "Added sugar within daily value",
-                overDailyValue ? AnalysisResult.WarningLevel.SEVERE : AnalysisResult.WarningLevel.POSITIVE,
-                overDailyValue ? 50 : 0,
+                overDailyValue ? AnalysisResult.WarningLevel.SEVERE : AnalysisResult.WarningLevel.WARNING,
+                overDailyValue ? 50 : 10,
                 "sugar",
                 String.format(
                         overDailyValue ? OVER_DAILY_VALUE_EXPLANATION : UNDER_DAILY_VALUE_EXPLANATION,
                         addedSugarAmount,
                         FDA_ADDED_SUGAR_DAILY_VALUE_G
                 )
-        ));
+        );
+        result.setSourceUrl("https://www.fda.gov/food/nutrition-facts-label/added-sugars-nutrition-facts-label");
+        results.add(result);
+        addIngredientTextAddedSugarResult(productWithDetails, results);
         return results;
     }
 
     @Override
     public String getRuleDescription() {
         return "Compares added sugar to the FDA Daily Value of 50g. Amounts over the daily value are severe; lower amounts are highlighted as within the suggested limit.";
+    }
+
+    private void addIngredientTextAddedSugarResult(ProductWithDetails productWithDetails, List<AnalysisResult> results) {
+        if (productWithDetails == null || productWithDetails.ingredients == null) return;
+        for (int i = 0; i < productWithDetails.ingredients.size(); i++) {
+            if (productWithDetails.ingredients.get(i) == null || productWithDetails.ingredients.get(i).text == null) continue;
+            String ingredient = productWithDetails.ingredients.get(i).text.trim();
+            String normalized = ingredient.toLowerCase(Locale.US);
+            if (normalized.contains("added sugar") || normalized.matches(".*\\bsugar\\b.*")) {
+                AnalysisResult result = new AnalysisResult(
+                        i < 3 ? "Added sugar near top of ingredient list" : "Contains added sugar",
+                        i < 3 ? AnalysisResult.WarningLevel.SEVERE : AnalysisResult.WarningLevel.WARNING,
+                        i < 3 ? 20 : 10,
+                        ingredient,
+                        "The ingredient list includes added sugar. Because ingredients are listed by weight, sugar appearing near the top means it is a major part of the product."
+                );
+                result.setSourceUrl("https://www.fda.gov/food/nutrition-facts-label/added-sugars-nutrition-facts-label");
+                results.add(result);
+                return;
+            }
+        }
     }
 }
