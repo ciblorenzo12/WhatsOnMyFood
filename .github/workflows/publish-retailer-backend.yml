@@ -16,6 +16,7 @@ permissions:
 
 jobs:
   publish:
+    if: github.repository == 'ciblorenzo12/WhatsOnMyFood'
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: ghcr.io/ciblorenzo12/whats-on-my-food-retailer
