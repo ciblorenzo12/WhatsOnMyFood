@@ -332,6 +332,16 @@ struct PantryInsightsView: View {
                 }
                 .insightPanel()
 
+                VStack(alignment: .leading, spacing: 10) {
+                    SectionHeader(title: "Pantry Health Profile")
+                    HealthProfileBar(label: "Health", value: stats.averageHealthScore, color: .green)
+                    HealthProfileBar(label: "Risk control", value: max(0, 100 - stats.averageCombinedRisk), color: .cyan)
+                    HealthProfileBar(label: "User confidence", value: stats.averageUserRisk == 0 ? 0 : max(0, 100 - stats.averageUserRisk), color: .orange)
+                    HealthProfileBar(label: "Calorie budget", value: max(0, 100 - stats.dailyCaloriesPercent), color: .purple)
+                    HealthProfileBar(label: "Data coverage", value: dataCoverage, color: .blue)
+                }
+                .insightPanel()
+
                 VStack(alignment: .leading, spacing: 8) {
                     SectionHeader(title: "Product Risk Graph")
                     Chart(items) { item in
@@ -420,6 +430,41 @@ struct PantryInsightsView: View {
             return "Add products to compare health score, user concern, calories, and combined pantry risk."
         }
         return "\(highest.product.displayName) has the highest combined risk at \(highest.combinedRisk)/100. The pantry currently has \(stats.lowRiskCount) low-risk, \(stats.moderateRiskCount) moderate-risk, and \(stats.highRiskCount) high-risk products."
+    }
+
+    private var dataCoverage: Int {
+        guard stats.itemCount > 0 else { return 0 }
+        let availableSignals = stats.healthScoreCount + stats.calorieCount + (stats.averageUserRisk == 0 ? 0 : stats.itemCount)
+        return min(100, max(0, Int((Double(availableSignals) / Double(stats.itemCount * 3) * 100).rounded())))
+    }
+}
+
+struct HealthProfileBar: View {
+    let label: String
+    let value: Int
+    let color: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack {
+                Text(label)
+                    .font(.caption.bold())
+                Spacer()
+                Text("\(value)/100")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.gray.opacity(0.18))
+                    Capsule()
+                        .fill(color.gradient)
+                        .frame(width: proxy.size.width * CGFloat(max(0, min(100, value))) / 100)
+                }
+            }
+            .frame(height: 10)
+        }
     }
 }
 

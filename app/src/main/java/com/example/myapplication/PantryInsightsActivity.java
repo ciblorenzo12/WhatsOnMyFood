@@ -26,6 +26,7 @@ public class PantryInsightsActivity extends BaseActivity {
     private AppDatabase db;
     private ExecutorService executorService;
     private PantryRiskChartView chartView;
+    private PantryHealthProfileView healthProfileView;
     private TextView combinedTextView;
     private TextView aiTextView;
     private TextView userTextView;
@@ -55,6 +56,7 @@ public class PantryInsightsActivity extends BaseActivity {
         ruleEngine = new RuleEngine();
 
         chartView = findViewById(R.id.pantry_risk_chart);
+        healthProfileView = findViewById(R.id.pantry_health_profile_view);
         combinedTextView = findViewById(R.id.combined_risk_text_view);
         aiTextView = findViewById(R.id.ai_risk_text_view);
         userTextView = findViewById(R.id.user_risk_text_view);
@@ -90,6 +92,7 @@ public class PantryInsightsActivity extends BaseActivity {
 
     private void bindStats(List<PantryRiskScorer.RiskItem> items, PantryRiskScorer.RiskStats stats, String breakdown, String insightSummary, String calorieBreakdown) {
         chartView.setItems(items);
+        healthProfileView.setStats(stats);
         combinedTextView.setText(String.valueOf(stats.averageCombinedRisk));
         aiTextView.setText(stats.healthScoreCount == 0 ? "--" : String.valueOf(stats.averageHealthScore));
         userTextView.setText(stats.userRatedCount == 0 ? "--" : String.valueOf(stats.averageUserRisk));

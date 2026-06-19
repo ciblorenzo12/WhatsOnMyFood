@@ -222,6 +222,23 @@
                 app:strokeColor="@color/glass_stroke"
                 app:strokeWidth="1dp">
 
+                <com.example.myapplication.PantryHealthProfileView
+                    android:id="@+id/pantry_health_profile_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="18dp" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="360dp"
+                android:layout_marginTop="16dp"
+                app:cardBackgroundColor="@color/glass_panel"
+                app:cardCornerRadius="22dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/glass_stroke"
+                app:strokeWidth="1dp">
+
                 <com.example.myapplication.PantryRiskChartView
                     android:id="@+id/pantry_risk_chart"
                     android:layout_width="match_parent"
