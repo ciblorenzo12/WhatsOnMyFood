@@ -8,6 +8,9 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.text.TextPaint;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public final class PantryRiskBitmapRenderer {
@@ -16,8 +19,7 @@ public final class PantryRiskBitmapRenderer {
 
     public static Bitmap render(Context context, List<PantryRiskScorer.RiskItem> items, PantryRiskScorer.RiskStats stats) {
         int width = 1080;
-        int height = 620;
-        float density = context.getResources().getDisplayMetrics().density;
+        int height = 860;
         Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
 
@@ -27,16 +29,16 @@ public final class PantryRiskBitmapRenderer {
 
         TextPaint titlePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         titlePaint.setColor(Color.rgb(17, 24, 39));
-        titlePaint.setTextSize(34 * density);
+        titlePaint.setTextSize(38);
         titlePaint.setFakeBoldText(true);
 
         TextPaint labelPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         labelPaint.setColor(Color.rgb(75, 85, 99));
-        labelPaint.setTextSize(18 * density);
+        labelPaint.setTextSize(22);
 
         TextPaint valuePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         valuePaint.setColor(Color.rgb(17, 24, 39));
-        valuePaint.setTextSize(24 * density);
+        valuePaint.setTextSize(28);
         valuePaint.setFakeBoldText(true);
 
         Paint panelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -80,6 +82,11 @@ public final class PantryRiskBitmapRenderer {
         drawBucket(canvas, trackPaint, barPaint, labelPaint, valuePaint, rect, 448, 394, 170, moderate, maxBucket, "Moderate", Color.rgb(245, 158, 11));
         drawBucket(canvas, trackPaint, barPaint, labelPaint, valuePaint, rect, 786, 394, 170, high, maxBucket, "High", Color.rgb(239, 68, 68));
 
+        rect.set(48, 610, 1032, 820);
+        canvas.drawRoundRect(rect, 28, 28, panelPaint);
+        canvas.drawText("Calories by product", 82, 660, valuePaint);
+        drawCalories(canvas, trackPaint, barPaint, labelPaint, valuePaint, rect, items, stats, 82, 694, 900);
+
         return bitmap;
     }
 
@@ -101,5 +108,51 @@ public final class PantryRiskBitmapRenderer {
         canvas.drawRoundRect(rect, 18, 18, barPaint);
         canvas.drawText(String.valueOf(count), left + 56, top + maxHeight - barHeight - 16, valuePaint);
         canvas.drawText(label, left + 24, top + maxHeight + 42, labelPaint);
+    }
+
+    private static void drawCalories(Canvas canvas, Paint trackPaint, Paint barPaint, TextPaint labelPaint, TextPaint valuePaint, RectF rect, List<PantryRiskScorer.RiskItem> items, PantryRiskScorer.RiskStats stats, float left, float top, float width) {
+        if (items == null || items.isEmpty() || stats.totalCalories <= 0) {
+            canvas.drawText("No calorie data available yet.", left, top + 38, labelPaint);
+            return;
+        }
+
+        List<PantryRiskScorer.RiskItem> calorieItems = new ArrayList<>(items);
+        Collections.sort(calorieItems, new Comparator<PantryRiskScorer.RiskItem>() {
+            @Override
+            public int compare(PantryRiskScorer.RiskItem left, PantryRiskScorer.RiskItem right) {
+                double leftCalories = left.caloriesPer100g == null ? 0 : left.caloriesPer100g;
+                double rightCalories = right.caloriesPer100g == null ? 0 : right.caloriesPer100g;
+                return Double.compare(rightCalories, leftCalories);
+            }
+        });
+
+        int drawn = 0;
+        for (PantryRiskScorer.RiskItem item : calorieItems) {
+            if (item.caloriesPer100g == null || item.product == null) continue;
+            float rowTop = top + drawn * 42;
+            int calories = (int) Math.round(item.caloriesPer100g);
+            int percent = Math.round(calories * 100f / stats.totalCalories);
+            String name = item.product.productName == null ? "Pantry item" : item.product.productName;
+            canvas.drawText(ellipsize(name, labelPaint, 280), left, rowTop + 24, labelPaint);
+            rect.set(left + 310, rowTop + 4, left + width, rowTop + 30);
+            canvas.drawRoundRect(rect, 12, 12, trackPaint);
+            barPaint.setColor(Color.rgb(124, 77, 255));
+            rect.right = left + 310 + ((width - 310) * Math.max(2, percent) / 100f);
+            canvas.drawRoundRect(rect, 12, 12, barPaint);
+            canvas.drawText(calories + " kcal  " + percent + "%", left + width - 190, rowTop + 24, labelPaint);
+            drawn++;
+            if (drawn >= 3) break;
+        }
+    }
+
+    private static String ellipsize(String text, TextPaint paint, float maxWidth) {
+        if (text == null) return "";
+        if (paint.measureText(text) <= maxWidth) return text;
+        String suffix = "...";
+        int end = text.length();
+        while (end > 0 && paint.measureText(text.substring(0, end) + suffix) > maxWidth) {
+            end--;
+        }
+        return end <= 0 ? suffix : text.substring(0, end) + suffix;
     }
 }

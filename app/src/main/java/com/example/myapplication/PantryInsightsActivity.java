@@ -31,7 +31,9 @@ public class PantryInsightsActivity extends BaseActivity {
     private TextView userTextView;
     private TextView highRiskTextView;
     private TextView emptyTextView;
+    private TextView insightSummaryTextView;
     private TextView productIngredientBreakdownTextView;
+    private TextView calorieBreakdownTextView;
     private ImageView processedGraphImageView;
     private FirebaseUser currentUser;
     private RuleEngine ruleEngine;
@@ -58,7 +60,9 @@ public class PantryInsightsActivity extends BaseActivity {
         userTextView = findViewById(R.id.user_risk_text_view);
         highRiskTextView = findViewById(R.id.high_risk_text_view);
         emptyTextView = findViewById(R.id.empty_scores_text_view);
+        insightSummaryTextView = findViewById(R.id.insight_summary_text_view);
         productIngredientBreakdownTextView = findViewById(R.id.product_ingredient_breakdown_text_view);
+        calorieBreakdownTextView = findViewById(R.id.calorie_breakdown_text_view);
         processedGraphImageView = findViewById(R.id.processed_graph_image_view);
         loadRiskData();
     }
@@ -78,20 +82,86 @@ public class PantryInsightsActivity extends BaseActivity {
             List<PantryRiskScorer.RiskItem> items = PantryRiskScorer.scoreProductDetails(products);
             PantryRiskScorer.RiskStats stats = PantryRiskScorer.stats(items);
             String breakdown = buildProductBreakdown(products, reports, items);
-            runOnUiThread(() -> bindStats(items, stats, breakdown));
+            String insightSummary = buildInsightSummary(items, stats);
+            String calorieBreakdown = buildCalorieBreakdown(items, stats);
+            runOnUiThread(() -> bindStats(items, stats, breakdown, insightSummary, calorieBreakdown));
         });
     }
 
-    private void bindStats(List<PantryRiskScorer.RiskItem> items, PantryRiskScorer.RiskStats stats, String breakdown) {
+    private void bindStats(List<PantryRiskScorer.RiskItem> items, PantryRiskScorer.RiskStats stats, String breakdown, String insightSummary, String calorieBreakdown) {
         chartView.setItems(items);
         combinedTextView.setText(String.valueOf(stats.averageCombinedRisk));
         aiTextView.setText(stats.healthScoreCount == 0 ? "--" : String.valueOf(stats.averageHealthScore));
         userTextView.setText(stats.userRatedCount == 0 ? "--" : String.valueOf(stats.averageUserRisk));
         highRiskTextView.setText(stats.calorieCount == 0 ? "--" : stats.dailyCaloriesPercent + "%");
         processedGraphImageView.setImageBitmap(PantryRiskBitmapRenderer.render(this, items, stats));
+        insightSummaryTextView.setText(Html.fromHtml(insightSummary, Html.FROM_HTML_MODE_COMPACT));
         productIngredientBreakdownTextView.setText(Html.fromHtml(breakdown, Html.FROM_HTML_MODE_COMPACT));
+        calorieBreakdownTextView.setText(Html.fromHtml(calorieBreakdown, Html.FROM_HTML_MODE_COMPACT));
         boolean hasScores = stats.healthScoreCount > 0 || stats.userRatedCount > 0 || stats.calorieCount > 0;
         emptyTextView.setVisibility(hasScores ? View.GONE : View.VISIBLE);
+    }
+
+    private String buildInsightSummary(List<PantryRiskScorer.RiskItem> items, PantryRiskScorer.RiskStats stats) {
+        if (items == null || items.isEmpty()) {
+            return "<b>What this graph is showing</b><br>Add products to compare health score, user concern, calories, and combined pantry risk.";
+        }
+
+        PantryRiskScorer.RiskItem highest = items.get(0);
+        String highestName = highest.product == null || highest.product.productName == null
+                ? "Pantry item"
+                : highest.product.productName;
+        int low = 0;
+        int moderate = 0;
+        int high = 0;
+        for (PantryRiskScorer.RiskItem item : items) {
+            if (item.combinedRisk >= 70) {
+                high++;
+            } else if (item.combinedRisk >= 40) {
+                moderate++;
+            } else {
+                low++;
+            }
+        }
+
+        StringBuilder builder = new StringBuilder();
+        builder.append("<b>What this graph is showing</b><br>");
+        builder.append("Highest risk product: <b>").append(escape(highestName)).append("</b> at ");
+        builder.append(highest.combinedRisk).append("/100.<br>");
+        builder.append("Risk mix: <font color='#059669'>").append(low).append(" low</font>, ");
+        builder.append("<font color='#F59E0B'>").append(moderate).append(" moderate</font>, ");
+        builder.append("<font color='#EF4444'>").append(high).append(" high</font>.<br>");
+        builder.append("Pantry calories: <b>").append(stats.totalCalories).append(" kcal</b>, ");
+        builder.append(stats.dailyCaloriesPercent).append("% of a ");
+        builder.append(PantryRiskScorer.RECOMMENDED_DAILY_CALORIES).append(" kcal daily target.");
+        return builder.toString();
+    }
+
+    private String buildCalorieBreakdown(List<PantryRiskScorer.RiskItem> items, PantryRiskScorer.RiskStats stats) {
+        if (items == null || items.isEmpty() || stats.calorieCount == 0 || stats.totalCalories <= 0) {
+            return "<b>Calorie contribution</b><br>No calorie data is available yet.";
+        }
+
+        List<PantryRiskScorer.RiskItem> calorieItems = new ArrayList<>(items);
+        calorieItems.sort((left, right) -> Double.compare(
+                right.caloriesPer100g == null ? 0 : right.caloriesPer100g,
+                left.caloriesPer100g == null ? 0 : left.caloriesPer100g
+        ));
+
+        StringBuilder builder = new StringBuilder();
+        builder.append("<b>Calorie contribution</b><br>");
+        int count = 0;
+        for (PantryRiskScorer.RiskItem item : calorieItems) {
+            if (item.caloriesPer100g == null || item.product == null) continue;
+            int calories = (int) Math.round(item.caloriesPer100g);
+            int percent = Math.round(calories * 100f / stats.totalCalories);
+            builder.append(escape(item.product.productName == null ? "Pantry item" : item.product.productName));
+            builder.append(": <b>").append(calories).append(" kcal</b> per 100g, ");
+            builder.append(percent).append("% of pantry calories<br>");
+            count++;
+            if (count >= 5) break;
+        }
+        return builder.toString();
     }
 
     private String buildProductBreakdown(List<ProductWithDetails> products, List<ProductAnalysisReport> reports, List<PantryRiskScorer.RiskItem> items) {

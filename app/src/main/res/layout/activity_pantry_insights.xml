@@ -200,6 +200,18 @@
                 android:visibility="gone"
                 tools:visibility="visible" />
 
+            <TextView
+                android:id="@+id/insight_summary_text_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/glass_panel_compact"
+                android:lineSpacingExtra="3dp"
+                android:padding="14dp"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                tools:text="Pantry summary" />
+
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="360dp"
@@ -230,6 +242,18 @@
                 tools:text="Product score breakdown" />
 
             <TextView
+                android:id="@+id/calorie_breakdown_text_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/glass_panel_compact"
+                android:lineSpacingExtra="4dp"
+                android:padding="14dp"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                tools:text="Calorie contribution breakdown" />
+
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="18dp"
@@ -240,7 +264,7 @@
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
-                android:layout_height="220dp"
+                android:layout_height="340dp"
                 android:layout_marginTop="8dp"
                 app:cardBackgroundColor="@color/glass_panel"
                 app:cardCornerRadius="22dp"

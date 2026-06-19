@@ -325,6 +325,14 @@ struct PantryInsightsView: View {
                 ScoreSummaryGrid(stats: stats)
 
                 VStack(alignment: .leading, spacing: 8) {
+                    SectionHeader(title: "What This Shows")
+                    Text(insightSummary)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                .insightPanel()
+
+                VStack(alignment: .leading, spacing: 8) {
                     SectionHeader(title: "Product Risk Graph")
                     Chart(items) { item in
                         BarMark(
@@ -355,6 +363,26 @@ struct PantryInsightsView: View {
                 }
                 .insightPanel()
 
+                VStack(alignment: .leading, spacing: 8) {
+                    SectionHeader(title: "Calorie Contribution")
+                    Chart(calorieItems) { item in
+                        BarMark(
+                            x: .value("Calories", item.product.nutriments?.energy ?? 0),
+                            y: .value("Product", item.product.shortName)
+                        )
+                        .foregroundStyle(.purple)
+                        .annotation(position: .trailing) {
+                            Text("\(Int((item.product.nutriments?.energy ?? 0).rounded())) kcal")
+                                .font(.caption.bold())
+                        }
+                    }
+                    .frame(minHeight: max(180, calorieItems.count * 48))
+                    Text("Total pantry calories: \(stats.totalCalories) kcal, \(stats.dailyCaloriesPercent)% of a \(recommendedDailyCalories) kcal daily target.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .insightPanel()
+
                 VStack(alignment: .leading, spacing: 12) {
                     SectionHeader(title: "Product Breakdown")
                     ForEach(items) { item in
@@ -379,6 +407,19 @@ struct PantryInsightsView: View {
             .padding()
         }
         .navigationTitle("Insights")
+    }
+
+    private var calorieItems: [RiskItem] {
+        items
+            .filter { $0.product.nutriments?.energy != nil }
+            .sorted { ($0.product.nutriments?.energy ?? 0) > ($1.product.nutriments?.energy ?? 0) }
+    }
+
+    private var insightSummary: String {
+        guard let highest = items.first else {
+            return "Add products to compare health score, user concern, calories, and combined pantry risk."
+        }
+        return "\(highest.product.displayName) has the highest combined risk at \(highest.combinedRisk)/100. The pantry currently has \(stats.lowRiskCount) low-risk, \(stats.moderateRiskCount) moderate-risk, and \(stats.highRiskCount) high-risk products."
     }
 }
 

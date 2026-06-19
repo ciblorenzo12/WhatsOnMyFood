@@ -15,6 +15,7 @@ import java.util.List;
 public class PantryRiskChartView extends View {
     private final Paint barPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint trackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint guidePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
     private List<PantryRiskScorer.RiskItem> items = new ArrayList<>();
@@ -31,6 +32,8 @@ public class PantryRiskChartView extends View {
 
     private void init() {
         trackPaint.setColor(Color.argb(42, 17, 24, 39));
+        guidePaint.setColor(Color.argb(84, 17, 24, 39));
+        guidePaint.setStrokeWidth(dp(1));
         textPaint.setColor(Color.rgb(26, 28, 30));
         textPaint.setTextSize(sp(12));
         textPaint.setFakeBoldText(true);
@@ -64,6 +67,8 @@ public class PantryRiskChartView extends View {
         float barLeft = left + labelWidth + dp(10);
         float barWidth = width - labelWidth - dp(10);
 
+        drawRiskGuides(canvas, barLeft, top, barWidth, height);
+
         for (int index = 0; index < count; index++) {
             PantryRiskScorer.RiskItem item = items.get(index);
             float rowTop = top + index * (rowHeight + gap);
@@ -94,9 +99,34 @@ public class PantryRiskChartView extends View {
             textPaint.setFakeBoldText(false);
             textPaint.setTextSize(sp(10));
             canvas.drawText("Combined risk", barLeft, Math.min(rowTop + rowHeight - dp(2), barBottom + dp(18)), textPaint);
+            drawComponentLabels(canvas, item, barLeft + dp(88), Math.min(rowTop + rowHeight - dp(2), barBottom + dp(18)));
             textPaint.setTextSize(sp(12));
             textPaint.setFakeBoldText(true);
         }
+    }
+
+    private void drawRiskGuides(Canvas canvas, float barLeft, float top, float barWidth, float height) {
+        float moderateX = barLeft + barWidth * 0.40f;
+        float highX = barLeft + barWidth * 0.70f;
+        canvas.drawLine(moderateX, top, moderateX, top + height, guidePaint);
+        canvas.drawLine(highX, top, highX, top + height, guidePaint);
+        textPaint.setFakeBoldText(false);
+        textPaint.setTextSize(sp(9));
+        textPaint.setColor(Color.rgb(75, 85, 99));
+        canvas.drawText("40", moderateX + dp(3), top + dp(9), textPaint);
+        canvas.drawText("70", highX + dp(3), top + dp(9), textPaint);
+        textPaint.setColor(Color.rgb(26, 28, 30));
+    }
+
+    private void drawComponentLabels(Canvas canvas, PantryRiskScorer.RiskItem item, float x, float y) {
+        String ai = item.aiRisk == null ? "Health --" : "Health risk " + item.aiRisk;
+        String user = item.userRisk == 0 ? "User --" : "User " + item.userRisk;
+        String calorie = item.calorieRisk == null ? "Kcal --" : "Kcal risk " + item.calorieRisk;
+        textPaint.setFakeBoldText(false);
+        textPaint.setTextSize(sp(10));
+        textPaint.setColor(Color.rgb(75, 85, 99));
+        canvas.drawText(ellipsize(ai + "  |  " + user + "  |  " + calorie, getWidth() - x - getPaddingRight()), x, y, textPaint);
+        textPaint.setColor(Color.rgb(26, 28, 30));
     }
 
     private String ellipsize(String text, float maxWidth) {
