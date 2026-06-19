@@ -356,7 +356,7 @@ struct PantryInsightsView: View {
                         }
                     }
                     .chartXScale(domain: 0...100)
-                    .frame(minHeight: max(220, items.count * 52))
+                    .frame(minHeight: CGFloat(max(220, items.count * 52)))
                 }
                 .insightPanel()
 
@@ -377,16 +377,16 @@ struct PantryInsightsView: View {
                     SectionHeader(title: "Calorie Contribution")
                     Chart(calorieItems) { item in
                         BarMark(
-                            x: .value("Calories", item.product.nutriments?.energy ?? 0),
+                            x: .value("Calories", item.product.nutriments?.energy ?? 0.0),
                             y: .value("Product", item.product.shortName)
                         )
                         .foregroundStyle(.purple)
                         .annotation(position: .trailing) {
-                            Text("\(Int((item.product.nutriments?.energy ?? 0).rounded())) kcal")
+                            Text("\(Int((item.product.nutriments?.energy ?? 0.0).rounded())) kcal")
                                 .font(.caption.bold())
                         }
                     }
-                    .frame(minHeight: max(180, calorieItems.count * 48))
+                    .frame(minHeight: CGFloat(max(180, calorieItems.count * 48)))
                     Text("Total pantry calories: \(stats.totalCalories) kcal, \(stats.dailyCaloriesPercent)% of a \(recommendedDailyCalories) kcal daily target.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -422,7 +422,7 @@ struct PantryInsightsView: View {
     private var calorieItems: [RiskItem] {
         items
             .filter { $0.product.nutriments?.energy != nil }
-            .sorted { ($0.product.nutriments?.energy ?? 0) > ($1.product.nutriments?.energy ?? 0) }
+            .sorted { ($0.product.nutriments?.energy ?? 0.0) > ($1.product.nutriments?.energy ?? 0.0) }
     }
 
     private var insightSummary: String {
@@ -460,7 +460,7 @@ struct HealthProfileBar: View {
                         .fill(Color.gray.opacity(0.18))
                     Capsule()
                         .fill(color.gradient)
-                        .frame(width: proxy.size.width * CGFloat(max(0, min(100, value))) / 100)
+                        .frame(width: proxy.size.width * CGFloat(max(0, min(100, value))) / 100.0)
                 }
             }
             .frame(height: 10)
@@ -876,7 +876,7 @@ struct Product: Identifiable, Codable, Hashable {
 
     func withScore(_ score: Int) -> Product {
         var copy = self
-        copy.healthScore = score
+        copy.healthScore = Double(score)
         return copy
     }
 }
@@ -1193,7 +1193,7 @@ enum PantryRiskScorer {
     static func score(products: [Product]) -> [RiskItem] {
         products.map { product in
             let analysis = ProductAnalyzer.analyze(product)
-            let healthScore = product.healthScore ?? analysis.score
+            let healthScore = Int((product.healthScore ?? Double(analysis.score)).rounded())
             let aiRisk = 100 - healthScore
             let userRisk = max(0, min(100, product.userIngredientRiskScore))
             let calorieRisk = calorieRisk(product.nutriments?.energy)
@@ -1223,7 +1223,7 @@ enum PantryRiskScorer {
         guard !items.isEmpty else {
             return RiskStats(itemCount: 0, averageCombinedRisk: 0, averageAiRisk: 0, averageUserRisk: 0, averageHealthScore: 0, averageCalories: 0, totalCalories: 0, dailyCaloriesPercent: 0, healthScoreCount: 0, calorieCount: 0, userRiskCount: 0, lowRiskCount: 0, moderateRiskCount: 0, highRiskCount: 0)
         }
-        let healthScores = products.map { $0.healthScore ?? ProductAnalyzer.analyze($0).score }
+        let healthScores = products.map { Int(($0.healthScore ?? Double(ProductAnalyzer.analyze($0).score)).rounded()) }
         let calories = products.compactMap { $0.nutriments?.energy }
         let userRisks = items.map(\.userRisk).filter { $0 > 0 }
         let totalCalories = Int(calories.reduce(0, +).rounded())
@@ -1256,7 +1256,7 @@ enum PantryRiskScorer {
 
     private static func calorieRisk(_ calories: Double?) -> Int? {
         guard let calories else { return nil }
-        let value = max(0, calories)
+        let value = max(0.0, calories)
         if value <= 120 {
             return clamp(Int((value / 120 * 20).rounded()))
         }
