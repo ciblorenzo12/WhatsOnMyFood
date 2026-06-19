@@ -26,6 +26,7 @@ jobs:
       - name: Build iOS app
         run: |
           set -o pipefail
+          set +e
           xcodebuild \
             -project ios/YourHealthyPantryIOS/YourHealthyPantryIOS.xcodeproj \
             -target YourHealthyPantryIOS \
@@ -35,6 +36,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build 2>&1 | tee xcodebuild.log
           status=${PIPESTATUS[0]}
+          set -e
           if [ "$status" -ne 0 ]; then
             echo "Xcode build failed. Showing the most useful compiler lines:"
             grep -E "error:|warning:" xcodebuild.log | tail -80 || true
