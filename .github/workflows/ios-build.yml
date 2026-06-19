@@ -25,6 +25,7 @@ jobs:
 
       - name: Build iOS app
         run: |
+          set -o pipefail
           xcodebuild \
             -project ios/YourHealthyPantryIOS/YourHealthyPantryIOS.xcodeproj \
             -target YourHealthyPantryIOS \
@@ -32,4 +33,17 @@ jobs:
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \
-            build
+            build 2>&1 | tee xcodebuild.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            echo "Xcode build failed. Showing the most useful compiler lines:"
+            grep -E "error:|warning:" xcodebuild.log | tail -80 || true
+            while IFS= read -r line; do
+              if [[ "$line" =~ ^(.+):([0-9]+):([0-9]+):[[:space:]]error:[[:space:]](.*)$ ]]; then
+                echo "::error file=${BASH_REMATCH[1]},line=${BASH_REMATCH[2]},col=${BASH_REMATCH[3]}::${BASH_REMATCH[4]}"
+              elif [[ "$line" == *"error:"* ]]; then
+                echo "::error ::$line"
+              fi
+            done < <(grep -E "error:" xcodebuild.log | tail -40 || true)
+            exit "$status"
+          fi
