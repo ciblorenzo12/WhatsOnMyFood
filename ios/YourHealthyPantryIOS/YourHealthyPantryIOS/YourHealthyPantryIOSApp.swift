@@ -434,7 +434,7 @@ struct PantryInsightsView: View {
 
     private var dataCoverage: Int {
         guard stats.itemCount > 0 else { return 0 }
-        let availableSignals = stats.healthScoreCount + stats.calorieCount + (stats.averageUserRisk == 0 ? 0 : stats.itemCount)
+        let availableSignals = stats.healthScoreCount + stats.calorieCount + stats.userRiskCount
         return min(100, max(0, Int((Double(availableSignals) / Double(stats.itemCount * 3) * 100).rounded())))
     }
 }
@@ -1174,6 +1174,9 @@ struct RiskStats {
     var averageCalories: Int
     var totalCalories: Int
     var dailyCaloriesPercent: Int
+    var healthScoreCount: Int
+    var calorieCount: Int
+    var userRiskCount: Int
     var lowRiskCount: Int
     var moderateRiskCount: Int
     var highRiskCount: Int
@@ -1218,20 +1221,24 @@ enum PantryRiskScorer {
     static func stats(for products: [Product]) -> RiskStats {
         let items = score(products: products)
         guard !items.isEmpty else {
-            return RiskStats(itemCount: 0, averageCombinedRisk: 0, averageAiRisk: 0, averageUserRisk: 0, averageHealthScore: 0, averageCalories: 0, totalCalories: 0, dailyCaloriesPercent: 0, lowRiskCount: 0, moderateRiskCount: 0, highRiskCount: 0)
+            return RiskStats(itemCount: 0, averageCombinedRisk: 0, averageAiRisk: 0, averageUserRisk: 0, averageHealthScore: 0, averageCalories: 0, totalCalories: 0, dailyCaloriesPercent: 0, healthScoreCount: 0, calorieCount: 0, userRiskCount: 0, lowRiskCount: 0, moderateRiskCount: 0, highRiskCount: 0)
         }
         let healthScores = products.map { $0.healthScore ?? ProductAnalyzer.analyze($0).score }
         let calories = products.compactMap { $0.nutriments?.energy }
+        let userRisks = items.map(\.userRisk).filter { $0 > 0 }
         let totalCalories = Int(calories.reduce(0, +).rounded())
         return RiskStats(
             itemCount: items.count,
             averageCombinedRisk: average(items.map(\.combinedRisk)),
             averageAiRisk: average(items.compactMap(\.aiRisk)),
-            averageUserRisk: average(items.map(\.userRisk).filter { $0 > 0 }),
+            averageUserRisk: average(userRisks),
             averageHealthScore: average(healthScores),
             averageCalories: average(calories.map { Int($0.rounded()) }),
             totalCalories: totalCalories,
             dailyCaloriesPercent: Int((Double(totalCalories) / Double(recommendedDailyCalories) * 100).rounded()),
+            healthScoreCount: healthScores.count,
+            calorieCount: calories.count,
+            userRiskCount: userRisks.count,
             lowRiskCount: items.filter { $0.combinedRisk < 40 }.count,
             moderateRiskCount: items.filter { (40..<70).contains($0.combinedRisk) }.count,
             highRiskCount: items.filter { $0.combinedRisk >= 70 }.count
