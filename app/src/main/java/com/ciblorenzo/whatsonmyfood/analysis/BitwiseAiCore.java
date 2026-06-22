@@ -1,0 +1,202 @@
+package com.ciblorenzo.whatsonmyfood.analysis;
+
+import android.app.Activity;
+import android.graphics.Bitmap;
+
+import com.ciblorenzo.whatsonmyfood.AiGlowManager;
+import com.ciblorenzo.whatsonmyfood.api.SecureAiService;
+
+/**
+ * Central Bitwise AI analysis entry point.
+ * Keeps the model response small, structured, and safe to render in Android TextViews.
+ */
+public class BitwiseAiCore {
+
+    public interface AiCallback {
+        void onResult(String jsonResult);
+        void onError(Throwable t);
+    }
+
+    public static void startAnalysis(Activity activity, String productData, Bitmap bitmap, AiCallback callback) {
+        if (activity != null) AiGlowManager.startGlow(activity);
+
+        SecureAiService.analyzeProduct(buildProductPrompt(productData), bitmap, new SecureAiService.AiCallback() {
+            @Override
+            public void onResult(String result) {
+                if (activity != null) AiGlowManager.stopGlow(activity);
+                callback.onResult(cleanJson(result));
+            }
+
+            @Override
+            public void onError(String error) {
+                if (activity != null) AiGlowManager.stopGlow(activity);
+                callback.onError(new Exception(error));
+            }
+        });
+    }
+
+    public static void defineIngredient(Activity activity, String ingredientName, String language, AiCallback callback) {
+        if (activity != null) AiGlowManager.startGlow(activity);
+
+        String prompt = "You are Bitwise AI, a food label assistant.\n"
+                + "Define the following food ingredient or additive: " + ingredientName + "\n"
+                + "IMPORTANT: If the input '" + ingredientName + "' is NOT a food ingredient, additive, or chemical found in food (e.g., if it's a person's name, a random word, or a non-food object), you MUST return a JSON with all fields as null or empty.\n"
+                + "Response language: " + language + "\n"
+                + "Return valid JSON only. Shape:\n"
+                + "{\n"
+                + "  \"name\": \"Name\",\n"
+                + "  \"category\": \"Category (e.g. Preservative)\",\n"
+                + "  \"function\": \"What it does\",\n"
+                + "  \"explanation\": \"Detailed health explanation\",\n"
+                + "  \"health_status\": \"RECOMMENDED\" | \"MODERATE\" | \"NOT_RECOMMENDED\",\n"
+                + "  \"source_name\": \"FDA/EFSA/WHO Source\",\n"
+                + "  \"source_url\": \"URL\"\n"
+                + "}";
+
+        SecureAiService.analyzeProduct(prompt, null, new SecureAiService.AiCallback() {
+            @Override
+            public void onResult(String result) {
+                if (activity != null) AiGlowManager.stopGlow(activity);
+                callback.onResult(cleanJson(result));
+            }
+
+            @Override
+            public void onError(String error) {
+                if (activity != null) AiGlowManager.stopGlow(activity);
+                callback.onError(new Exception(error));
+            }
+        });
+    }
+
+    private static String buildProductPrompt(String productData) {
+        PromptContext context = parsePromptContext(productData);
+        return "You are Bitwise AI, a careful ingredient-label assistant for a consumer Android app.\n"
+                + "You can analyze packaged foods, drinks, supplements, oral-care products, and personal-care products.\n"
+                + "Use the OCR text and image carefully. Do not invent label claims or scientific facts.\n"
+                + "Response language: " + context.responseLanguage + "\n"
+                + "IMPORTANT: The OCR text and attached image may contain the front of the product, a barcode, nutrition facts, and the back ingredient list.\n"
+                + "Use the image and OCR together: identify product_name, brand, and product_type from visible front-label/package text when possible.\n"
+                + "If DETECTED INGREDIENT LABEL is non-empty, it is the source of truth for the ingredients array. Parse and correct that label text before using any product-name inference.\n"
+                + "Correct obvious OCR truncations in ingredient names when the meaning is clear, such as 'organic coconut wa' to 'organic coconut water'. Do not return partial ingredient fragments.\n"
+                + "If DETECTED INGREDIENT LABEL is empty, first try ingredient-panel text, INCI text, supplement facts, or a clearly labeled ingredients section from OCR TEXT or the image.\n"
+                + "Front-label text is for product identity only; put ONLY true label ingredients in the ingredients array.\n"
+                + "Never include metadata, language fields, brand names, product names, net weight, marketing claims, UI text, directions, warnings, or store-card text as ingredients.\n"
+                + "If the product_name and brand are visible but the ingredient panel is not readable, infer the likely ingredients from the exact product identity and product type. Mark the summary and verdict_reason as based on product identity rather than a visible ingredient panel.\n"
+                + "For single-ingredient products such as plain coconut water, bottled water, plain milk, plain oats, or plain rice, infer the simple ingredient from the product name when the identity is clear.\n"
+                + "Only use REVIEW when neither a readable ingredient panel nor a confident product identity is available.\n"
+                + "For foods, decide whether this is HEALTHY or NOT_HEALTHY for everyday use by looking for disqualifying ingredients and nutrition signals, not by assigning a score.\n"
+                + "For personal-care and oral-care products, decide whether it is APPROVED or NOT_APPROVED based on ingredient concerns and intended use; still explain good and bad ingredients clearly.\n"
+                + "Treat ordinary base ingredients such as water, rose water, glycerin, aloe, citric acid, salt used in small amounts, and mineral salts as neutral or positive unless the label shows a specific concern.\n"
+                + "Reserve negative findings for clear issues: artificial colors, high added sugar, trans-fat sources, high-fructose corn syrup, multiple ultra-processed additives, high sodium/sugar, concerning preservatives, fragrance allergens, or ingredients with evidence-based cautions.\n"
+                + "When giving a NOT_HEALTHY or NOT_APPROVED verdict, say which concerning ingredients or nutrition signals are present and why they matter. Do not justify the verdict by listing ingredients that are absent.\n\n"
+                + "DETECTED INGREDIENT LABEL:\n"
+                + context.detectedIngredientLabel + "\n\n"
+                + "OCR TEXT:\n"
+                + context.productText + "\n\n"
+                + "Return valid JSON only. No Markdown fences, no headings outside JSON, no commentary.\n"
+                + "The summary must be 70-120 words, specific, calm, and written like a nutrition-savvy human talking to a shopper. Use only <b> and <br> tags.\n"
+                + "Do not format the summary like you are answering a questionnaire. Avoid section headings such as Why this rating, What to watch, and Recommendation.\n"
+                + "Write it as one natural note with a practical bottom line near the end. You may use one short <b>Bottom line</b> label if it helps readability.\n"
+                + "Do not write phrases like I do not see, does not contain, no artificial colors, no partially hydrogenated oils, or no high-intensity sweeteners. Focus on the ingredients and nutrition facts that are actually present.\n"
+                + "Do not sound like a generic AI template. Avoid phrases like readable label text, concrete basis, does not prove, high-concern ingredients, clean-looking ingredient list, backup result, fallback service, no major watch items, or highly nutritious.\n"
+                + "Name the product type when possible, explain the meaningful ingredients in everyday scientific language, and make the advice practical rather than trying to force a positive recommendation.\n"
+                + "Important oil distinction: canola oil, sunflower oil, soybean oil, corn oil, and vegetable oil are refined seed/vegetable oils, but they are NOT hydrogenated oils unless the ingredient text explicitly says hydrogenated or partially hydrogenated. If canola oil appears, describe it as a refined oil watch item, not trans fat.\n"
+                + "If the product is simple, say so directly. Do not make a simple product sound suspicious just because it is not nutritionally complete.\n"
+                + "Finish every sentence. The bottom line must be complete, practical, and end with punctuation.\n"
+                + "Return no more than 5 findings. Each finding must be specific, evidence-based, and tied to an actual ingredient or nutrient signal.\n"
+                + "Every negative or warning finding must include a source_url from this approved source list when relevant:\n"
+                + "- FDA Food Additives and GRAS Ingredients: https://www.fda.gov/food/food-ingredients-packaging/food-additives-and-gras-ingredients-information-consumers\n"
+                + "- FDA High-Intensity Sweeteners: https://www.fda.gov/food/food-additives-petitions/high-intensity-sweeteners\n"
+                + "- FDA Food Additive Regulation: https://www.fda.gov/food/food-additives-and-gras-ingredients-information-consumers/understanding-how-fda-regulates-food-additives-and-gras-ingredients\n"
+                + "- FDA Types of Food Ingredients: https://www.fda.gov/food/food-additives-and-gras-ingredients-information-consumers/types-food-ingredients\n"
+                + "- EFSA Food Additives: https://www.efsa.europa.eu/en/topics/topic/food-additives\n"
+                + "- EFSA Sweeteners: https://www.efsa.europa.eu/en/topics/topic/sweeteners\n"
+                + "- WHO Healthy Diet: https://www.who.int/news-room/fact-sheets/detail/healthy-diet\n"
+                + "- FDA Cosmetic Products and Ingredients: https://www.fda.gov/cosmetics/cosmetic-products-ingredients\n"
+                + "- FDA Cosmetic Ingredient Names: https://www.fda.gov/cosmetics/cosmetics-labeling/cosmetic-ingredient-names\n"
+                + "- FDA Allergens in Cosmetics: https://www.fda.gov/cosmetics/cosmetic-ingredients/allergens-cosmetics\n"
+                + "Use this exact JSON shape:\n"
+                + "{\n"
+                + "  \"product_name\": \"\",\n"
+                + "  \"brand\": \"\",\n"
+                + "  \"product_type\": \"food | beverage | supplement | oral_care | personal_care | unknown\",\n"
+                + "  \"verdict\": \"HEALTHY | NOT_HEALTHY | APPROVED | NOT_APPROVED | REVIEW\",\n"
+                + "  \"verdict_reason\": \"One short reason for the verdict.\",\n"
+                + "  \"ingredients\": [\"ingredient one\", \"ingredient two\"],\n"
+                + "  \"summary\": \"A natural product-specific shopper note using simple HTML breaks.<br><br><b>Bottom line</b><br>A complete practical recommendation.\",\n"
+                + "  \"findings\": [\n"
+                + "    {\"rule\": \"Short label\", \"impact\": \"positive | neutral | warning | negative\", \"triggering_ingredient\": \"\", \"explanation\": \"Brief, specific reason with scientific context.\", \"source_url\": \"\"}\n"
+                + "  ],\n"
+                + "  \"sources\": [{\"name\": \"FDA Food Additives\", \"url\": \"https://www.fda.gov/food/food-ingredients-packaging/food-additives-and-gras-ingredients-information-consumers\", \"visual_quote\": \"\", \"search_query\": \"food additive safety\"}]\n"
+                + "}\n"
+                + "If there are no meaningful warnings, return positive or neutral findings only. Do not penalize water-like products for having no protein, fiber, fat, or carbs.";
+    }
+
+    private static PromptContext parsePromptContext(String productData) {
+        String responseLanguage = "English";
+        String productText = productData != null ? productData : "";
+        StringBuilder detectedIngredientLabel = new StringBuilder();
+
+        String[] lines = productText.split("\\r?\\n");
+        StringBuilder cleaned = new StringBuilder();
+        boolean skippingMarker = false;
+        boolean readingIngredientLabel = false;
+        for (String line : lines) {
+            String lower = line.trim().toLowerCase();
+            if (lower.startsWith("response_language:")) {
+                String value = line.substring(line.indexOf(':') + 1).trim();
+                if (!value.isEmpty()) responseLanguage = value;
+                continue;
+            }
+            if (lower.startsWith("scan_mode:")
+                    || lower.startsWith("image_attached:")
+                    || lower.startsWith("available_barcode:")
+                    || lower.startsWith("task:")) {
+                readingIngredientLabel = false;
+                continue;
+            }
+            if (lower.equals("detected_ingredient_label:")) {
+                readingIngredientLabel = true;
+                skippingMarker = false;
+                continue;
+            }
+            if (lower.equals("product_ocr_text:") || lower.equals("ocr_text:")) {
+                readingIngredientLabel = false;
+                skippingMarker = true;
+                continue;
+            }
+            if (!skippingMarker && (lower.startsWith("baseline_health_score:") || lower.startsWith("product data:"))) {
+                continue;
+            }
+            if (readingIngredientLabel) {
+                detectedIngredientLabel.append(line).append('\n');
+                continue;
+            }
+            cleaned.append(line).append('\n');
+        }
+
+        return new PromptContext(responseLanguage, cleaned.toString().trim(), detectedIngredientLabel.toString().trim());
+    }
+
+    private static final class PromptContext {
+        final String responseLanguage;
+        final String productText;
+        final String detectedIngredientLabel;
+
+        PromptContext(String responseLanguage, String productText, String detectedIngredientLabel) {
+            this.responseLanguage = responseLanguage;
+            this.productText = productText;
+            this.detectedIngredientLabel = detectedIngredientLabel;
+        }
+    }
+
+    private static String cleanJson(String text) {
+        if (text == null) return "{}";
+        int start = text.indexOf("{");
+        int end = text.lastIndexOf("}");
+        if (start != -1 && end != -1 && end > start) {
+            return text.substring(start, end + 1);
+        }
+        return text;
+    }
+}

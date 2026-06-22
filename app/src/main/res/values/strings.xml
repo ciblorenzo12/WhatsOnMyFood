@@ -2,6 +2,13 @@
     <string name="app_name" translatable="false">WhatsOnMyFood</string>
     <string name="title_activity_scan_barcode">Scan Barcode</string>
     <string name="bitwise_ai">Bitwise AI</string>
+    <string name="bitwise_plus">Bitwise Plus</string>
+    <string name="bitwise_plus_headline">Unlock smarter food decisions</string>
+    <string name="bitwise_plus_subtitle">Get expanded Bitwise explanations, daily pantry coaching, and deeper ingredient reasoning.</string>
+    <string name="bitwise_plus_benefits">• Unlimited Bitwise product explanations\n• Deeper ingredient and nutrition reasoning\n• Priority access to AI pantry guidance\n• Usage resets and purchase status in one place</string>
+    <string name="subscribe_bitwise_plus">Subscribe with Google Play</string>
+    <string name="restore_purchases">Restore purchases</string>
+    <string name="bitwise_free_limit_reached">You have used today\'s free Bitwise explanations. Upgrade to Bitwise Plus for unlimited AI reasoning.</string>
     <string name="action_print">Print</string>
     <string name="app_display_name">What\'s On My Food</string>
     <string name="welcome">Welcome</string>

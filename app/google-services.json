@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:759803394674:android:dae10ff0fdea9ea8a460eb",
         "android_client_info": {
-          "package_name": "com.example.myapplication"
+          "package_name": "com.ciblorenzo.whatsonmyfood"
         }
       },
       "oauth_client": [
@@ -17,7 +17,7 @@
           "client_id": "759803394674-2gciach6sehaafadb6his9qq9cd10mco.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.myapplication",
+            "package_name": "com.ciblorenzo.whatsonmyfood",
             "certificate_hash": "c56a25ef7730aa82358874206f3389644d650aa6"
           }
         },

@@ -16,7 +16,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <com.example.myapplication.PantryArGraphOverlayView
+    <com.ciblorenzo.whatsonmyfood.PantryArGraphOverlayView
         android:id="@+id/ar_graph_overlay"
         android:layout_width="0dp"
         android:layout_height="0dp"

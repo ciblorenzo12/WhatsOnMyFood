@@ -75,7 +75,7 @@
             app:strokeColor="@color/glass_stroke"
             app:strokeWidth="1dp">
 
-            <com.example.myapplication.retail.RetailerAvailabilityMapView
+            <com.ciblorenzo.whatsonmyfood.retail.RetailerAvailabilityMapView
                 android:id="@+id/where_to_buy_map_view"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />

@@ -9,13 +9,13 @@
     android:focusable="true"
     android:visibility="gone">
 
-    <com.example.myapplication.AiGlowView
+    <com.ciblorenzo.whatsonmyfood.AiGlowView
         android:id="@+id/loading_glow"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:alpha="0.55" />
 
-    <com.example.myapplication.BitwiseAiSpriteView
+    <com.ciblorenzo.whatsonmyfood.BitwiseAiSpriteView
         android:id="@+id/loading_planet"
         android:layout_width="120dp"
         android:layout_height="120dp"

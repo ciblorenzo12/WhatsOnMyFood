@@ -12,7 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <com.example.myapplication.ScanningOverlayView
+    <com.ciblorenzo.whatsonmyfood.ScanningOverlayView
         android:id="@+id/scanning_overlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

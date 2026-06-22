@@ -92,6 +92,12 @@
             android:exported="false" />
 
         <activity
+            android:name=".SubscriptionActivity"
+            android:exported="false"
+            android:label="@string/bitwise_plus"
+            android:theme="@style/Theme.MyApplication" />
+
+        <activity
             android:name=".AddProductActivity"
             android:exported="false" />
 

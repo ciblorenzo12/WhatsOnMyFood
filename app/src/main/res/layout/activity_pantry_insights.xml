@@ -222,7 +222,7 @@
                 app:strokeColor="@color/glass_stroke"
                 app:strokeWidth="1dp">
 
-                <com.example.myapplication.PantryHealthProfileView
+                <com.ciblorenzo.whatsonmyfood.PantryHealthProfileView
                     android:id="@+id/pantry_health_profile_view"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
@@ -239,7 +239,7 @@
                 app:strokeColor="@color/glass_stroke"
                 app:strokeWidth="1dp">
 
-                <com.example.myapplication.PantryRiskChartView
+                <com.ciblorenzo.whatsonmyfood.PantryRiskChartView
                     android:id="@+id/pantry_risk_chart"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"

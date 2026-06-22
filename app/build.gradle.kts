@@ -25,7 +25,7 @@ fun buildConfigString(value: String): String {
 }
 
 android {
-    namespace = "com.example.myapplication"
+    namespace = "com.ciblorenzo.whatsonmyfood"
     compileSdk = 35
 
     buildFeatures {
@@ -33,7 +33,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.myapplication"
+        applicationId = "com.ciblorenzo.whatsonmyfood"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
@@ -75,6 +75,7 @@ dependencies {
     implementation("com.firebaseui:firebase-ui-auth:9.1.1")
     implementation("com.google.android.gms:play-services-auth:21.3.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("com.android.billingclient:billing:9.0.0")
 
     // Room
     val roomVersion = "2.6.1"
