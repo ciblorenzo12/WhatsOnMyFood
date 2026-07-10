@@ -131,6 +131,27 @@
                         tools:text="$4.99 / month" />
 
                     <TextView
+                        android:id="@+id/renewal_terms_text"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp"
+                        tools:text="Renews automatically until canceled in Google Play." />
+
+                    <TextView
+                        android:id="@+id/billing_state_text"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:textColor="@color/colorPrimary"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:visibility="gone"
+                        tools:text="Google Play purchase verification in progress"
+                        tools:visibility="visible" />
+
+                    <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
@@ -152,6 +173,22 @@
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
                         android:text="@string/restore_purchases" />
+
+                    <Button
+                        android:id="@+id/manage_subscription_button"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:text="@string/manage_subscription" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center"
+                        android:text="@string/google_play_subscription_disclosure"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>

@@ -1,17 +1,15 @@
 package com.ciblorenzo.whatsonmyfood.analysis;
 
 import android.graphics.Bitmap;
-import okhttp3.Call;
+
 import java.util.List;
 
-public class OpenAIAnalysisService {
+public class BitwiseAnalysisService {
 
     public interface AnalysisCallback {
         void onResult(String jsonResult);
-        void onError(Throwable t);
+        void onError(Throwable error);
     }
-
-    private Call activeCall;
 
     public void analyzeWithRules(String productData, List<String> rules, AnalysisCallback callback) {
         analyzeWithRules(productData, rules, null, callback);
@@ -25,12 +23,13 @@ public class OpenAIAnalysisService {
             }
 
             @Override
-            public void onError(Throwable t) {
-                callback.onError(t);
+            public void onError(Throwable error) {
+                callback.onError(error);
             }
         });
     }
 
     public void cancelActiveCall() {
+        // Calls are owned by the screen lifecycle through BitwiseAiCore.
     }
 }

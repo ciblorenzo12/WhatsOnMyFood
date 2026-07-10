@@ -59,7 +59,7 @@ NUTRITIONIX_APP_KEY=your-nutritionix-app-key
 BARCODE_LOOKUP_API_KEY=your-barcode-lookup-key
 UPCITEMDB_USER_KEY=your-upcitemdb-key
 RETAILER_BACKEND_BASE_URL=http://10.0.2.2:8787
-BITWISE_LLM_BASE_URL=http://10.0.2.2:8788
+BITWISE_LLM_BASE_URL=http://10.0.2.2:8787
 GOOGLE_MAPS_API_KEY=your-google-maps-key
 ```
 
@@ -85,6 +85,12 @@ Run focused analysis tests:
 .\gradlew.bat testDebugUnitTest --tests com.example.myapplication.analysis.IngredientTextParserTest --tests com.example.myapplication.analysis.rules.SugarAsMainIngredientRuleTest
 ```
 
+## Google Play Release
+
+The Android app targets API 35 and includes Google Play Billing for the Bitwise Plus subscription product `bitwise_plus_monthly`.
+
+See `docs/play_release_checklist.md` for the release bundle command, Play Console subscription setup, purchase testing flow, and store policy checklist.
+
 ## Retailer Backend
 
 The Android app can call a local Node backend instead of connecting directly to retailer APIs.
@@ -106,20 +112,22 @@ For a physical device, use your computer's LAN IP address instead of `10.0.2.2`.
 
 More backend details are in `backend/retailer/README.md`.
 
-## Bitwise Fallback Service
+## Bitwise Gemini Service
 
-The fallback summary service can run locally while testing Bitwise wording without depending on a remote model endpoint.
+The retailer backend now sends Bitwise requests to Google Gemini and automatically uses the local analysis when Gemini is not configured or temporarily unavailable. Keep the Google key on the server, never in the mobile applications.
 
-From `backend/bitwise-fallback/`:
+From `backend/retailer/`:
 
 ```powershell
-node server.js
+$env:GEMINI_API_KEY="your-google-ai-studio-api-key"
+$env:GEMINI_MODEL="gemini-2.5-flash"
+npm start
 ```
 
-Then point the Android app at that service with:
+Then point the Android app at that backend with:
 
 ```properties
-BITWISE_LLM_BASE_URL=http://10.0.2.2:8788
+BITWISE_LLM_BASE_URL=http://10.0.2.2:8787
 ```
 
 ## Data and Privacy Notes

@@ -27,7 +27,7 @@ import com.ciblorenzo.whatsonmyfood.analysis.AnalysisResultDeduplicator;
 import com.ciblorenzo.whatsonmyfood.analysis.AiSummaryFormatter;
 import com.ciblorenzo.whatsonmyfood.analysis.HealthVerdict;
 import com.ciblorenzo.whatsonmyfood.analysis.IngredientTextParser;
-import com.ciblorenzo.whatsonmyfood.analysis.OpenAIAnalysisService;
+import com.ciblorenzo.whatsonmyfood.analysis.BitwiseAnalysisService;
 import com.ciblorenzo.whatsonmyfood.analysis.ProductAnalysisReport;
 import com.ciblorenzo.whatsonmyfood.analysis.rules.RuleEngine;
 import com.ciblorenzo.whatsonmyfood.retail.RetailerCommerceViewBinder;
@@ -149,7 +149,7 @@ public class IngredientAnalysisActivity extends BaseActivity {
     private void analyzeWithAI(String prompt, List<String> rules, Bitmap bitmap, TextView healthScoreView, TextView rawIngredientsView, RecyclerView analysisRecyclerView, ProgressBar progressBar) {
         analysisInputText = prompt;
         if (loadingOverlay != null) loadingOverlay.setVisibility(View.VISIBLE);
-        new OpenAIAnalysisService().analyzeWithRules(prompt, rules, bitmap, new OpenAIAnalysisService.AnalysisCallback() {
+        new BitwiseAnalysisService().analyzeWithRules(prompt, rules, bitmap, new BitwiseAnalysisService.AnalysisCallback() {
             @Override
             public void onResult(String jsonResult) {
                 runOnUiThread(() -> {

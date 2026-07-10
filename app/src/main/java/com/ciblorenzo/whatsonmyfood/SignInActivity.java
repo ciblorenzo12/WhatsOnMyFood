@@ -86,7 +86,7 @@ public class SignInActivity extends BaseActivity {
         Intent signInIntent = AuthUI.getInstance()
                 .createSignInIntentBuilder()
                 .setAvailableProviders(providers)
-                .setCredentialManagerEnabled(false)
+                .setCredentialManagerEnabled(true)
                 .build();
         signInLauncher.launch(signInIntent);
     }
@@ -197,8 +197,12 @@ public class SignInActivity extends BaseActivity {
                 Log.e(TAG, "Sign-in failed. Error Code: " + errorCode + ", Message: " + errorMessage);
                 
                 String displayMessage = "Sign-in failed: " + errorMessage;
-                if (errorCode == 10) { // Common code for DEVELOPER_ERROR
-                    displayMessage = "Sign-in failed: Developer Error (10). Check SHA-1 in Firebase Console.";
+                String normalizedMessage = errorMessage == null ? "" : errorMessage.toLowerCase();
+                boolean developerConfigurationError = errorCode == 10
+                        || normalizedMessage.contains("code: 10")
+                        || normalizedMessage.startsWith("10:");
+                if (developerConfigurationError) {
+                    displayMessage = "Google sign-in is not configured for this app build. Check the Firebase Google provider and signing certificate.";
                 }
                 Toast.makeText(this, displayMessage, Toast.LENGTH_LONG).show();
             } else {

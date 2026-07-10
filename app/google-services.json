@@ -7,14 +7,22 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:759803394674:android:dae10ff0fdea9ea8a460eb",
+        "mobilesdk_app_id": "1:759803394674:android:8b03242b4f247bbea460eb",
         "android_client_info": {
           "package_name": "com.ciblorenzo.whatsonmyfood"
         }
       },
       "oauth_client": [
         {
-          "client_id": "759803394674-2gciach6sehaafadb6his9qq9cd10mco.apps.googleusercontent.com",
+          "client_id": "759803394674-3haaq59fi9mqu5hdopg85307vhlvokvn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ciblorenzo.whatsonmyfood",
+            "certificate_hash": "ab2203ca42c106118a040c37047d49e503c60b8c"
+          }
+        },
+        {
+          "client_id": "759803394674-i67uam98j8pro7h8htdh7ge4qe09251i.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.ciblorenzo.whatsonmyfood",
@@ -37,6 +45,57 @@
             {
               "client_id": "759803394674-kmnvdlbqj7mcqaj1junntc0toqu8r59q.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "759803394674-bb28kej23ehbcd1gqrsvp7vfq0pmg8q3.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.YourHealthyPantryIOS"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:759803394674:android:dae10ff0fdea9ea8a460eb",
+        "android_client_info": {
+          "package_name": "com.example.myapplication"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "759803394674-2gciach6sehaafadb6his9qq9cd10mco.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.myapplication",
+            "certificate_hash": "c56a25ef7730aa82358874206f3389644d650aa6"
+          }
+        },
+        {
+          "client_id": "759803394674-kmnvdlbqj7mcqaj1junntc0toqu8r59q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0l5_WO1rhSCh342svIuDnpZGyO-eqcXA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "759803394674-kmnvdlbqj7mcqaj1junntc0toqu8r59q.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "759803394674-bb28kej23ehbcd1gqrsvp7vfq0pmg8q3.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.YourHealthyPantryIOS"
+              }
             }
           ]
         }

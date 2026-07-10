@@ -20,4 +20,10 @@ public interface AdditiveDao {
 
     @Query("SELECT * FROM additives WHERE name = :name LIMIT 1")
     AdditiveEntry getAdditiveByName(String name);
+
+    @Query("DELETE FROM additives WHERE name IS NULL OR category IS NULL OR `function` IS NULL " +
+            "OR LOWER(TRIM(name)) IN ('null', 'none', 'unknown', 'n/a') " +
+            "OR LOWER(TRIM(category)) IN ('null', 'none', 'unknown', 'n/a') " +
+            "OR LOWER(TRIM(`function`)) IN ('null', 'none', 'unknown', 'n/a')")
+    void deleteInvalidEntries();
 }

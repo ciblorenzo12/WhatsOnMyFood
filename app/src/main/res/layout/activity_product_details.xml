@@ -366,6 +366,16 @@
                 app:cornerRadius="16dp" />
 
             <Button
+                android:id="@+id/contribute_ingredients_button"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_marginTop="12dp"
+                android:text="@string/off_add_missing_ingredients"
+                android:visibility="gone"
+                app:cornerRadius="16dp" />
+
+            <Button
                 android:id="@+id/remove_from_pantry_button"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="match_parent"

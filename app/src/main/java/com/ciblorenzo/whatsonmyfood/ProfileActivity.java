@@ -21,9 +21,11 @@ import androidx.appcompat.widget.Toolbar;
 
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageException;
 import com.google.firebase.storage.StorageReference;
 import com.squareup.picasso.Picasso;
 
@@ -31,6 +33,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.List;
+import java.util.concurrent.Executors;
 
 public class ProfileActivity extends BaseActivity {
 
@@ -82,7 +85,9 @@ public class ProfileActivity extends BaseActivity {
         Button updateProfileButton = findViewById(R.id.update_profile_button);
         Button changePasswordButton = findViewById(R.id.change_password_button);
         Button bitwisePlusButton = findViewById(R.id.bitwise_plus_button);
+        Button privacyPolicyButton = findViewById(R.id.privacy_policy_button);
         Button logoutButton = findViewById(R.id.logout_button);
+        Button deleteAccountButton = findViewById(R.id.delete_account_button);
 
         setupLanguageSpinner();
         loadUserProfile();
@@ -91,7 +96,9 @@ public class ProfileActivity extends BaseActivity {
         updateProfileButton.setOnClickListener(v -> updateUserProfile());
         changePasswordButton.setOnClickListener(v -> sendPasswordReset());
         bitwisePlusButton.setOnClickListener(v -> startActivity(new Intent(this, SubscriptionActivity.class)));
+        privacyPolicyButton.setOnClickListener(v -> startActivity(new Intent(this, PrivacyPolicyActivity.class)));
         logoutButton.setOnClickListener(v -> logout());
+        deleteAccountButton.setOnClickListener(v -> confirmAccountDeletion(deleteAccountButton));
     }
 
     private void loadUserProfile() {
@@ -274,6 +281,85 @@ public class ProfileActivity extends BaseActivity {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+    }
+
+    private void confirmAccountDeletion(Button deleteAccountButton) {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.delete_account)
+                .setMessage(R.string.delete_account_confirmation)
+                .setPositiveButton(R.string.delete_permanently, (dialog, which) ->
+                        deleteAccount(deleteAccountButton))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void deleteAccount(Button deleteAccountButton) {
+        if (currentUser == null) return;
+
+        deleteAccountButton.setEnabled(false);
+        String uid = currentUser.getUid();
+        StorageReference profileImage = storageReference.child("profile_images/" + uid + ".jpg");
+        profileImage.delete().addOnCompleteListener(storageTask -> {
+            if (!storageTask.isSuccessful() && !isMissingStorageObject(storageTask.getException())) {
+                deleteAccountButton.setEnabled(true);
+                Toast.makeText(this, R.string.account_delete_storage_failed, Toast.LENGTH_LONG).show();
+                return;
+            }
+            deleteFirebaseAccount(uid, deleteAccountButton);
+        });
+    }
+
+    private boolean isMissingStorageObject(Exception exception) {
+        return exception instanceof StorageException
+                && ((StorageException) exception).getErrorCode() == StorageException.ERROR_OBJECT_NOT_FOUND;
+    }
+
+    private void deleteFirebaseAccount(String uid, Button deleteAccountButton) {
+        currentUser.delete().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                clearLocalAccountData(uid);
+                return;
+            }
+
+            deleteAccountButton.setEnabled(true);
+            Exception error = task.getException();
+            if (error instanceof FirebaseAuthRecentLoginRequiredException) {
+                new AlertDialog.Builder(this)
+                        .setTitle(R.string.sign_in_again_title)
+                        .setMessage(R.string.account_delete_reauth_required)
+                        .setPositiveButton(R.string.log_out, (dialog, which) -> logout())
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .show();
+            } else {
+                Log.e(TAG, "Account deletion failed", error);
+                Toast.makeText(this, R.string.account_delete_failed, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void clearLocalAccountData(String uid) {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            try {
+                AppDatabase.getDatabase(getApplicationContext()).clearAllTables();
+                getSharedPreferences("bitwise_plus", MODE_PRIVATE).edit().clear().apply();
+                getSharedPreferences("open_food_facts_contribution", MODE_PRIVATE).edit().clear().apply();
+                File cachedProfile = new File(getFilesDir(), "profile_cache_" + uid + ".jpg");
+                if (cachedProfile.exists() && !cachedProfile.delete()) {
+                    Log.w(TAG, "Could not remove cached profile image after account deletion");
+                }
+            } catch (Exception error) {
+                Log.e(TAG, "Account was deleted, but local cleanup was incomplete", error);
+            }
+
+            runOnUiThread(() -> {
+                mAuth.signOut();
+                Toast.makeText(this, R.string.account_deleted, Toast.LENGTH_LONG).show();
+                Intent intent = new Intent(this, SignInActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            });
+        });
     }
 
     @Override

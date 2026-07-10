@@ -29,7 +29,7 @@ You can change the backend URL from the iOS app Settings/Profile tab.
 - Open Food Facts product lookup
 - Product detail screen with ingredients, nutrition, labels/certifications, Nutri-Score, NOVA, Eco-Score
 - Original certification logo assets for USDA Organic, Non-GMO Project, Green Dot, Triman, and other supported labels
-- Bitwise AI summary through `/v1/chat/completions`
+- Bitwise AI summary through the Gemini-backed `/v1/bitwise/analyze` endpoint
 - Pantry save/remove using local persisted storage
 - Pantry risk insights and charts using SwiftUI `Charts`
 - Healthy vs concern ingredient breakdown

@@ -86,7 +86,6 @@ public class AddProductActivity extends BaseActivity {
                     startActivity(detailsIntent);
                     finish();
                 });
-                submitToOpenFoodFactsInBackground(productName, finalBrand, ingredients);
             } catch (Exception e) {
                 Log.e(TAG, "Error saving manual product", e);
                 runOnUiThread(() -> Toast.makeText(AddProductActivity.this, R.string.failed_to_save_product, Toast.LENGTH_LONG).show());
@@ -120,18 +119,6 @@ public class AddProductActivity extends BaseActivity {
         productWithDetails.ingredients = ingredients;
         productWithDetails.nutriments = null;
         return productWithDetails;
-    }
-
-    private void submitToOpenFoodFactsInBackground(String productName, String brand, String ingredients) {
-        try {
-            OpenFoodFactsApiClient apiClient = new OpenFoodFactsApiClient(
-                    getCacheDir(),
-                    LanguageManager.getLanguageCode(this)
-            );
-            apiClient.addProduct(barcode, productName, brand, ingredients);
-        } catch (Exception e) {
-            Log.w(TAG, "Manual product saved locally but could not be submitted to Open Food Facts", e);
-        }
     }
 
     @Override

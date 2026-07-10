@@ -7,6 +7,8 @@ The Android app should call backend endpoints like these instead of calling reta
 - `GET /api/retail/products/:barcode`
 - `GET /api/retail/products/:barcode/availability`
 - `GET /api/retail/products/:barcode/alternatives`
+- `POST /v1/bitwise/analyze`
+- `POST /v1/billing/google-play/verify`
 
 The first provider is mock data so the app flow can ship before retailer approvals. Real providers should be added behind this backend in this order:
 
@@ -18,10 +20,33 @@ The first provider is mock data so the app flow can ship before retailer approva
 
 Retailer API keys belong in backend environment variables, never in the Android app.
 
+## Bitwise AI with Google Gemini
+
+Bitwise sends its prompts and optional label images to this backend. The backend then
+calls Google Gemini, so the Gemini key is never included in the Android or iOS app.
+
+Create an API key in Google AI Studio, then set these server environment variables:
+
+```text
+GEMINI_API_KEY=your-google-ai-studio-api-key
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+`gemini-2.5-flash` is the default when `GEMINI_MODEL` is omitted. If no Gemini key is
+configured, Bitwise returns its deterministic local analysis so label scans still work.
+`BITWISE_APP_TOKEN` is optional; if you rotate it, update the matching mobile client
+configuration before deploying the backend.
+
 Run the mock server:
 
 ```bash
 node src/server.js
+```
+
+Run the backend tests:
+
+```bash
+npm test
 ```
 
 ## Walmart Affiliates taxonomy smoke test
@@ -87,6 +112,23 @@ Use your computer's LAN IP instead of `10.0.2.2` when testing on a physical phon
 For production, set `RETAILER_BACKEND_BASE_URL` to your HTTPS RunPod/backend URL.
 Do not put `WALMART_CONSUMER_ID`, `WALMART_KEY_VERSION`, or the private key in
 the Android app.
+
+## Google Play subscription verification
+
+Bitwise Plus purchase tokens are verified on this backend before the Android app
+enables paid access. Create a Google Cloud service account, grant it access to the
+app in Play Console, enable the Google Play Android Developer API, and configure:
+
+```text
+GOOGLE_PLAY_PACKAGE_NAME=com.ciblorenzo.whatsonmyfood
+GOOGLE_PLAY_SUBSCRIPTION_PRODUCT_ID=bitwise_plus_monthly
+GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL=play-billing-verifier@your-project.iam.gserviceaccount.com
+GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----
+```
+
+`GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` can be used instead of the email and private
+key variables. It accepts either the raw service-account JSON or its base64 form.
+Never add that credential file or value to the repository or mobile application.
 
 ## RunPod deployment shape
 

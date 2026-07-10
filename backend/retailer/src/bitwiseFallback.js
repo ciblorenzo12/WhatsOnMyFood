@@ -241,6 +241,12 @@ function completion(content) {
   };
 }
 
+function analyzePrompt(prompt) {
+  return /define the following food ingredient/i.test(prompt)
+    ? ingredientDefinition(prompt)
+    : productAnalysis(prompt);
+}
+
 async function handleBitwiseCompletion(req, writeJson) {
   if (APP_TOKEN && req.headers["x-app-token"] !== APP_TOKEN) {
     return { status: 401, body: { error: "Unauthorized" } };
@@ -249,12 +255,11 @@ async function handleBitwiseCompletion(req, writeJson) {
   const root = JSON.parse(await readBody(req));
   const messages = Array.isArray(root.messages) ? root.messages : [];
   const prompt = messages.map((message) => contentText(message.content)).join("\n");
-  const result = /define the following food ingredient/i.test(prompt)
-    ? ingredientDefinition(prompt)
-    : productAnalysis(prompt);
+  const result = analyzePrompt(prompt);
   return { status: 200, body: completion(result) };
 }
 
 module.exports = {
+  analyzePrompt,
   handleBitwiseCompletion,
 };

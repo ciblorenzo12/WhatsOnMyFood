@@ -25,6 +25,7 @@
 
     <!-- UI Components -->
     <color name="card_background">#FFFFFF</color>
+    <color name="bottom_sheet_background">#FFFFFF</color>
     <color name="divider">#E5E7EB</color>
     <color name="glass_panel">#EEFFFFFF</color>
     <color name="glass_panel_soft">#DFFFFFFF</color>

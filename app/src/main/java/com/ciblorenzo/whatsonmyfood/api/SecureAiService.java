@@ -5,7 +5,7 @@ import okhttp3.Call;
 
 public class SecureAiService {
 
-    private static final RunpodLlmClient llmClient = new RunpodLlmClient();
+    private static final BitwiseBackendClient llmClient = new BitwiseBackendClient();
 
     public interface AiCallback {
         void onResult(String result);
@@ -13,7 +13,7 @@ public class SecureAiService {
     }
 
     public static Call analyzeProduct(String prompt, Bitmap bitmap, AiCallback callback) {
-        return llmClient.askBitwise(prompt, bitmap, new RunpodLlmClient.LlmCallback() {
+        return llmClient.askBitwise(prompt, bitmap, new BitwiseBackendClient.LlmCallback() {
             @Override
             public void onResult(String text) {
                 callback.onResult(text);

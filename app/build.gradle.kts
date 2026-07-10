@@ -6,9 +6,11 @@ plugins {
 }
 
 val localProperties = Properties().apply {
-    val localPropertiesFile = rootProject.file("local.properties")
-    if (localPropertiesFile.exists()) {
-        localPropertiesFile.inputStream().use(::load)
+    listOf("local.properties", "keystore.properties").forEach { filename ->
+        val propertiesFile = rootProject.file(filename)
+        if (propertiesFile.exists()) {
+            propertiesFile.inputStream().use(::load)
+        }
     }
 }
 
@@ -24,6 +26,17 @@ fun buildConfigString(value: String): String {
     return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 }
 
+val releaseStoreFile = apiKey("YHP_UPLOAD_STORE_FILE")
+val releaseStorePassword = apiKey("YHP_UPLOAD_STORE_PASSWORD")
+val releaseKeyAlias = apiKey("YHP_UPLOAD_KEY_ALIAS")
+val releaseKeyPassword = apiKey("YHP_UPLOAD_KEY_PASSWORD")
+val releaseSigningConfigured = listOf(
+    releaseStoreFile,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword
+).all { it.isNotBlank() }
+
 android {
     namespace = "com.ciblorenzo.whatsonmyfood"
     compileSdk = 35
@@ -35,9 +48,9 @@ android {
     defaultConfig {
         applicationId = "com.ciblorenzo.whatsonmyfood"
         minSdk = 26
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        targetSdk = 35
+        versionCode = 3
+        versionName = "1.0.2"
 
         buildConfigField("String", "FDC_API_KEY", buildConfigString(apiKey("FDC_API_KEY")))
         buildConfigField("String", "NUTRITIONIX_APP_ID", buildConfigString(apiKey("NUTRITIONIX_APP_ID")))
@@ -50,10 +63,44 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (releaseSigningConfigured) {
+            create("release") {
+                storeFile = file(releaseStoreFile)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
+        debug {
+            manifestPlaceholders["usesCleartextTraffic"] = true
+        }
+
         release {
             isMinifyEnabled = false
+            manifestPlaceholders["usesCleartextTraffic"] = false
+            if (releaseSigningConfigured) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+    }
+
+    lint {
+        abortOnError = true
+        checkReleaseBuilds = true
+        // Picasso contains an optional RemoteViews notification target. This app never
+        // posts notifications, so requesting POST_NOTIFICATIONS would be misleading.
+        disable += "NotificationPermission"
+    }
+
+    bundle {
+        // The app changes language at runtime; keep all packaged translations available.
+        language {
+            enableSplit = false
         }
     }
     compileOptions {
@@ -85,6 +132,8 @@ dependencies {
     // Camera & ML Kit
     implementation("com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.1")
     implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.1")
+    implementation("com.google.mlkit:language-id:17.0.6")
+    implementation("com.google.mlkit:translate:17.0.3")
     implementation("androidx.camera:camera-core:1.4.1")
     implementation("androidx.camera:camera-camera2:1.4.1")
     implementation("androidx.camera:camera-lifecycle:1.4.1")
@@ -97,9 +146,6 @@ dependencies {
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("com.squareup.picasso:picasso:2.71828")
     implementation("androidx.test.espresso:espresso-idling-resource:3.6.1")
-    // OpenAI SDK
-    implementation("com.theokanning.openai-gpt3-java:service:0.18.2")
-
     // Web Scraping
     implementation("org.jsoup:jsoup:1.18.1")
 

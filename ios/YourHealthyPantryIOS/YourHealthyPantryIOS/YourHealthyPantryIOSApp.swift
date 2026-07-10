@@ -758,18 +758,14 @@ final class APIClient {
 
     func askBitwise(product: Product) async throws -> String {
         let prompt = """
-        Explain why this product is healthy or not healthy for a consumer. Use these sections exactly: Why this rating, What to watch, Recommendation, Scientific sources. Be specific to the product, ingredients, Nutri-Score, NOVA group, Eco-Score, and nutrition data. Product: \(product.displayName). Ingredients: \(product.ingredients.joined(separator: ", ")). Nutri-Score: \(product.nutriscoreGrade ?? "unknown"). NOVA: \(product.novaGroup.map(String.init) ?? "unknown"). Calories per 100g: \(product.nutriments?.energy.map { String(Int($0.rounded())) } ?? "unknown").
+        Explain why this product is healthy or not healthy for a consumer. Be specific to the product, ingredients, Nutri-Score, NOVA group, Eco-Score, and nutrition data. Do not invent missing facts or provide medical advice.
+        Return valid JSON only with this exact shape:
+        {"why_this_rating":"", "what_to_watch":"", "recommendation":"", "scientific_sources":""}
+        Product: \(product.displayName). Ingredients: \(product.ingredients.joined(separator: ", ")). Nutri-Score: \(product.nutriscoreGrade ?? "unknown"). NOVA: \(product.novaGroup.map(String.init) ?? "unknown"). Calories per 100g: \(product.nutriments?.energy.map { String(Int($0.rounded())) } ?? "unknown").
         """
-        let body = ChatRequest(
-            model: "gpt-4o-mini",
-            messages: [ChatMessage(role: "user", content: prompt)],
-            temperature: 0.1,
-            topP: 0.9,
-            maxTokens: 850,
-            responseFormat: ResponseFormat(type: "json_object")
-        )
+        let body = BitwiseRequest(prompt: prompt)
 
-        var request = URLRequest(url: try backendURL(path: "v1/chat/completions"))
+        var request = URLRequest(url: try backendURL(path: "v1/bitwise/analyze"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(bitwiseAppToken, forHTTPHeaderField: "X-APP-TOKEN")
@@ -777,11 +773,11 @@ final class APIClient {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         try validate(response)
-        let decoded = try JSONDecoder().decode(ChatResponse.self, from: data)
-        guard let content = decoded.choices.first?.message.content else {
+        let decoded = try JSONDecoder().decode(BitwiseResponse.self, from: data)
+        guard !decoded.content.isEmpty else {
             throw AppError.emptyAIResponse
         }
-        return Self.formatAIContent(content)
+        return Self.formatAIContent(decoded.content)
     }
 
     func fetchAvailability(for product: Product) async throws -> [RetailerAvailability] {
@@ -978,37 +974,14 @@ struct OpenFoodFactsProduct: Decodable {
     }
 }
 
-struct ChatRequest: Encodable {
-    var model: String
-    var messages: [ChatMessage]
-    var temperature: Double
-    var topP: Double
-    var maxTokens: Int
-    var responseFormat: ResponseFormat
-
-    enum CodingKeys: String, CodingKey {
-        case model, messages, temperature
-        case topP = "top_p"
-        case maxTokens = "max_tokens"
-        case responseFormat = "response_format"
-    }
+struct BitwiseRequest: Encodable {
+    var prompt: String
 }
 
-struct ChatMessage: Codable {
-    var role: String
+struct BitwiseResponse: Decodable {
     var content: String
-}
-
-struct ResponseFormat: Encodable {
-    var type: String
-}
-
-struct ChatResponse: Decodable {
-    var choices: [ChatChoice]
-}
-
-struct ChatChoice: Decodable {
-    var message: ChatMessage
+    var provider: String?
+    var model: String?
 }
 
 struct RetailerResults<T: Decodable>: Decodable {

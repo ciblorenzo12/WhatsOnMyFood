@@ -36,9 +36,11 @@ import com.ciblorenzo.whatsonmyfood.analysis.AnalysisResult;
 import com.ciblorenzo.whatsonmyfood.analysis.AnalysisResultAdapter;
 import com.ciblorenzo.whatsonmyfood.analysis.AnalysisResultDeduplicator;
 import com.ciblorenzo.whatsonmyfood.analysis.AiSummaryFormatter;
+import com.ciblorenzo.whatsonmyfood.analysis.AiIngredientRecovery;
 import com.ciblorenzo.whatsonmyfood.analysis.HealthVerdict;
 import com.ciblorenzo.whatsonmyfood.analysis.HealthVerdictExplanationBuilder;
-import com.ciblorenzo.whatsonmyfood.analysis.OpenAIAnalysisService;
+import com.ciblorenzo.whatsonmyfood.analysis.IngredientTextParser;
+import com.ciblorenzo.whatsonmyfood.analysis.BitwiseAnalysisService;
 import com.ciblorenzo.whatsonmyfood.analysis.ProductAnalysisReport;
 import com.ciblorenzo.whatsonmyfood.analysis.rules.RuleEngine;
 import com.ciblorenzo.whatsonmyfood.retail.RetailerCommerceViewBinder;
@@ -85,11 +87,15 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     private View detailsLayout;
     private AiGlowView aiCardGlow;
     private android.widget.Button updateProductButton;
+    private android.widget.Button contributeIngredientsButton;
     private android.widget.Button removeFromPantryButton;
     private TableLayout nutritionFactsTable;
     private RecyclerView analysisRecyclerView;
     private View loadingOverlay;
     private RetailerCommerceViewBinder retailerCommerceViewBinder;
+    private ProductWithDetails currentProductDetails;
+    private final List<String> suggestedIngredients = new ArrayList<>();
+    private String translationCheckedBarcode;
 
     private TextView aiSourcesTextView;
     private View aiSourcesDivider;
@@ -172,8 +178,10 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         aiSourcesDivider = view.findViewById(R.id.ai_sources_divider);
         aiSourcesLabel = view.findViewById(R.id.ai_sources_label);
         updateProductButton = view.findViewById(R.id.update_product_button);
+        contributeIngredientsButton = view.findViewById(R.id.contribute_ingredients_button);
         removeFromPantryButton = view.findViewById(R.id.remove_from_pantry_button);
         GlassMotion.attachPress(updateProductButton);
+        GlassMotion.attachPress(contributeIngredientsButton);
         GlassMotion.attachPress(removeFromPantryButton);
         nutritionFactsTable = view.findViewById(R.id.nutrition_facts_table);
         analysisRecyclerView = view.findViewById(R.id.analysis_recycler_view);
@@ -211,6 +219,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         if (barcode != null) {
             loadProductDetails(barcode);
             updateProductButton.setOnClickListener(v -> updateProductFromSources(barcode));
+            contributeIngredientsButton.setOnClickListener(v -> showIngredientContribution(barcode));
             removeFromPantryButton.setOnClickListener(v -> {
                 executorService.execute(() -> {
                     db.productDao().deletePantryProduct(barcode, currentUser.getUid());
@@ -359,6 +368,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     }
 
     private void displayProductDetails(ProductWithDetails productDetails, boolean allowAiInsight) {
+        currentProductDetails = productDetails;
         if (productDetails.product.imageUrl != null && !productDetails.product.imageUrl.isEmpty()) {
             Picasso.get().load(productDetails.product.imageUrl).into(productImageView);
         }
@@ -381,6 +391,9 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         servingSizeTextView.setText(productDetails.product.servingSize != null ? productDetails.product.servingSize : "");
 
         currentReport = ruleEngine.analyze(productDetails);
+        boolean ingredientsMissing = !hasListedIngredients(productDetails);
+        contributeIngredientsButton.setVisibility(ingredientsMissing ? View.VISIBLE : View.GONE);
+        if (!ingredientsMissing) suggestedIngredients.clear();
         if (currentReport != null) {
             applyRuleBasedScore(productDetails, currentReport);
             analysisRecyclerView.setAdapter(new AnalysisResultAdapter(currentReport.getResults()));
@@ -399,6 +412,10 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         displayNutriments(productDetails.nutriments);
         GlassMotion.enter(detailsLayout, 0L);
 
+        if (allowAiInsight && hasListedIngredients(productDetails)
+                && translateListedIngredientsIfNeeded(productDetails)) {
+            return;
+        }
         if (allowAiInsight && isAiEnabled()) {
             fetchAiInsight(productDetails);
         } else if (!allowAiInsight || !isAiEnabled()) {
@@ -421,7 +438,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
     private void fetchAiInsight(ProductWithDetails productDetails) {
         if (aiSummaryContainer == null) return;
-        if (displayCachedAiInsight(productDetails)) return;
+        if (hasListedIngredients(productDetails) && displayCachedAiInsight(productDetails)) return;
 
         aiSummaryContainer.setVisibility(View.VISIBLE);
         GlassMotion.enter(aiSummaryContainer, 120L);
@@ -430,14 +447,17 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
         StringBuilder productData = new StringBuilder();
         productData.append("response_language: ").append(LanguageManager.getLanguageName(requireContext())).append("\n");
+        productData.append("Barcode: ").append(productDetails.product.barcode).append("\n");
         productData.append("Name: ").append(isMeaningfulProductName(productDetails.product.productName) ? productDetails.product.productName : "").append("\n");
         productData.append("Brand: ").append(productDetails.product.brands).append("\n");
+        productData.append("Categories: ").append(productDetails.product.categories).append("\n");
+        productData.append("Quantity: ").append(productDetails.product.quantity).append("\n");
         productData.append("Ingredients: ").append(formatIngredientsForAi(productDetails)).append("\n");
         if (productDetails.nutriments != null) {
             productData.append("\nNutrition: ").append(productDetails.nutriments.toString());
         }
 
-        new OpenAIAnalysisService().analyzeWithRules(productData.toString(), null, new OpenAIAnalysisService.AnalysisCallback() {
+        new BitwiseAnalysisService().analyzeWithRules(productData.toString(), null, new BitwiseAnalysisService.AnalysisCallback() {
             @Override
             public void onResult(String result) {
                 if (getActivity() == null || !isAdded()) return;
@@ -450,9 +470,16 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                         String summary = AiSummaryFormatter.format(obj.optString("summary", ""));
                         String aiVerdict = obj.optString("verdict", "");
                         String aiVerdictReason = obj.optString("verdict_reason", "");
+                        AiIngredientRecovery.Recovery recoveredIngredients = AiIngredientRecovery.parse(result);
 
                         if (isMeaningfulProductName(aiName)) productNameTextView.setText(aiName);
                         if (!aiBrand.isEmpty() && !aiBrand.equalsIgnoreCase("Brand")) productBrandTextView.setText(aiBrand);
+                        if (AiIngredientRecovery.shouldDisplay(productDetails, recoveredIngredients)) {
+                            suggestedIngredients.clear();
+                            suggestedIngredients.addAll(recoveredIngredients.ingredients);
+                            contributeIngredientsButton.setVisibility(View.VISIBLE);
+                            displayRecoveredIngredientsInEnglish(recoveredIngredients);
+                        }
 
                         // 2. Nutrition table
                         org.json.JSONObject aiNutrition = obj.optJSONObject("nutrition");
@@ -532,8 +559,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                         }
 
                     } catch (Exception e) {
-                        String summaryFallback = result.replaceAll("\"[a-z_]+\":", "").replaceAll("[{}\\[\\]\"]", "").trim();
-                        updateAiUI(productDetails, summaryFallback, null);
+                        updateAiUI(productDetails, "Bitwise could not format this explanation. Please try again.", null);
                     }
                 });
             }
@@ -547,7 +573,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
                         AiGlowManager.stopGlow(getActivity());
-                        aiSummaryTextView.setText("Bitwise AI is on break. Error: " + t.getMessage());
+                        aiSummaryTextView.setText(t.getMessage());
                     });
                 }
             }
@@ -728,7 +754,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
     private String formatIngredientsForAi(ProductWithDetails product) {
         if (product == null || product.ingredients == null || product.ingredients.isEmpty()) {
-            return "Not listed";
+            return "";
         }
 
         StringBuilder builder = new StringBuilder();
@@ -738,7 +764,101 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                 builder.append(ingredient.text.trim());
             }
         }
-        return builder.length() == 0 ? "Not listed" : builder.toString();
+        return builder.toString();
+    }
+
+    private boolean hasListedIngredients(ProductWithDetails product) {
+        if (product == null || product.ingredients == null) return false;
+        for (Ingredient ingredient : product.ingredients) {
+            if (ingredient != null && ingredient.text != null && !ingredient.text.trim().isEmpty()) return true;
+        }
+        return false;
+    }
+
+    private void showIngredientContribution(String barcode) {
+        if (getActivity() == null) return;
+        OpenFoodFactsContributionDialog.show(
+                requireActivity(),
+                barcode,
+                suggestedIngredients,
+                verifiedIngredients -> saveConfirmedIngredients(barcode, verifiedIngredients)
+        );
+    }
+
+    private boolean translateListedIngredientsIfNeeded(ProductWithDetails product) {
+        String barcode = product != null && product.product != null ? product.product.barcode : null;
+        if (barcode == null || barcode.equals(translationCheckedBarcode)) return false;
+        translationCheckedBarcode = barcode;
+        String original = formatIngredientsForAi(product);
+        if (original.isEmpty()) return false;
+        ingredientsTextView.append("\n\n" + getString(R.string.ingredients_checking_language));
+        MlKitIngredientTranslator.translateToEnglish(original, new MlKitIngredientTranslator.Callback() {
+            @Override
+            public void onSuccess(MlKitIngredientTranslator.TranslationResult result) {
+                if (getActivity() == null || !isAdded()) return;
+                getActivity().runOnUiThread(() -> {
+                    if (result.translated && !result.englishText.isEmpty()) {
+                        product.ingredients = buildIngredientList(barcode, result.englishText);
+                        currentProductDetails = product;
+                        executorService.execute(() -> db.productDao().insertProductWithDetails(product));
+                    }
+                    displayProductDetails(product, true);
+                });
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                if (getActivity() != null && isAdded()) {
+                    getActivity().runOnUiThread(() -> displayProductDetails(product, true));
+                }
+            }
+        });
+        return true;
+    }
+
+    private void displayRecoveredIngredientsInEnglish(AiIngredientRecovery.Recovery recovery) {
+        String original = OpenFoodFactsContributionValidator.joinSuggestedIngredients(recovery.ingredients);
+        ingredientsTextView.setText(recovery.toDisplayText() + "\n\n" + getString(R.string.ingredients_checking_language));
+        MlKitIngredientTranslator.translateToEnglish(original, new MlKitIngredientTranslator.Callback() {
+            @Override
+            public void onSuccess(MlKitIngredientTranslator.TranslationResult result) {
+                if (getActivity() == null || !isAdded() || !result.translated) return;
+                getActivity().runOnUiThread(() -> ingredientsTextView.setText(getString(
+                        R.string.ingredients_translation_display,
+                        result.sourceLanguage,
+                        result.englishText,
+                        result.originalText
+                )));
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                if (getActivity() != null && isAdded()) {
+                    getActivity().runOnUiThread(() -> ingredientsTextView.setText(recovery.toDisplayText()));
+                }
+            }
+        });
+    }
+
+    private List<Ingredient> buildIngredientList(String barcode, String ingredientText) {
+        List<Ingredient> ingredients = new ArrayList<>();
+        for (String text : IngredientTextParser.parseIngredientCandidates(ingredientText)) {
+            ingredients.add(new Ingredient(barcode, text, ingredients.size()));
+        }
+        return ingredients;
+    }
+
+    private void saveConfirmedIngredients(String barcode, String verifiedIngredients) {
+        if (currentProductDetails == null || currentProductDetails.product == null) return;
+        currentProductDetails.ingredients = buildIngredientList(barcode, verifiedIngredients);
+        suggestedIngredients.clear();
+        contributeIngredientsButton.setVisibility(View.GONE);
+        executorService.execute(() -> {
+            db.productDao().insertProductWithDetails(currentProductDetails);
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> displayProductDetails(currentProductDetails, false));
+            }
+        });
     }
 
     private String displayProductName(String value) {

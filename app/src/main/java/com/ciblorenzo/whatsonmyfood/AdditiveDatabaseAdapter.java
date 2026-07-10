@@ -25,7 +25,9 @@ public class AdditiveDatabaseAdapter extends RecyclerView.Adapter<AdditiveDataba
     public void updateEntries(List<AdditiveEntry> nextEntries) {
         entries.clear();
         if (nextEntries != null) {
-            entries.addAll(nextEntries);
+            for (AdditiveEntry entry : nextEntries) {
+                if (entry != null && entry.isValid()) entries.add(entry);
+            }
         }
         notifyDataSetChanged();
     }

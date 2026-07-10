@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 
 public class AdditiveDatabaseActivity extends BaseActivity {
+    private static final String TAG = "AdditiveDatabase";
     private final List<AdditiveEntry> allEntries = new ArrayList<>();
     private AdditiveDatabaseAdapter adapter;
     private TextView resultCountTextView;
@@ -97,6 +99,7 @@ public class AdditiveDatabaseActivity extends BaseActivity {
 
     private void loadInitialData() {
         Executors.newSingleThreadExecutor().execute(() -> {
+            additiveDao.deleteInvalidEntries();
             List<AdditiveEntry> fromDb = additiveDao.getAllAdditives();
             if (fromDb.isEmpty()) {
                 List<AdditiveEntry> hardcoded = AdditiveDatabase.entries();
@@ -107,7 +110,9 @@ public class AdditiveDatabaseActivity extends BaseActivity {
             final List<AdditiveEntry> finalData = fromDb;
             runOnUiThread(() -> {
                 allEntries.clear();
-                allEntries.addAll(finalData);
+                for (AdditiveEntry entry : finalData) {
+                    if (entry != null && entry.isValid()) allEntries.add(entry);
+                }
                 updateResults(allEntries);
             });
         });
@@ -115,7 +120,7 @@ public class AdditiveDatabaseActivity extends BaseActivity {
 
     private void performRemoteSearch(String query) {
         for (AdditiveEntry entry : allEntries) {
-            if (entry.name.toLowerCase().contains(query.toLowerCase())) return;
+            if (entry != null && entry.matches(query)) return;
         }
 
         runOnUiThread(() -> {
@@ -130,10 +135,10 @@ public class AdditiveDatabaseActivity extends BaseActivity {
             public void onResult(String jsonResult) {
                 try {
                     JSONObject json = new JSONObject(jsonResult);
-                    String name = json.getString("name");
+                    String name = jsonText(json, "name");
                     
                     if (name.length() < 3) {
-                        runOnUiThread(() -> { if (loadingLayout != null) loadingLayout.setVisibility(View.GONE); });
+                        showInvalidResult();
                         return;
                     }
 
@@ -150,21 +155,18 @@ public class AdditiveDatabaseActivity extends BaseActivity {
 
                     AdditiveEntry aiEntry = new AdditiveEntry(
                             name,
-                            json.getString("category"),
+                            jsonText(json, "category"),
                             "",
-                            json.getString("function"),
-                            json.getString("explanation"),
+                            jsonText(json, "function"),
+                            jsonText(json, "explanation"),
                             "Source: Bitwise AI Analysis",
-                            json.optString("source_name", "Bitwise AI"),
-                            json.optString("source_url", ""),
+                            valueOrDefault(jsonText(json, "source_name"), "Bitwise AI"),
+                            jsonText(json, "source_url"),
                             status
                     );
 
                     if (!aiEntry.isValid()) {
-                        runOnUiThread(() -> {
-                            if (loadingLayout != null) loadingLayout.setVisibility(View.GONE);
-                            Toast.makeText(AdditiveDatabaseActivity.this, R.string.not_a_valid_additive, Toast.LENGTH_SHORT).show();
-                        });
+                        showInvalidResult();
                         return;
                     }
 
@@ -192,14 +194,22 @@ public class AdditiveDatabaseActivity extends BaseActivity {
                         }
                     });
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    runOnUiThread(() -> { if (loadingLayout != null) loadingLayout.setVisibility(View.GONE); });
+                    Log.e(TAG, "Could not parse Bitwise ingredient response: " + jsonResult, e);
+                    showInvalidResult();
                 }
             }
 
             @Override
             public void onError(Throwable t) {
-                runOnUiThread(() -> { if (loadingLayout != null) loadingLayout.setVisibility(View.GONE); });
+                Log.e(TAG, "Bitwise ingredient search failed", t);
+                runOnUiThread(() -> {
+                    if (loadingLayout != null) loadingLayout.setVisibility(View.GONE);
+                    Toast.makeText(
+                            AdditiveDatabaseActivity.this,
+                            valueOrDefault(t.getMessage(), getString(R.string.no_additives_found)),
+                            Toast.LENGTH_LONG
+                    ).show();
+                });
             }
         });
     }
@@ -216,8 +226,33 @@ public class AdditiveDatabaseActivity extends BaseActivity {
 
     private void updateResults(List<AdditiveEntry> entries) {
         adapter.updateEntries(entries);
-        resultCountTextView.setText(getString(R.string.additive_result_count, entries.size()));
-        emptyStateTextView.setVisibility(entries.isEmpty() ? View.VISIBLE : View.GONE);
+        int count = adapter.getItemCount();
+        resultCountTextView.setText(getString(R.string.additive_result_count, count));
+        emptyStateTextView.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
+    }
+
+    static String jsonText(JSONObject json, String key) {
+        if (json == null || key == null || json.isNull(key)) return "";
+        String value = json.optString(key, "").trim();
+        String normalized = value.toLowerCase();
+        if (normalized.equals("null")
+                || normalized.equals("none")
+                || normalized.equals("unknown")
+                || normalized.equals("n/a")) {
+            return "";
+        }
+        return value;
+    }
+
+    private static String valueOrDefault(String value, String fallback) {
+        return value == null || value.trim().isEmpty() ? fallback : value;
+    }
+
+    private void showInvalidResult() {
+        runOnUiThread(() -> {
+            if (loadingLayout != null) loadingLayout.setVisibility(View.GONE);
+            Toast.makeText(this, R.string.not_a_valid_additive, Toast.LENGTH_SHORT).show();
+        });
     }
 
     @Override

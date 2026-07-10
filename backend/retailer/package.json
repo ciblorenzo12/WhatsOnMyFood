@@ -5,6 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node src/server.js",
+    "test": "node --test test/*.test.js",
     "walmart:taxonomy": "node scripts/queryWalmartTaxonomy.js"
   },
   "engines": {

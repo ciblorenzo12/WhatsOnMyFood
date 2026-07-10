@@ -1,5 +1,7 @@
 package com.ciblorenzo.whatsonmyfood;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
@@ -17,8 +19,12 @@ public class SubscriptionActivity extends BaseActivity implements BitwiseEntitle
     private TextView planStatusText;
     private TextView usageText;
     private TextView priceText;
+    private TextView renewalTermsText;
+    private TextView billingStateText;
     private View usageMeterFill;
     private Button subscribeButton;
+    private Button restoreButton;
+    private Button manageSubscriptionButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,9 +41,12 @@ public class SubscriptionActivity extends BaseActivity implements BitwiseEntitle
         planStatusText = findViewById(R.id.plan_status_text);
         usageText = findViewById(R.id.usage_text);
         priceText = findViewById(R.id.price_text);
+        renewalTermsText = findViewById(R.id.renewal_terms_text);
+        billingStateText = findViewById(R.id.billing_state_text);
         usageMeterFill = findViewById(R.id.usage_meter_fill);
         subscribeButton = findViewById(R.id.subscribe_button);
-        Button restoreButton = findViewById(R.id.restore_button);
+        restoreButton = findViewById(R.id.restore_button);
+        manageSubscriptionButton = findViewById(R.id.manage_subscription_button);
 
         entitlementManager = new BitwiseEntitlementManager(this);
         entitlementManager.setListener(this);
@@ -46,8 +55,9 @@ public class SubscriptionActivity extends BaseActivity implements BitwiseEntitle
         subscribeButton.setOnClickListener(v -> entitlementManager.launchPurchase(this));
         restoreButton.setOnClickListener(v -> {
             entitlementManager.refreshPurchases();
-            Toast.makeText(this, "Checking Google Play purchases...", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.checking_google_play_purchases, Toast.LENGTH_SHORT).show();
         });
+        manageSubscriptionButton.setOnClickListener(v -> openGooglePlaySubscriptions());
 
         updateUi();
     }
@@ -84,14 +94,42 @@ public class SubscriptionActivity extends BaseActivity implements BitwiseEntitle
         int used = entitlementManager.getDailyUsage();
         int limit = entitlementManager.getDailyLimit();
         int remaining = entitlementManager.getRemainingFreeUses();
+        boolean billingReady = entitlementManager.isBillingReady();
+        boolean productLoaded = entitlementManager.isProductDetailsLoaded();
+        boolean productQueryComplete = entitlementManager.isProductQueryComplete();
+        BitwiseEntitlementManager.AccessState accessState = entitlementManager.getAccessState();
 
-        planStatusText.setText(premium ? "Bitwise Plus active" : "Free Bitwise access");
+        planStatusText.setText(premium ? R.string.bitwise_plan_active : R.string.bitwise_plan_free);
         usageText.setText(premium
-                ? "Unlimited Bitwise explanations are available on this account."
-                : remaining + " of " + limit + " free Bitwise explanations left today. Resets " + entitlementManager.getResetLabel() + ".");
+                ? getString(R.string.bitwise_usage_unlimited)
+                : getString(R.string.bitwise_usage_remaining, remaining, limit, entitlementManager.getResetLabel()));
         priceText.setText(entitlementManager.getPriceLabel());
-        subscribeButton.setText(premium ? "Bitwise Plus is active" : getString(R.string.subscribe_bitwise_plus));
-        subscribeButton.setEnabled(!premium);
+        renewalTermsText.setText(entitlementManager.getRenewalTerms());
+
+        String billingMessage = entitlementManager.getLastBillingMessage();
+        billingStateText.setText(billingMessage);
+        billingStateText.setVisibility(billingMessage.isEmpty() ? View.GONE : View.VISIBLE);
+        if (premium) {
+            subscribeButton.setText(R.string.bitwise_plus_active);
+        } else if (accessState == BitwiseEntitlementManager.AccessState.VERIFYING) {
+            subscribeButton.setText(R.string.billing_verifying_purchase);
+        } else if (accessState == BitwiseEntitlementManager.AccessState.PENDING) {
+            subscribeButton.setText(R.string.billing_payment_pending);
+        } else if (!billingReady) {
+            subscribeButton.setText(R.string.billing_connecting);
+        } else if (!productQueryComplete) {
+            subscribeButton.setText(R.string.billing_loading_product);
+        } else if (!productLoaded) {
+            subscribeButton.setText(R.string.billing_product_unavailable);
+        } else {
+            subscribeButton.setText(R.string.subscribe_bitwise_plus);
+        }
+        subscribeButton.setEnabled(!premium
+                && accessState != BitwiseEntitlementManager.AccessState.VERIFYING
+                && accessState != BitwiseEntitlementManager.AccessState.PENDING
+                && billingReady
+                && productLoaded);
+        restoreButton.setEnabled(billingReady && !entitlementManager.isVerificationInProgress());
 
         usageMeterFill.post(() -> {
             View parent = (View) usageMeterFill.getParent();
@@ -101,6 +139,15 @@ public class SubscriptionActivity extends BaseActivity implements BitwiseEntitle
             params.width = Math.max(0, Math.round(parentWidth * ratio));
             usageMeterFill.setLayoutParams(params);
         });
+    }
+
+    private void openGooglePlaySubscriptions() {
+        Uri uri = Uri.parse("https://play.google.com/store/account/subscriptions")
+                .buildUpon()
+                .appendQueryParameter("sku", BitwiseEntitlementManager.PRODUCT_ID_BITWISE_PLUS)
+                .appendQueryParameter("package", getPackageName())
+                .build();
+        startActivity(new Intent(Intent.ACTION_VIEW, uri));
     }
 
     @Override

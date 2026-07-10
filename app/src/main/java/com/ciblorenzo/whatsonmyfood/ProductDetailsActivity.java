@@ -35,10 +35,11 @@ import com.ciblorenzo.whatsonmyfood.analysis.AnalysisResult;
 import com.ciblorenzo.whatsonmyfood.analysis.AnalysisResultAdapter;
 import com.ciblorenzo.whatsonmyfood.analysis.AnalysisResultDeduplicator;
 import com.ciblorenzo.whatsonmyfood.analysis.AiSummaryFormatter;
+import com.ciblorenzo.whatsonmyfood.analysis.AiIngredientRecovery;
 import com.ciblorenzo.whatsonmyfood.analysis.BitwiseAiCore;
 import com.ciblorenzo.whatsonmyfood.analysis.HealthVerdict;
 import com.ciblorenzo.whatsonmyfood.analysis.HealthVerdictExplanationBuilder;
-import com.ciblorenzo.whatsonmyfood.analysis.OpenAIAnalysisService;
+import com.ciblorenzo.whatsonmyfood.analysis.IngredientTextParser;
 import com.ciblorenzo.whatsonmyfood.analysis.ProductAnalysisReport;
 import com.ciblorenzo.whatsonmyfood.analysis.rules.RuleEngine;
 import com.ciblorenzo.whatsonmyfood.retail.RetailerCommerceViewBinder;
@@ -78,6 +79,7 @@ public class ProductDetailsActivity extends BaseActivity {
     private LinearLayout certificateBadgesContainer;
     private Button removeFromPantryButton;
     private Button updateProductButton;
+    private Button contributeIngredientsButton;
     private CollapsingToolbarLayout collapsingToolbarLayout;
     private TableLayout nutritionFactsTable;
     private RecyclerView analysisRecyclerView;
@@ -94,6 +96,9 @@ public class ProductDetailsActivity extends BaseActivity {
     private View loadingOverlay;
     private RetailerCommerceViewBinder retailerCommerceViewBinder;
     private boolean aiEnabled = true;
+    private ProductWithDetails currentProductDetails;
+    private final List<String> suggestedIngredients = new ArrayList<>();
+    private String translationCheckedBarcode;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -136,8 +141,10 @@ public class ProductDetailsActivity extends BaseActivity {
         servingSizeTextView = findViewById(R.id.serving_size_text_view);
         healthScoreTextView = findViewById(R.id.health_score_text_view);
         updateProductButton = findViewById(R.id.update_product_button);
+        contributeIngredientsButton = findViewById(R.id.contribute_ingredients_button);
         removeFromPantryButton = findViewById(R.id.remove_from_pantry_button);
         GlassMotion.attachPress(updateProductButton);
+        GlassMotion.attachPress(contributeIngredientsButton);
         GlassMotion.attachPress(removeFromPantryButton);
         collapsingToolbarLayout = findViewById(R.id.collapsing_toolbar);
         nutritionFactsTable = findViewById(R.id.nutrition_facts_table);
@@ -182,6 +189,7 @@ public class ProductDetailsActivity extends BaseActivity {
             checkIfProductInPantry(barcode);
 
             updateProductButton.setOnClickListener(v -> updateProductFromSources(barcode));
+            contributeIngredientsButton.setOnClickListener(v -> showIngredientContribution(barcode));
 
             removeFromPantryButton.setOnClickListener(v -> {
                 executorService.execute(() -> {
@@ -301,6 +309,7 @@ public class ProductDetailsActivity extends BaseActivity {
     }
 
     private void displayProductDetails(ProductWithDetails productDetails, boolean allowAiInsight) {
+        currentProductDetails = productDetails;
         collapsingToolbarLayout.setTitle(" ");
         if (productDetails.product.imageUrl != null && !productDetails.product.imageUrl.isEmpty()) {
             Picasso.get().load(productDetails.product.imageUrl).into(productImageView);
@@ -313,6 +322,9 @@ public class ProductDetailsActivity extends BaseActivity {
         }
 
         currentReport = ruleEngine.analyze(productDetails);
+        boolean ingredientsMissing = !hasListedIngredients(productDetails);
+        contributeIngredientsButton.setVisibility(ingredientsMissing ? View.VISIBLE : View.GONE);
+        if (!ingredientsMissing) suggestedIngredients.clear();
         if (currentReport != null) {
             applyRuleBasedScore(productDetails, currentReport);
             analysisRecyclerView.setAdapter(new AnalysisResultAdapter(currentReport.getResults()));
@@ -338,6 +350,10 @@ public class ProductDetailsActivity extends BaseActivity {
         displayNutriments(productDetails.nutriments);
         GlassMotion.enter(detailsLayout, 0L);
 
+        if (allowAiInsight && hasListedIngredients(productDetails)
+                && translateListedIngredientsIfNeeded(productDetails)) {
+            return;
+        }
         if (allowAiInsight && aiEnabled) {
             performAiReasoning(productDetails);
         } else if (aiSummaryContainer != null) {
@@ -348,7 +364,7 @@ public class ProductDetailsActivity extends BaseActivity {
 
     private void performAiReasoning(ProductWithDetails product) {
         if (aiSummaryContainer == null) return;
-        if (displayCachedAiInsight(product)) return;
+        if (hasListedIngredients(product) && displayCachedAiInsight(product)) return;
         if (!bitwiseEntitlementManager.canUseBitwise()) {
             showBitwiseUpgradePrompt();
             return;
@@ -363,8 +379,11 @@ public class ProductDetailsActivity extends BaseActivity {
 
         StringBuilder productData = new StringBuilder();
         productData.append("response_language: ").append(LanguageManager.getLanguageName(this)).append("\n");
+        productData.append("Barcode: ").append(product.product.barcode).append("\n");
         productData.append("Name: ").append(isMeaningfulProductName(product.product.productName) ? product.product.productName : "").append("\n");
         productData.append("Brand: ").append(product.product.brands).append("\n");
+        productData.append("Categories: ").append(product.product.categories).append("\n");
+        productData.append("Quantity: ").append(product.product.quantity).append("\n");
         productData.append("Ingredients: ").append(formatIngredientsForAi(product)).append("\n");
         if (product.nutriments != null) {
             productData.append("\nNutrition Facts (per 100g): ").append(product.nutriments.toString());
@@ -382,6 +401,7 @@ public class ProductDetailsActivity extends BaseActivity {
                         String summary = com.ciblorenzo.whatsonmyfood.analysis.AiSummaryFormatter.format(obj.optString("summary", ""));
                         String aiVerdict = obj.optString("verdict", "");
                         String aiVerdictReason = obj.optString("verdict_reason", "");
+                        AiIngredientRecovery.Recovery recoveredIngredients = AiIngredientRecovery.parse(result);
 
                         if (isMeaningfulProductName(aiName)) {
                             productNameTextView.setText(aiName);
@@ -389,6 +409,12 @@ public class ProductDetailsActivity extends BaseActivity {
 
                         if (!aiBrand.isEmpty()) {
                             productBrandTextView.setText(aiBrand);
+                        }
+                        if (AiIngredientRecovery.shouldDisplay(product, recoveredIngredients)) {
+                            suggestedIngredients.clear();
+                            suggestedIngredients.addAll(recoveredIngredients.ingredients);
+                            contributeIngredientsButton.setVisibility(View.VISIBLE);
+                            displayRecoveredIngredientsInEnglish(recoveredIngredients);
                         }
 
                         // Sources
@@ -469,7 +495,7 @@ public class ProductDetailsActivity extends BaseActivity {
                             applyHealthVerdict(product, currentReport, currentReport != null ? currentReport.getResults() : null, aiVerdict, aiVerdictReason);
                         }
                     } catch (Exception e) {
-                        aiSummaryTextView.setText(result);
+                        aiSummaryTextView.setText("Bitwise could not format this explanation. Please try again.");
                     }
                 });
             }
@@ -477,7 +503,7 @@ public class ProductDetailsActivity extends BaseActivity {
             @Override
             public void onError(Throwable t) {
                 runOnUiThread(() -> {
-                    aiSummaryTextView.setText("Bitwise AI Error: " + t.getMessage());
+                    aiSummaryTextView.setText(t.getMessage());
                 });
             }
         });
@@ -654,7 +680,7 @@ public class ProductDetailsActivity extends BaseActivity {
 
     private String formatIngredientsForAi(ProductWithDetails product) {
         if (product == null || product.ingredients == null || product.ingredients.isEmpty()) {
-            return "Not listed";
+            return "";
         }
 
         StringBuilder builder = new StringBuilder();
@@ -664,7 +690,100 @@ public class ProductDetailsActivity extends BaseActivity {
                 builder.append(ingredient.text.trim());
             }
         }
-        return builder.length() == 0 ? "Not listed" : builder.toString();
+        return builder.toString();
+    }
+
+    private boolean hasListedIngredients(ProductWithDetails product) {
+        if (product == null || product.ingredients == null) return false;
+        for (Ingredient ingredient : product.ingredients) {
+            if (ingredient != null && ingredient.text != null && !ingredient.text.trim().isEmpty()) return true;
+        }
+        return false;
+    }
+
+    private void showIngredientContribution(String barcode) {
+        OpenFoodFactsContributionDialog.show(
+                this,
+                barcode,
+                suggestedIngredients,
+                verifiedIngredients -> saveConfirmedIngredients(barcode, verifiedIngredients)
+        );
+    }
+
+    private boolean translateListedIngredientsIfNeeded(ProductWithDetails product) {
+        String barcode = product != null && product.product != null ? product.product.barcode : null;
+        if (barcode == null || barcode.equals(translationCheckedBarcode)) return false;
+        translationCheckedBarcode = barcode;
+        String original = formatIngredientsForAi(product);
+        if (original.isEmpty()) return false;
+        ingredientsTextView.append("\n\n" + getString(R.string.ingredients_checking_language));
+        MlKitIngredientTranslator.translateToEnglish(original, new MlKitIngredientTranslator.Callback() {
+            @Override
+            public void onSuccess(MlKitIngredientTranslator.TranslationResult result) {
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    if (result.translated && !result.englishText.isEmpty()) {
+                        product.ingredients = buildIngredientList(barcode, result.englishText);
+                        currentProductDetails = product;
+                        executorService.execute(() -> db.productDao().insertProductWithDetails(product));
+                    }
+                    displayProductDetails(product, true);
+                });
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                runOnUiThread(() -> {
+                    if (!isFinishing() && !isDestroyed()) displayProductDetails(product, true);
+                });
+            }
+        });
+        return true;
+    }
+
+    private void displayRecoveredIngredientsInEnglish(AiIngredientRecovery.Recovery recovery) {
+        String original = OpenFoodFactsContributionValidator.joinSuggestedIngredients(recovery.ingredients);
+        ingredientsTextView.setText(recovery.toDisplayText() + "\n\n" + getString(R.string.ingredients_checking_language));
+        MlKitIngredientTranslator.translateToEnglish(original, new MlKitIngredientTranslator.Callback() {
+            @Override
+            public void onSuccess(MlKitIngredientTranslator.TranslationResult result) {
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed() || !result.translated) return;
+                    ingredientsTextView.setText(getString(
+                            R.string.ingredients_translation_display,
+                            result.sourceLanguage,
+                            result.englishText,
+                            result.originalText
+                    ));
+                });
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                runOnUiThread(() -> {
+                    if (!isFinishing() && !isDestroyed()) ingredientsTextView.setText(recovery.toDisplayText());
+                });
+            }
+        });
+    }
+
+    private List<Ingredient> buildIngredientList(String barcode, String ingredientText) {
+        List<Ingredient> ingredients = new ArrayList<>();
+        for (String text : IngredientTextParser.parseIngredientCandidates(ingredientText)) {
+            ingredients.add(new Ingredient(barcode, text, ingredients.size()));
+        }
+        return ingredients;
+    }
+
+    private void saveConfirmedIngredients(String barcode, String verifiedIngredients) {
+        if (currentProductDetails == null || currentProductDetails.product == null) return;
+        currentProductDetails.ingredients = buildIngredientList(barcode, verifiedIngredients);
+        suggestedIngredients.clear();
+        contributeIngredientsButton.setVisibility(View.GONE);
+        executorService.execute(() -> {
+            db.productDao().insertProductWithDetails(currentProductDetails);
+            runOnUiThread(() -> displayProductDetails(currentProductDetails, false));
+        });
     }
 
     private String displayProductName(String value) {

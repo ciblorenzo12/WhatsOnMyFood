@@ -3,6 +3,8 @@ package com.ciblorenzo.whatsonmyfood;
 import android.util.Log;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import java.io.File;
 import java.io.IOException;
@@ -117,40 +119,95 @@ public class OpenFoodFactsApiClient implements BarcodeApiClient {
         }
     }
 
-    public boolean addProduct(String barcode, String productName, String brand, String ingredients) throws IOException {
+    public SubmissionResult updateIngredients(
+            String barcode,
+            String originalIngredients,
+            String englishIngredients,
+            String sourceLanguage,
+            String userId,
+            String password
+    ) throws IOException {
         String url = "https://world.openfoodfacts.org/cgi/product_jqm2.pl";
 
-        RequestBody formBody = new FormBody.Builder()
+        FormBody.Builder formBuilder = new FormBody.Builder()
                 .add("code", barcode)
-                .add("product_name", productName)
-                .add("brands", brand)
-                .add("ingredients_text", ingredients)
-                .add("lang", languageCode)
-                // Required for authenticated write operations, but we can try without for now.
-                // .add("user_id", "YOUR_USER_ID") 
-                // .add("password", "YOUR_PASSWORD")
-                .build();
+                .add("ingredients_text_en", englishIngredients)
+                .add("user_id", userId)
+                .add("password", password)
+                .add("comment", "Original ingredients and English translation verified in What's On My Food");
+        String sourceCode = ingredientLanguageCode(sourceLanguage);
+        if (sourceCode != null && !sourceCode.equals("en")) {
+            formBuilder.add("ingredients_text_" + sourceCode, originalIngredients);
+        } else {
+            formBuilder.add("ingredients_text", originalIngredients);
+        }
+        RequestBody formBody = formBuilder.build();
 
         Request request = new Request.Builder()
                 .url(url)
                 .post(formBody)
-                .addHeader("User-Agent", "WhatsOnMyFood - Android - Version 1.0")
+                .addHeader("Accept", "application/json")
+                .addHeader("User-Agent", "WhatsOnMyFood/1.0.1 (Android; https://github.com/ciblorenzo12/WhatsOnMyFood)")
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
+            String responseBody = response.body() != null ? response.body().string() : "";
             if (!response.isSuccessful()) {
                 Log.e(TAG, "Failed to submit product, code: " + response.code());
-                return false;
+                return SubmissionResult.failure(responseMessage(responseBody, response.code()));
             }
 
-            String responseBody = response.body().string();
-            Log.d(TAG, "Add product response: " + responseBody);
-
-            // The response is a simple JSON object, check the status field.
-            return responseBody.contains("\"status\":1");
+            Log.d(TAG, "Ingredient update response: " + responseBody);
+            try {
+                JsonObject body = JsonParser.parseString(responseBody).getAsJsonObject();
+                int status = body.has("status") ? body.get("status").getAsInt() : 0;
+                String message = body.has("status_verbose")
+                        ? body.get("status_verbose").getAsString()
+                        : "Open Food Facts did not accept the update.";
+                return status == 1 ? SubmissionResult.success(message) : SubmissionResult.failure(message);
+            } catch (Exception parseError) {
+                Log.e(TAG, "Could not parse Open Food Facts response", parseError);
+                return SubmissionResult.failure("Open Food Facts returned an unexpected response.");
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error submitting product", e);
-            return false;
+            if (e instanceof IOException) throw (IOException) e;
+            return SubmissionResult.failure("The update could not be submitted.");
+        }
+    }
+
+    private String responseMessage(String responseBody, int statusCode) {
+        try {
+            JsonObject body = JsonParser.parseString(responseBody).getAsJsonObject();
+            if (body.has("status_verbose")) return body.get("status_verbose").getAsString();
+            if (body.has("error")) return body.get("error").getAsString();
+        } catch (Exception ignored) {
+            // Fall through to a concise HTTP error.
+        }
+        return "Open Food Facts rejected the update (HTTP " + statusCode + ").";
+    }
+
+    static String ingredientLanguageCode(String languageTag) {
+        if (languageTag == null) return null;
+        String code = languageTag.trim().toLowerCase(Locale.US).split("-")[0];
+        return code.matches("[a-z]{2,3}") ? code : null;
+    }
+
+    public static final class SubmissionResult {
+        public final boolean successful;
+        public final String message;
+
+        private SubmissionResult(boolean successful, String message) {
+            this.successful = successful;
+            this.message = message;
+        }
+
+        static SubmissionResult success(String message) {
+            return new SubmissionResult(true, message);
+        }
+
+        static SubmissionResult failure(String message) {
+            return new SubmissionResult(false, message);
         }
     }
 
