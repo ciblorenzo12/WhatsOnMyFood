@@ -86,6 +86,7 @@ public class ProfileActivity extends BaseActivity {
         Button changePasswordButton = findViewById(R.id.change_password_button);
         Button bitwisePlusButton = findViewById(R.id.bitwise_plus_button);
         Button privacyPolicyButton = findViewById(R.id.privacy_policy_button);
+        Button clearCachedDataButton = findViewById(R.id.clear_cached_data_button);
         Button logoutButton = findViewById(R.id.logout_button);
         Button deleteAccountButton = findViewById(R.id.delete_account_button);
 
@@ -97,6 +98,7 @@ public class ProfileActivity extends BaseActivity {
         changePasswordButton.setOnClickListener(v -> sendPasswordReset());
         bitwisePlusButton.setOnClickListener(v -> startActivity(new Intent(this, SubscriptionActivity.class)));
         privacyPolicyButton.setOnClickListener(v -> startActivity(new Intent(this, PrivacyPolicyActivity.class)));
+        clearCachedDataButton.setOnClickListener(v -> confirmCachedDataDeletion(clearCachedDataButton));
         logoutButton.setOnClickListener(v -> logout());
         deleteAccountButton.setOnClickListener(v -> confirmAccountDeletion(deleteAccountButton));
     }
@@ -281,6 +283,69 @@ public class ProfileActivity extends BaseActivity {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+    }
+
+    private void confirmCachedDataDeletion(Button clearCachedDataButton) {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.clear_cached_data)
+                .setMessage(R.string.clear_cached_data_confirmation)
+                .setPositiveButton(R.string.clear_cached_data, (dialog, which) ->
+                        clearCachedData(clearCachedDataButton))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void clearCachedData(Button clearCachedDataButton) {
+        clearCachedDataButton.setEnabled(false);
+        Executors.newSingleThreadExecutor().execute(() -> {
+            boolean success = true;
+            try {
+                AppDatabase.getDatabase(getApplicationContext())
+                        .productDao()
+                        .clearCachedProductData();
+                success = deleteDirectoryContents(getCacheDir());
+
+                File cachedProfile = new File(
+                        getFilesDir(),
+                        "profile_cache_" + currentUser.getUid() + ".jpg"
+                );
+                if (cachedProfile.exists() && !cachedProfile.delete()) {
+                    success = false;
+                    Log.w(TAG, "Could not remove the cached profile image");
+                }
+            } catch (Exception error) {
+                success = false;
+                Log.e(TAG, "Could not clear all cached data", error);
+            }
+
+            boolean completed = success;
+            runOnUiThread(() -> {
+                clearCachedDataButton.setEnabled(true);
+                Toast.makeText(
+                        this,
+                        completed ? R.string.cached_data_cleared : R.string.cached_data_clear_failed,
+                        Toast.LENGTH_LONG
+                ).show();
+            });
+        });
+    }
+
+    private boolean deleteDirectoryContents(File directory) {
+        if (directory == null || !directory.exists()) return true;
+        File[] children = directory.listFiles();
+        if (children == null) return false;
+
+        boolean success = true;
+        for (File child : children) {
+            if (child.isDirectory() && !deleteDirectoryContents(child)) {
+                success = false;
+            }
+            if (!child.delete()) {
+                success = false;
+                Log.w(TAG, "Could not remove cached path: " + child.getName());
+            }
+        }
+        return success;
     }
 
     private void confirmAccountDeletion(Button deleteAccountButton) {

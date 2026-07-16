@@ -59,6 +59,10 @@
     <string name="language_updated">Idioma actualizado.</string>
     <string name="profile_updated">Perfil actualizado correctamente.</string>
     <string name="profile_update_failed">No se pudo actualizar el perfil.</string>
+    <string name="clear_cached_data">Borrar datos en caché</string>
+    <string name="clear_cached_data_confirmation">¿Eliminar de este dispositivo los productos descargados, las explicaciones guardadas de Bitwise, los archivos temporales y la imagen de perfil en caché? Tu cuenta, despensa, favoritos, suscripción y configuración se conservarán.</string>
+    <string name="cached_data_cleared">Los datos en caché se borraron.</string>
+    <string name="cached_data_clear_failed">No se pudieron eliminar todos los datos en caché. Cierra las otras pantallas de la aplicación e inténtalo de nuevo.</string>
     <string name="my_pantry">Mi despensa</string>
     <string name="pantry">Despensa</string>
     <string name="scan_me">Escanear</string>

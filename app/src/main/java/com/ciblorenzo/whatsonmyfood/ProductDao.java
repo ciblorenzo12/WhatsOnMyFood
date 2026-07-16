@@ -83,4 +83,29 @@ public interface ProductDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertCacheMeta(CacheMeta cacheMeta);
+
+    @Query("DELETE FROM cache_meta")
+    void clearCacheMetadata();
+
+    @Query("UPDATE products SET aiInsight = NULL")
+    void clearCachedAiInsights();
+
+    @Query("DELETE FROM ingredients WHERE barcode NOT IN (SELECT barcode FROM pantry) AND barcode NOT IN (SELECT barcode FROM products WHERE isFavorite = 1)")
+    void deleteUnretainedCachedIngredients();
+
+    @Query("DELETE FROM nutriments WHERE barcode NOT IN (SELECT barcode FROM pantry) AND barcode NOT IN (SELECT barcode FROM products WHERE isFavorite = 1)")
+    void deleteUnretainedCachedNutriments();
+
+    @Query("DELETE FROM products WHERE barcode NOT IN (SELECT barcode FROM pantry) AND isFavorite = 0")
+    void deleteUnretainedCachedProducts();
+
+    /** Clears downloaded product and AI cache while preserving pantry items and favorites. */
+    @Transaction
+    default void clearCachedProductData() {
+        clearCachedAiInsights();
+        clearCacheMetadata();
+        deleteUnretainedCachedIngredients();
+        deleteUnretainedCachedNutriments();
+        deleteUnretainedCachedProducts();
+    }
 }

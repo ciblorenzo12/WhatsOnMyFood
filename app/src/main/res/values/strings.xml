@@ -59,6 +59,10 @@
     <string name="language_updated">Language updated.</string>
     <string name="profile_updated">Profile updated successfully.</string>
     <string name="profile_update_failed">Failed to update profile.</string>
+    <string name="clear_cached_data">Clear cached data</string>
+    <string name="clear_cached_data_confirmation">Remove downloaded product results, saved Bitwise explanations, temporary files, and the locally cached profile image from this device? Your account, pantry, favorites, subscription, and settings will remain.</string>
+    <string name="cached_data_cleared">Cached data was cleared.</string>
+    <string name="cached_data_clear_failed">Some cached data could not be removed. Please close other app screens and try again.</string>
     <string name="my_pantry">My Pantry</string>
     <string name="pantry">Pantry</string>
     <string name="scan_me">Scan Me!!</string>

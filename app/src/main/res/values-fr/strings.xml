@@ -59,6 +59,10 @@
     <string name="language_updated">Langue mise a jour.</string>
     <string name="profile_updated">Profil mis a jour.</string>
     <string name="profile_update_failed">Impossible de mettre a jour le profil.</string>
+    <string name="clear_cached_data">Effacer les données en cache</string>
+    <string name="clear_cached_data_confirmation">Supprimer de cet appareil les produits téléchargés, les explications Bitwise enregistrées, les fichiers temporaires et l’image de profil en cache ? Votre compte, votre garde-manger, vos favoris, votre abonnement et vos réglages seront conservés.</string>
+    <string name="cached_data_cleared">Les données en cache ont été effacées.</string>
+    <string name="cached_data_clear_failed">Certaines données en cache n’ont pas pu être supprimées. Fermez les autres écrans de l’application et réessayez.</string>
     <string name="my_pantry">Mon garde-manger</string>
     <string name="pantry">Garde-manger</string>
     <string name="scan_me">Scanner</string>
