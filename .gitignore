@@ -38,6 +38,7 @@ keystore.properties
 *.pem
 .env
 .env.*
+backend/retailer/runpod.local.env
 
 # ---- Firebase / Google services ----
 # If you don't want to commit service configs, uncomment:

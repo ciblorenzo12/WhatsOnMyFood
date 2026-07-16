@@ -130,19 +130,36 @@ GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\n...\n-----E
 key variables. It accepts either the raw service-account JSON or its base64 form.
 Never add that credential file or value to the repository or mobile application.
 
-## RunPod deployment shape
+## RunPod deployment
 
-This backend is ready to run as a small Node service:
+The PowerShell deployment script packages this backend, uploads it over RunPod SSH,
+starts it, and confirms that the public health check reports `google-gemini`. It uses
+the RunPod SSH connection, which does not need SCP or SFTP.
 
-```bash
-npm start
+One-time setup:
+
+```powershell
+Copy-Item runpod.local.env.example runpod.local.env
 ```
 
-If your RunPod exposes port `8787`, the Android app should use a URL shaped like:
+Edit `runpod.local.env` with the exact SSH command details from the pod's **Connect**
+tab and its HTTP proxy URL. Keep `GEMINI_API_KEY` blank; the script requests it as a
+masked local prompt and sends it only to the RunPod server. The local file is ignored
+by Git.
+
+Deploy or update the backend with one command:
+
+```powershell
+.\scripts\deploy-runpod.ps1
+```
+
+For a pod exposing port `8000`, the Android configuration should use the corresponding
+HTTPS proxy URL:
 
 ```properties
-RETAILER_BACKEND_BASE_URL=https://YOUR-POD-ID-8787.proxy.runpod.net
+RETAILER_BACKEND_BASE_URL=https://YOUR-POD-ID-8000.proxy.runpod.net
+BITWISE_LLM_BASE_URL=https://YOUR-POD-ID-8000.proxy.runpod.net
 ```
 
-If you prefer to keep one public RunPod port, mount this service behind your existing
-port `8000` app and proxy `/api/retail/*` to this Node process.
+The Gemini key stays on the server. Do not put it in Android `local.properties`, source
+code, or a committed configuration file.
