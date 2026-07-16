@@ -15,12 +15,45 @@ const HEALTH_EDUCATOR_INSTRUCTION = [
 
 const FACT_CHECKER_INSTRUCTION = [
   "You are the evidence-checking stage for Bitwise, a consumer food-label assistant.",
-  "You must use Google Search on every request to verify the nutrition and ingredient claims that are relevant to the supplied product label.",
+  "You must use URL Context on every request to verify the nutrition and ingredient claims that are relevant to the supplied product label.",
   "Prefer authoritative primary sources such as FDA, USDA, NIH, WHO, EFSA, and established medical or public-health organizations.",
   "Check the reason for the proposed health verdict and find practical serving or portion context when the label provides enough information.",
   "Do not diagnose, prescribe, or invent a serving amount. If the package serving size is unavailable, say that portion advice must stay general.",
-  "Return a concise evidence memo for another model to use. Clearly separate verified facts, label-specific limits, and uncertainty.",
+  "Use the verified facts in the final structured response. Clearly separate verified facts, label-specific limits, and uncertainty.",
 ].join(" ");
+
+const TRUSTED_FACT_CHECK_SOURCES = [
+  {
+    key: "nutrition_label",
+    name: "FDA - How to Understand and Use the Nutrition Facts Label",
+    url: "https://www.fda.gov/food/nutrition-facts-label/how-understand-and-use-nutrition-facts-label",
+  },
+  {
+    key: "fats",
+    name: "American Heart Association - Fats in Foods",
+    url: "https://www.heart.org/en/healthy-living/healthy-eating/eat-smart/fats/fats-in-foods",
+  },
+  {
+    key: "added_sugars",
+    name: "FDA - Added Sugars on the Nutrition Facts Label",
+    url: "https://www.fda.gov/food/nutrition-facts-label/added-sugars-nutrition-facts-label",
+  },
+  {
+    key: "sodium",
+    name: "FDA - Sodium in Your Diet",
+    url: "https://www.fda.gov/food/nutrition-education-resources-materials/sodium-your-diet",
+  },
+  {
+    key: "additives",
+    name: "FDA - Food Additives and GRAS Ingredients",
+    url: "https://www.fda.gov/food/food-ingredients-packaging/food-additives-and-gras-ingredients-information-consumers",
+  },
+  {
+    key: "healthy_diet",
+    name: "WHO - Healthy diet",
+    url: "https://www.who.int/news-room/fact-sheets/detail/healthy-diet",
+  },
+];
 
 const BITWISE_RESPONSE_SCHEMA = {
   type: "object",
@@ -152,11 +185,24 @@ function productContextForFactCheck(prompt) {
   return context.trim().slice(0, 12000);
 }
 
-function factCheckPrompt(prompt) {
-  return "Use Google Search now and return a short fact-check memo supported by 2-4 authoritative web sources. "
-    + "Verify the specific reason for the product verdict and any portion guidance that can be supported by the printed serving size. "
-    + "Search authoritative health or food-regulatory sources first. Do not merely repeat the product analysis request.\n\n"
-    + `PRODUCT LABEL DATA TO VERIFY:\n${productContextForFactCheck(prompt)}`;
+function factCheckSourcesForPrompt(prompt) {
+  const text = productContextForFactCheck(prompt).toLowerCase();
+  const selectedKeys = new Set(["nutrition_label", "healthy_diet"]);
+  if (/\b(fat|oil|butter|nut|almond|peanut|palm|coconut)\b/.test(text)) selectedKeys.add("fats");
+  if (/\b(sugar|sweetener|syrup|fructose|sucrose)\b/.test(text)) selectedKeys.add("added_sugars");
+  if (/\b(sodium|salt)\b/.test(text)) selectedKeys.add("sodium");
+  if (/\b(additive|preservative|color|dye|emulsifier|stabilizer)\b/.test(text)) selectedKeys.add("additives");
+  return TRUSTED_FACT_CHECK_SOURCES.filter((source) => selectedKeys.has(source.key)).slice(0, 4);
+}
+
+function groundedResponsePrompt(prompt, sources) {
+  const sourceList = sources.map((source) => `- ${source.name}: ${source.url}`).join("\n");
+  return "Use URL Context now before writing the final response. Fact-check the health-verdict reason and portion guidance "
+    + "against the authoritative sources listed below. "
+    + "Base portion advice on the printed serving size and never invent an amount. Then follow the full Bitwise JSON instructions below.\n\n"
+    + `AUTHORITATIVE FACT-CHECK SOURCES:\n${sourceList}\n\n`
+    + `PRODUCT LABEL DATA TO FACT-CHECK:\n${productContextForFactCheck(prompt)}\n\n`
+    + `FULL BITWISE RESPONSE INSTRUCTIONS:\n${prompt}`;
 }
 
 function modelText(result) {
@@ -190,16 +236,32 @@ function groundingSources(result) {
     }));
 }
 
-function groundedAnalysisPrompt(prompt, evidence, sources) {
-  const sourceList = sources.map((source, index) =>
-    `${index + 1}. ${source.name}: ${source.url}`
-  ).join("\n");
+function urlContextSources(result, requestedSources) {
+  const metadata = result.candidates?.[0]?.urlContextMetadata;
+  const retrieved = new Set((metadata?.urlMetadata || [])
+    .filter((item) => item?.urlRetrievalStatus === "URL_RETRIEVAL_STATUS_SUCCESS")
+    .map((item) => normalizeSourceUrl(item.retrievedUrl)));
 
-  return `${prompt}\n\nGEMINI FACT-CHECK EVIDENCE:\n${evidence}\n\n`
-    + `SOURCES ACTUALLY USED BY THE FACT-CHECK:\n${sourceList || "No grounded web source was returned."}\n\n`
-    + "Use the fact-check evidence to verify the verdict explanation and portion guidance. "
-    + "Do not introduce a health claim that is not supported by the label or the evidence above. "
-    + "Do not invent citations. The server will attach the verified source list to the final response.";
+  return requestedSources
+    .filter((source) => retrieved.has(normalizeSourceUrl(source.url)))
+    .map((source) => ({
+      name: source.name,
+      url: source.url,
+      visual_quote: "Used by Gemini to fact-check the product explanation.",
+      search_query: "",
+    }));
+}
+
+function normalizeSourceUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    url.hash = "";
+    url.search = "";
+    url.pathname = url.pathname.replace(/\/+$/, "") || "/";
+    return url.toString().toLowerCase();
+  } catch (_error) {
+    return "";
+  }
 }
 
 function attachVerifiedSources(content, sources) {
@@ -222,9 +284,10 @@ function attachVerifiedSources(content, sources) {
 function analysisGenerationConfig(usesGemini3Defaults) {
   const config = {
     ...(usesGemini3Defaults ? {} : { temperature: 0.3, topP: 0.9 }),
-    maxOutputTokens: 4096,
+    maxOutputTokens: 8192,
   };
   if (usesGemini3Defaults) {
+    config.thinkingConfig = { thinkingLevel: "low" };
     config.responseFormat = {
       text: {
         mimeType: "APPLICATION_JSON",
@@ -252,36 +315,8 @@ async function requestGemini(prompt, image) {
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   const model = process.env.GEMINI_MODEL || DEFAULT_MODEL;
   const usesGemini3Defaults = /^gemini-3(?:\.|-)/i.test(model);
+  const requestedSources = factCheckSourcesForPrompt(prompt);
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-  const factCheckResponse = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": apiKey,
-    },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: FACT_CHECKER_INSTRUCTION }] },
-      contents: [{ role: "user", parts: geminiParts(factCheckPrompt(prompt), image) }],
-      tools: [{ google_search: {} }],
-      generationConfig: {
-        ...(usesGemini3Defaults ? {} : { temperature: 0.1, topP: 0.8 }),
-        maxOutputTokens: 1400,
-      },
-    }),
-  });
-
-  const factCheckText = await factCheckResponse.text();
-  if (!factCheckResponse.ok) {
-    throw new Error(`Gemini fact-check returned ${factCheckResponse.status}: ${factCheckText.slice(0, 500)}`);
-  }
-
-  const factCheckResult = JSON.parse(factCheckText);
-  const evidence = modelText(factCheckResult);
-  const sources = groundingSources(factCheckResult);
-  if (!evidence) {
-    throw new Error("Gemini fact-check returned an empty response");
-  }
-
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
@@ -289,19 +324,24 @@ async function requestGemini(prompt, image) {
       "x-goog-api-key": apiKey,
     },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: HEALTH_EDUCATOR_INSTRUCTION }] },
-      contents: [{ role: "user", parts: geminiParts(groundedAnalysisPrompt(prompt, evidence, sources), image) }],
+      systemInstruction: {
+        parts: [{ text: `${HEALTH_EDUCATOR_INSTRUCTION} ${FACT_CHECKER_INSTRUCTION}` }],
+      },
+      contents: [{ role: "user", parts: geminiParts(groundedResponsePrompt(prompt, requestedSources), image) }],
+      tools: [{ url_context: {} }],
       generationConfig: analysisGenerationConfig(usesGemini3Defaults),
     }),
   });
 
   const responseText = await response.text();
   if (!response.ok) {
-    throw new Error(`Gemini analysis returned ${response.status}: ${responseText.slice(0, 500)}`);
+    throw new Error(`Gemini grounded analysis returned ${response.status}: ${responseText.slice(0, 500)}`);
   }
 
   const result = JSON.parse(responseText);
   const content = modelText(result);
+  const contextSources = urlContextSources(result, requestedSources);
+  const sources = contextSources.length > 0 ? contextSources : groundingSources(result);
   if (!content) {
     const blockReason = result.promptFeedback?.blockReason;
     throw new Error(blockReason ? `Gemini blocked the request: ${blockReason}` : "Gemini returned an empty response");
@@ -348,4 +388,6 @@ module.exports = {
   attachVerifiedSources,
   BITWISE_RESPONSE_SCHEMA,
   productContextForFactCheck,
+  factCheckSourcesForPrompt,
+  urlContextSources,
 };

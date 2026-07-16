@@ -7,6 +7,8 @@ const {
   groundingSources,
   attachVerifiedSources,
   productContextForFactCheck,
+  factCheckSourcesForPrompt,
+  urlContextSources,
 } = require("../src/bitwiseGemini");
 
 const originalFetch = global.fetch;
@@ -42,40 +44,30 @@ test("grounds the fact check before generating the structured shopper response",
     const body = JSON.parse(options.body);
     assert.equal(body.contents[0].parts[1].inlineData.data, "image-data");
 
-    if (callCount === 1) {
-      assert.deepEqual(body.tools, [{ google_search: {} }]);
-      assert.equal(body.generationConfig.responseMimeType, undefined);
-      assert.equal(body.generationConfig.temperature, undefined);
-      assert.match(body.systemInstruction.parts[0].text, /evidence-checking stage/i);
-      assert.match(body.contents[0].parts[0].text, /Use Google Search now/i);
-      assert.match(body.contents[0].parts[0].text, /2-4 authoritative web sources/i);
-      return {
-        ok: true,
-        text: async () => JSON.stringify({
-          candidates: [{
-            content: { parts: [{ text: "FDA guidance supports checking added sugar against the label serving." }] },
-            groundingMetadata: {
-              webSearchQueries: ["FDA added sugar serving size"],
-              groundingChunks: [{ web: { title: "FDA Nutrition Facts Label", uri: "https://example.gov/fda-label" } }],
-            },
-          }],
-        }),
-      };
-    }
-
-    assert.equal(body.tools, undefined);
+    assert.deepEqual(body.tools, [{ url_context: {} }]);
     assert.equal(body.generationConfig.responseMimeType, undefined);
     assert.equal(body.generationConfig.responseFormat.text.mimeType, "APPLICATION_JSON");
     assert.equal(body.generationConfig.responseFormat.text.schema.properties.verdict.type, "string");
+    assert.equal(body.generationConfig.thinkingConfig.thinkingLevel, "low");
+    assert.equal(body.generationConfig.maxOutputTokens, 8192);
     assert.equal(body.generationConfig.temperature, undefined);
     assert.match(body.systemInstruction.parts[0].text, /warm, evidence-aware food-label assistant/i);
+    assert.match(body.systemInstruction.parts[0].text, /evidence-checking stage/i);
     assert.match(body.systemInstruction.parts[0].text, /Do not claim to be a doctor/i);
-    assert.match(body.contents[0].parts[0].text, /GEMINI FACT-CHECK EVIDENCE/i);
-    assert.match(body.contents[0].parts[0].text, /FDA Nutrition Facts Label/i);
+    assert.match(body.contents[0].parts[0].text, /Use URL Context now/i);
+    assert.match(body.contents[0].parts[0].text, /FDA.*Nutrition Facts Label/i);
     return {
       ok: true,
       text: async () => JSON.stringify({
-        candidates: [{ content: { parts: [{ text: '{"verdict":"HEALTHY","findings":[],"sources":[{"name":"Invented","url":"https://bad.example"}]}' }] } }],
+        candidates: [{
+          content: { parts: [{ text: '{"verdict":"HEALTHY","findings":[],"sources":[{"name":"Invented","url":"https://bad.example"}]}' }] },
+          urlContextMetadata: {
+            urlMetadata: [{
+              retrievedUrl: "https://www.fda.gov/food/nutrition-facts-label/how-understand-and-use-nutrition-facts-label",
+              urlRetrievalStatus: "URL_RETRIEVAL_STATUS_SUCCESS",
+            }],
+          },
+        }],
       }),
     };
   };
@@ -86,15 +78,15 @@ test("grounds the fact check before generating the structured shopper response",
   }));
   assert.equal(result.status, 200);
   assert.equal(result.body.provider, "google-gemini");
-  assert.equal(callCount, 2);
+  assert.equal(callCount, 1);
   const content = JSON.parse(result.body.content);
   assert.equal(content.verdict, "HEALTHY");
   assert.equal(content.fact_check_status, "grounded");
   assert.deepEqual(content.sources, [{
-    name: "FDA Nutrition Facts Label",
-    url: "https://example.gov/fda-label",
+    name: "FDA - How to Understand and Use the Nutrition Facts Label",
+    url: "https://www.fda.gov/food/nutrition-facts-label/how-understand-and-use-nutrition-facts-label",
     visual_quote: "Used by Gemini to fact-check the product explanation.",
-    search_query: "FDA added sugar serving size",
+    search_query: "",
   }]);
 });
 
@@ -128,6 +120,49 @@ test("keeps JSON formatting instructions out of the fact-check query", () => {
   );
   assert.match(context, /^Product: Plain almond butter/);
   assert.doesNotMatch(context, /JSON shape/i);
+});
+
+test("selects nutrition sources that match the scanned label", () => {
+  const sources = factCheckSourcesForPrompt(
+    "Product: Almond butter. Ingredients: almonds. Added sugar: 0 g. Sodium: 0 mg."
+  );
+  const keys = sources.map((source) => source.key);
+  assert.ok(keys.includes("nutrition_label"));
+  assert.ok(keys.includes("fats"));
+  assert.ok(keys.includes("added_sugars"));
+  assert.ok(keys.includes("sodium"));
+});
+
+test("returns only URL context sources Gemini successfully retrieved", () => {
+  const requested = factCheckSourcesForPrompt("Product: Water");
+  const sources = urlContextSources({
+    candidates: [{
+      urlContextMetadata: {
+        urlMetadata: [
+          { retrievedUrl: requested[0].url, urlRetrievalStatus: "URL_RETRIEVAL_STATUS_SUCCESS" },
+          { retrievedUrl: requested[1].url, urlRetrievalStatus: "URL_RETRIEVAL_STATUS_ERROR" },
+        ],
+      },
+    }],
+  }, requested);
+  assert.equal(sources.length, 1);
+  assert.equal(sources[0].url, requested[0].url);
+});
+
+test("recognizes successfully retrieved sources when Gemini normalizes the URL", () => {
+  const requested = factCheckSourcesForPrompt("Product: Water");
+  const sources = urlContextSources({
+    candidates: [{
+      urlContextMetadata: {
+        urlMetadata: [{
+          retrievedUrl: `${requested[0].url}/?utm_source=gemini#details`,
+          urlRetrievalStatus: "URL_RETRIEVAL_STATUS_SUCCESS",
+        }],
+      },
+    }],
+  }, requested);
+  assert.equal(sources.length, 1);
+  assert.equal(sources[0].url, requested[0].url);
 });
 
 test("rejects a request with the wrong app token", async () => {
