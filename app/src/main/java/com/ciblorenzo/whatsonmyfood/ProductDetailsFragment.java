@@ -67,7 +67,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
     private static final String ARG_BARCODE = "barcode";
     private static final String ARG_AI_ENABLED = "ai_enabled";
-    private static final String AI_CACHE_PREFIX = "BITWISE_AI_CACHE_V9:";
+    private static final String AI_CACHE_PREFIX = "BITWISE_AI_CACHE_V10:";
     private static final String AI_CACHE_LEGACY_PREFIX = "BITWISE_AI_CACHE_";
 
     private ProductRepository productRepository;
@@ -597,7 +597,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         }
 
         CachedAiInsight cachedInsight = parseCachedAiInsight(product.product.aiInsight);
-        if (isProbablyIncomplete(cachedInsight.summary)) {
+        if (isProbablyIncomplete(cachedInsight.summary) || !hasDisplayableSources(cachedInsight.sources)) {
             return false;
         }
 
@@ -712,6 +712,17 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         }
         String text = android.text.Html.fromHtml(html, android.text.Html.FROM_HTML_MODE_COMPACT).toString().trim();
         return !(text.endsWith(".") || text.endsWith("!") || text.endsWith("?"));
+    }
+
+    private boolean hasDisplayableSources(org.json.JSONArray sources) {
+        if (sources == null) return false;
+        for (int i = 0; i < sources.length(); i++) {
+            org.json.JSONObject source = sources.optJSONObject(i);
+            if (source == null) continue;
+            String url = source.optString("url", "").trim().toLowerCase(Locale.US);
+            if (url.startsWith("https://") || url.startsWith("http://")) return true;
+        }
+        return false;
     }
 
     private void displaySources(org.json.JSONArray sources) {

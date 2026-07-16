@@ -114,7 +114,7 @@ public class BitwiseAiCore {
                 + "If the product is simple, say so directly. Do not make a simple product sound suspicious just because it is not nutritionally complete.\n"
                 + "Finish every sentence. Each of the three summary sections must be complete, practical, and end with punctuation.\n"
                 + "Return no more than 5 findings. Each finding must be specific, evidence-based, and tied to an actual ingredient or nutrient signal.\n"
-                + "The backend will provide a Gemini fact-check memo and the exact web sources used. Use only that evidence for scientific claims and source_url values. Never invent or substitute a citation.\n"
+                + "The backend will attach the exact verified web sources after the analysis. Use only that evidence for scientific claims and source_url values. Never invent or substitute a citation.\n"
                 + "Use this exact JSON shape:\n"
                 + "{\n"
                 + "  \"product_name\": \"\",\n"
