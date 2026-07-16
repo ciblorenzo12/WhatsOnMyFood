@@ -4,6 +4,10 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+# PowerShell 5 defaults external-command pipeline output to UTF-16LE. The RunPod
+# transfer uses Base64 text, so force UTF-8 before piping it to SSH.
+$OutputEncoding = [Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = $OutputEncoding
 
 function Read-ConfigFile {
     param([string]$Path)
@@ -51,6 +55,36 @@ function ConvertFrom-SecureString {
     }
     finally {
         [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer)
+    }
+}
+
+function New-PortableBackendArchive {
+    param([string]$Root, [string]$DestinationPath)
+
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+    $stream = [IO.File]::Open($DestinationPath, [IO.FileMode]::Create)
+    $archive = [IO.Compression.ZipArchive]::new($stream, [IO.Compression.ZipArchiveMode]::Create, $false)
+    try {
+        $files = @(
+            Get-Item -LiteralPath (Join-Path $Root "package.json")
+            Get-ChildItem -LiteralPath (Join-Path $Root "src") -File -Recurse
+            Get-ChildItem -LiteralPath (Join-Path $Root "scripts") -File -Recurse
+        )
+        foreach ($file in $files) {
+            $relativePath = $file.FullName.Substring($Root.Length).TrimStart([char[]]'\\/') -replace '\\', '/'
+            [IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+                $archive,
+                $file.FullName,
+                $relativePath,
+                [IO.Compression.CompressionLevel]::Optimal
+            ) | Out-Null
+        }
+    }
+    finally {
+        $archive.Dispose()
+        $stream.Dispose()
     }
 }
 
@@ -102,12 +136,7 @@ $remoteRoot = "/workspace/whats-on-my-food-backend"
 $remoteArchive = "/tmp/whats-on-my-food-backend.zip"
 
 try {
-    $archiveItems = @(
-        (Join-Path $backendRoot "package.json"),
-        (Join-Path $backendRoot "src"),
-        (Join-Path $backendRoot "scripts")
-    )
-    Compress-Archive -LiteralPath $archiveItems -DestinationPath $archivePath -Force
+    New-PortableBackendArchive -Root $backendRoot -DestinationPath $archivePath
     [IO.File]::WriteAllText($runtimePath, ($runtimeValues | ConvertTo-Json -Compress), [Text.UTF8Encoding]::new($false))
 
     $sshArguments = @("-i", $sshKeyPath)
@@ -122,16 +151,43 @@ try {
     }
 
     Write-Host "Uploading the backend package..."
-    [Convert]::ToBase64String([IO.File]::ReadAllBytes($archivePath)) |
-        & ssh @sshArguments "base64 -d > '$remoteArchive'"
-    if ($LASTEXITCODE -ne 0) {
-        throw "Could not upload the backend package."
-    }
+    if ($sshPort -gt 0 -and (Get-Command scp -ErrorAction SilentlyContinue)) {
+        # RunPod's direct TCP endpoint supports SCP, which preserves binary files on
+        # Windows without relying on PowerShell's text pipeline encoding.
+        $scpArguments = @("-i", $sshKeyPath, "-P", "$sshPort")
+        $archiveTarget = "${sshTarget}:$remoteArchive"
+        & scp @scpArguments $archivePath $archiveTarget
+        if ($LASTEXITCODE -ne 0) {
+            throw "Could not upload the backend package."
+        }
 
-    [Convert]::ToBase64String([IO.File]::ReadAllBytes($runtimePath)) |
-        & ssh @sshArguments "mkdir -p '$remoteRoot'; base64 -d > '$remoteRoot/runpod.runtime.json'; chmod 600 '$remoteRoot/runpod.runtime.json'"
-    if ($LASTEXITCODE -ne 0) {
-        throw "Could not upload the server configuration."
+        & ssh @sshArguments "mkdir -p '$remoteRoot'"
+        if ($LASTEXITCODE -ne 0) {
+            throw "Could not prepare the RunPod application directory."
+        }
+
+        $runtimeTarget = "${sshTarget}:$remoteRoot/runpod.runtime.json"
+        & scp @scpArguments $runtimePath $runtimeTarget
+        if ($LASTEXITCODE -ne 0) {
+            throw "Could not upload the server configuration."
+        }
+        & ssh @sshArguments "chmod 600 '$remoteRoot/runpod.runtime.json'"
+        if ($LASTEXITCODE -ne 0) {
+            throw "Could not protect the server configuration."
+        }
+    }
+    else {
+        [Convert]::ToBase64String([IO.File]::ReadAllBytes($archivePath)) |
+            & ssh @sshArguments "base64 -d > '$remoteArchive'"
+        if ($LASTEXITCODE -ne 0) {
+            throw "Could not upload the backend package."
+        }
+
+        [Convert]::ToBase64String([IO.File]::ReadAllBytes($runtimePath)) |
+            & ssh @sshArguments "mkdir -p '$remoteRoot'; base64 -d > '$remoteRoot/runpod.runtime.json'; chmod 600 '$remoteRoot/runpod.runtime.json'"
+        if ($LASTEXITCODE -ne 0) {
+            throw "Could not upload the server configuration."
+        }
     }
 
     $remoteSetup = @'
@@ -198,7 +254,9 @@ echo
 '@
 
     Write-Host "Starting the Gemini backend on port $port..."
-    $remoteSetup | & ssh @sshArguments "bash -s -- '$remoteRoot' '$remoteArchive' '$port'"
+    # Windows PowerShell writes CRLF to external-command stdin. Strip the carriage
+    # returns on the pod before Bash evaluates the setup script.
+    $remoteSetup | & ssh @sshArguments "tr -d '\r' | bash -s -- '$remoteRoot' '$remoteArchive' '$port'"
     if ($LASTEXITCODE -ne 0) {
         throw "RunPod could not start the backend. Check the error above."
     }
