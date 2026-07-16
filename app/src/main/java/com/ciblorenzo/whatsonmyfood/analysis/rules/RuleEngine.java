@@ -26,7 +26,6 @@ public class RuleEngine {
                 new SugarAsMainIngredientRule(),
                 new RefinedFlourRule(),
                 new ArtificialSweetenersRule(),
-                new BadVegetableOilsRule(),
                 new HighSodiumRule(),
                 new HighSugarRule(),
                 new TextureAdditivesRule(),

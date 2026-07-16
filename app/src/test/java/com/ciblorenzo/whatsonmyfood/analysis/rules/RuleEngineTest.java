@@ -130,6 +130,22 @@ public class RuleEngineTest {
     }
 
     @Test
+    public void analyze_oilNameAloneDoesNotCreateANegativeFinding() {
+        ProductWithDetails product = new ProductBuilder("oil_only")
+                .withIngredients(Arrays.asList(
+                        new Ingredient("oil_only", "Sunflower oil", 1),
+                        new Ingredient("oil_only", "Palm oil", 2)
+                ))
+                .build();
+
+        ProductAnalysisReport report = ruleEngine.analyze(product);
+
+        assertFalse(report.getResults().stream()
+                .anyMatch(result -> result.getLevel() == AnalysisResult.WarningLevel.WARNING
+                        || result.getLevel() == AnalysisResult.WarningLevel.SEVERE));
+    }
+
+    @Test
     public void analyze_whenScoreGoesBelowZero_clampsScoreAtZero() {
         List<Ingredient> ingredients = Arrays.asList(
                 new Ingredient("worst_barcode", "Palm oil", 1),
