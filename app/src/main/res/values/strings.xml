@@ -150,7 +150,15 @@
     <string name="shop_now">Shop</string>
     <string name="search_store">Search</string>
     <string name="view_product">View Product</string>
-    <string name="offline_cached_data">Offline - Using Cached Data</string>
+    <string name="offline_cached_data">Saved offline result.</string>
+    <string name="scanner_offline_indicator">No internet connection. Saved results are available.</string>
+    <string name="scanner_online_restored">Internet connection restored.</string>
+    <string name="source_status_fresh_cached_result">Fresh cached result.</string>
+    <string name="source_status_updated_from_product_database">Updated from product database.</string>
+    <string name="source_status_fallback_product_source">Fallback product source.</string>
+    <string name="source_status_saved_offline_result">Saved offline result.</string>
+    <string name="source_status_information_may_be_outdated">Information may be outdated.</string>
+    <string name="source_status_ingredients_recovered">Ingredients recovered from label or supporting service.</string>
     <string name="point_camera_barcode">Point the camera at a barcode</string>
     <string name="point_camera_ingredients">Point the camera at the ingredients list</string>
     <string name="barcode_mode">Barcode Mode</string>

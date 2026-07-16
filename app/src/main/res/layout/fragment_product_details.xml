@@ -50,7 +50,20 @@
                 android:id="@+id/product_brand_text_view"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp" />
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/source_status_text_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/glass_panel"
+                android:lineSpacingExtra="2dp"
+                android:padding="12dp"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:visibility="gone"
+                tools:text="Fresh cached result." />
 
             <TextView
                 android:id="@+id/ingredients_label"

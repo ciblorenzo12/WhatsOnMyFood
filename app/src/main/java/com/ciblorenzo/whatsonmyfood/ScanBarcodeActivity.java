@@ -7,7 +7,12 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Rect;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -70,10 +75,19 @@ public class ScanBarcodeActivity extends BaseActivity {
     private ScanMode currentMode = ScanMode.BARCODE;
     private TextRecognizer textRecognizer;
     private BarcodeScanner barcodeScanner;
+    private ConnectivityManager connectivityManager;
+    private ConnectivityManager.NetworkCallback networkCallback;
+    private Boolean lastKnownOnline;
+    private boolean networkCallbackRegistered;
 
     private final Handler launchHandler = new Handler(Looper.getMainLooper());
     private Runnable launchRunnable;
     private AnimatorSet modeToggleGlowAnimator;
+    private final Runnable hideConnectionMessageRunnable = () -> {
+        if (offlineIndicator != null && NetworkUtils.isOnline(this)) {
+            offlineIndicator.setVisibility(View.GONE);
+        }
+    };
 
     private final ActivityResultLauncher<PickVisualMediaRequest> pickMediaLauncher = registerForActivityResult(new ActivityResultContracts.PickVisualMedia(), uri -> {
         if (uri != null) {
@@ -117,6 +131,7 @@ public class ScanBarcodeActivity extends BaseActivity {
         modeToggleHintText = findViewById(R.id.mode_toggle_hint_text);
         barcodeAiToggleButton = findViewById(R.id.barcode_ai_toggle_button);
         transitionProgressBar = findViewById(R.id.loading_progress_bar);
+        connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         cameraExecutor = Executors.newSingleThreadExecutor();
 
         if (scanningOverlay != null) {
@@ -162,7 +177,15 @@ public class ScanBarcodeActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        checkOfflineStatus();
+        registerNetworkCallback();
+        updateConnectionStatus();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unregisterNetworkCallback();
+        launchHandler.removeCallbacks(hideConnectionMessageRunnable);
     }
 
     @Override
@@ -625,9 +648,70 @@ public class ScanBarcodeActivity extends BaseActivity {
         }
     }
 
-    private void checkOfflineStatus(){
-        if (offlineIndicator != null) {
-            offlineIndicator.setVisibility(NetworkUtils.isOnline(this) ? View.GONE : View.VISIBLE);
+    private void registerNetworkCallback() {
+        if (connectivityManager == null || networkCallbackRegistered) {
+            return;
         }
+        networkCallback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(@NonNull Network network) {
+                runOnUiThread(ScanBarcodeActivity.this::updateConnectionStatus);
+            }
+
+            @Override
+            public void onLost(@NonNull Network network) {
+                runOnUiThread(ScanBarcodeActivity.this::updateConnectionStatus);
+            }
+
+            @Override
+            public void onCapabilitiesChanged(@NonNull Network network, @NonNull NetworkCapabilities capabilities) {
+                runOnUiThread(ScanBarcodeActivity.this::updateConnectionStatus);
+            }
+        };
+        NetworkRequest request = new NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build();
+        connectivityManager.registerNetworkCallback(request, networkCallback);
+        networkCallbackRegistered = true;
+    }
+
+    private void unregisterNetworkCallback() {
+        if (connectivityManager == null || !networkCallbackRegistered || networkCallback == null) {
+            return;
+        }
+        try {
+            connectivityManager.unregisterNetworkCallback(networkCallback);
+        } catch (IllegalArgumentException ignored) {
+            // The system may already have removed the callback while the activity was paused.
+        }
+        networkCallbackRegistered = false;
+    }
+
+    private void updateConnectionStatus() {
+        if (offlineIndicator == null) {
+            return;
+        }
+
+        boolean online = NetworkUtils.isOnline(this);
+        boolean connectionRestored = Boolean.FALSE.equals(lastKnownOnline) && online;
+        lastKnownOnline = online;
+        launchHandler.removeCallbacks(hideConnectionMessageRunnable);
+
+        if (!online) {
+            offlineIndicator.setBackgroundColor(Color.parseColor("#D32F2F"));
+            offlineIndicator.setText(R.string.scanner_offline_indicator);
+            offlineIndicator.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        if (connectionRestored) {
+            offlineIndicator.setBackgroundColor(Color.parseColor("#2E7D32"));
+            offlineIndicator.setText(R.string.scanner_online_restored);
+            offlineIndicator.setVisibility(View.VISIBLE);
+            launchHandler.postDelayed(hideConnectionMessageRunnable, 2500L);
+            return;
+        }
+
+        offlineIndicator.setVisibility(View.GONE);
     }
 }

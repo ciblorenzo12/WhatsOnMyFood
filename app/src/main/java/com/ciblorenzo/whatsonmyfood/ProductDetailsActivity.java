@@ -52,8 +52,10 @@ import com.google.firebase.auth.FirebaseUser;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -73,6 +75,7 @@ public class ProductDetailsActivity extends BaseActivity {
 
     private ImageView productImageView;
     private TextView productNameTextView, productBrandTextView, ingredientsTextView, healthScoreTextView;
+    private TextView sourceStatusTextView;
     private TextView nutriscoreTextView, novaTextView, ecoscoreTextView, categoriesTextView, packagingTextView, labelsTextView, servingSizeTextView;
     private View labelsLabel;
     private HorizontalScrollView certificateBadgesScrollView;
@@ -98,6 +101,7 @@ public class ProductDetailsActivity extends BaseActivity {
     private boolean aiEnabled = true;
     private ProductWithDetails currentProductDetails;
     private final List<String> suggestedIngredients = new ArrayList<>();
+    private final Set<ProductRepository.SourceStatus> displayedSourceStatuses = new LinkedHashSet<>();
     private String translationCheckedBarcode;
 
     @Override
@@ -128,6 +132,7 @@ public class ProductDetailsActivity extends BaseActivity {
         productImageView = findViewById(R.id.product_image_view);
         productNameTextView = findViewById(R.id.product_name_text_view);
         productBrandTextView = findViewById(R.id.product_brand_text_view);
+        sourceStatusTextView = findViewById(R.id.source_status_text_view);
         ingredientsTextView = findViewById(R.id.ingredients_text_view);
         nutriscoreTextView = findViewById(R.id.nutriscore_text_view);
         novaTextView = findViewById(R.id.nova_text_view);
@@ -216,6 +221,7 @@ public class ProductDetailsActivity extends BaseActivity {
                     if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
                     if (result != null && result.productWithDetails != null) {
                         displayProductDetails(result.productWithDetails);
+                        displaySourceStatuses(result.sourceStatuses);
                     } else {
                         showErrorState("Product not found for barcode: " + barcode, barcode);
                     }
@@ -276,6 +282,7 @@ public class ProductDetailsActivity extends BaseActivity {
                     if (updateProductButton != null) updateProductButton.setEnabled(true);
                     if (result != null && result.productWithDetails != null) {
                         displayProductDetails(result.productWithDetails);
+                        displaySourceStatuses(result.sourceStatuses);
                         Toast.makeText(ProductDetailsActivity.this, R.string.product_updated, Toast.LENGTH_SHORT).show();
                         setResult(RESULT_OK, new Intent().putExtra(PantryActivity.RESULT_DATA_CHANGED, true));
                     } else {
@@ -415,6 +422,7 @@ public class ProductDetailsActivity extends BaseActivity {
                             suggestedIngredients.addAll(recoveredIngredients.ingredients);
                             contributeIngredientsButton.setVisibility(View.VISIBLE);
                             displayRecoveredIngredientsInEnglish(recoveredIngredients);
+                            addSourceStatus(ProductRepository.SourceStatus.INGREDIENTS_RECOVERED_FROM_LABEL_OR_SUPPORTING_SERVICE);
                         }
 
                         // Sources
@@ -765,6 +773,30 @@ public class ProductDetailsActivity extends BaseActivity {
                 });
             }
         });
+    }
+
+    private void displaySourceStatuses(List<ProductRepository.SourceStatus> statuses) {
+        displayedSourceStatuses.clear();
+        if (statuses != null) {
+            displayedSourceStatuses.addAll(statuses);
+        }
+        renderSourceStatuses();
+    }
+
+    private void addSourceStatus(ProductRepository.SourceStatus status) {
+        if (status == null) return;
+        displayedSourceStatuses.add(status);
+        renderSourceStatuses();
+    }
+
+    private void renderSourceStatuses() {
+        if (sourceStatusTextView == null) return;
+        String message = SourceStatusMessageFormatter.format(
+                this,
+                new ArrayList<>(displayedSourceStatuses)
+        );
+        sourceStatusTextView.setText(message);
+        sourceStatusTextView.setVisibility(message.isEmpty() ? View.GONE : View.VISIBLE);
     }
 
     private List<Ingredient> buildIngredientList(String barcode, String ingredientText) {

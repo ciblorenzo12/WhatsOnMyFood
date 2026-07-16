@@ -123,9 +123,11 @@ public final class AiIngredientRecovery {
         public String toDisplayText() {
             StringBuilder builder = new StringBuilder();
             if (source.equals("product_identity")) {
-                builder.append("AI-inferred ingredients (").append(confidence).append(" confidence; verify on package)");
+                builder.append("Ingredients recovered from a supporting service (")
+                        .append(confidence)
+                        .append(" confidence; verify on package)");
             } else {
-                builder.append("Ingredients recovered from the label by Bitwise (verify on package)");
+                builder.append("Ingredients recovered from the label (verify on package)");
             }
             for (String ingredient : ingredients) {
                 builder.append("\n- ").append(ingredient);

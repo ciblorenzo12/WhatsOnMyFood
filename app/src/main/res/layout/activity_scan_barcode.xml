@@ -120,7 +120,7 @@
         android:background="#D32F2F"
         android:gravity="center"
         android:padding="8dp"
-        android:text="@string/offline_cached_data"
+        android:text="@string/scanner_offline_indicator"
         android:textColor="@android:color/white"
         android:textSize="14sp"
         android:textStyle="bold"

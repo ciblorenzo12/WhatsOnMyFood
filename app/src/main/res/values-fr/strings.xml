@@ -125,7 +125,15 @@
     <string name="shop_now">Acheter</string>
     <string name="search_store">Rechercher</string>
     <string name="view_product">Voir le produit</string>
-    <string name="offline_cached_data">Hors ligne - donnees en cache</string>
+    <string name="offline_cached_data">Résultat enregistré hors ligne.</string>
+    <string name="scanner_offline_indicator">Aucune connexion Internet. Les résultats enregistrés restent disponibles.</string>
+    <string name="scanner_online_restored">Connexion Internet rétablie.</string>
+    <string name="source_status_fresh_cached_result">Résultat en cache récent.</string>
+    <string name="source_status_updated_from_product_database">Mis à jour depuis la base de données de produits.</string>
+    <string name="source_status_fallback_product_source">Source de produit de secours.</string>
+    <string name="source_status_saved_offline_result">Résultat enregistré hors ligne.</string>
+    <string name="source_status_information_may_be_outdated">Les informations peuvent ne pas être à jour.</string>
+    <string name="source_status_ingredients_recovered">Ingrédients récupérés depuis l’étiquette ou un service d’assistance.</string>
     <string name="point_camera_barcode">Pointez la camera vers un code-barres</string>
     <string name="point_camera_ingredients">Pointez la camera vers la liste des ingredients</string>
     <string name="barcode_mode">Mode code-barres</string>

@@ -8,6 +8,7 @@ import com.ciblorenzo.whatsonmyfood.analysis.IngredientTextParser;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
@@ -25,16 +26,37 @@ public class ProductRepository {
     public static final CountingIdlingResource idlingResource = new CountingIdlingResource(IDLING_RESOURCE);
 
     public enum DataStatus { FRESH, STALE, OFFLINE }
+    public enum SourceStatus {
+        FRESH_CACHED_RESULT,
+        UPDATED_FROM_PRODUCT_DATABASE,
+        FALLBACK_PRODUCT_SOURCE,
+        SAVED_OFFLINE_RESULT,
+        INFORMATION_MAY_BE_OUTDATED,
+        INGREDIENTS_RECOVERED_FROM_LABEL_OR_SUPPORTING_SERVICE
+    }
 
     public static class ProductResult {
         public final ProductWithDetails productWithDetails;
         public final DataStatus status;
         public final String apiSourceName;
+        public final List<SourceStatus> sourceStatuses;
 
         public ProductResult(ProductWithDetails productWithDetails, DataStatus status, String apiSourceName) {
+            this(productWithDetails, status, apiSourceName, Collections.emptyList());
+        }
+
+        public ProductResult(
+                ProductWithDetails productWithDetails,
+                DataStatus status,
+                String apiSourceName,
+                List<SourceStatus> sourceStatuses
+        ) {
             this.productWithDetails = productWithDetails;
             this.status = status;
             this.apiSourceName = apiSourceName;
+            this.sourceStatuses = Collections.unmodifiableList(new ArrayList<>(
+                    sourceStatuses == null ? Collections.emptyList() : sourceStatuses
+            ));
         }
     }
 
@@ -74,7 +96,8 @@ public class ProductRepository {
                     callback.onComplete(new ProductResult(
                             cachedProduct,
                             isCacheStale ? DataStatus.STALE : DataStatus.FRESH,
-                            hasSavedAiInsight(cachedProduct) ? "Cache (Saved Bitwise)" : "Cache"
+                            hasSavedAiInsight(cachedProduct) ? "Cache (Saved AI insight)" : "Cache",
+                            SourceStatusResolver.forCachedResult(isCacheStale)
                     ));
                     idlingResource.decrement();
                     return;
@@ -84,7 +107,12 @@ public class ProductRepository {
                     fetchFromApiChain(barcode, callback, cachedProduct, isCacheStale);
                 } else {
                     if (cachedProduct != null) {
-                        callback.onComplete(new ProductResult( cachedProduct, DataStatus.OFFLINE, "Cache"));
+                        callback.onComplete(new ProductResult(
+                                cachedProduct,
+                                DataStatus.OFFLINE,
+                                "Cache",
+                                SourceStatusResolver.forSavedOfflineResult()
+                        ));
                     } else {
                         callback.onError(new IOException("You are offline. Please check your connection."));
                     }
@@ -166,14 +194,29 @@ public class ProductRepository {
             if (fetchedProduct.product != null) {
                 fetchedProduct.product.labels = mergeLabelText(fetchedProduct.product.labels, supplementalLabels);
             }
-            fillMissingIngredients(fetchedProduct, barcode, firstNonEmpty(openFoodFactsIngredients, supplementalIngredients));
+            boolean ingredientsRecovered = fillMissingIngredients(
+                    fetchedProduct,
+                    barcode,
+                    firstNonEmpty(openFoodFactsIngredients, supplementalIngredients)
+            );
             preserveSavedFields(fetchedProduct, cachedProduct, preserveAiInsight);
             productDao.insertProductWithDetails(fetchedProduct);
             productDao.insertCacheMeta(new CacheMeta(barcode, System.currentTimeMillis()));
-            callback.onComplete(new ProductResult(fetchedProduct, DataStatus.FRESH, sourceName));
+            boolean usedFallbackSource = !OpenFoodFactsApiClient.class.getSimpleName().equals(sourceName);
+            callback.onComplete(new ProductResult(
+                    fetchedProduct,
+                    DataStatus.FRESH,
+                    sourceName,
+                    SourceStatusResolver.forUpdatedDatabaseResult(usedFallbackSource, ingredientsRecovered)
+            ));
         } else {
             if (cachedProduct != null) {
-                callback.onComplete(new ProductResult(cachedProduct, isCacheStale ? DataStatus.STALE : DataStatus.FRESH, "Cache (Stale)"));
+                callback.onComplete(new ProductResult(
+                        cachedProduct,
+                        DataStatus.STALE,
+                        "Cache",
+                        SourceStatusResolver.forUnavailableRefreshResult()
+                ));
             } else {
                  if (networkErrors == apiClients.size()) {
                     callback.onError(new IOException("Network error. Please check your connection and try again."));
@@ -369,15 +412,15 @@ public class ProductRepository {
         return String.join(", ", labels);
     }
 
-    private void fillMissingIngredients(ProductWithDetails productWithDetails, String barcode, String retrievedIngredients) {
+    private boolean fillMissingIngredients(ProductWithDetails productWithDetails, String barcode, String retrievedIngredients) {
         if (productWithDetails == null || productWithDetails.product == null || hasParsedIngredients(productWithDetails)) {
-            return;
+            return false;
         }
 
         if (!isBlank(retrievedIngredients)) {
             productWithDetails.ingredients = parseIngredients(barcode, retrievedIngredients, productWithDetails.nutriments);
             if (hasParsedIngredients(productWithDetails)) {
-                return;
+                return true;
             }
         }
 
@@ -388,17 +431,19 @@ public class ProductRepository {
                     productWithDetails.product.brands
             );
             if (ragResponse == null || ragResponse.status != 1 || ragResponse.product == null) {
-                return;
+                return false;
             }
 
             String ingredientsText = localizedIngredients(ragResponse.product, LanguageManager.getLanguageCode(application));
             if (isBlank(ingredientsText)) {
-                return;
+                return false;
             }
 
             productWithDetails.ingredients = parseIngredients(barcode, ingredientsText, productWithDetails.nutriments);
+            return hasParsedIngredients(productWithDetails);
         } catch (IOException e) {
             e.printStackTrace();
+            return false;
         }
     }
 

@@ -12,6 +12,9 @@ public class NetworkUtils {
             return false;
         }
         NetworkCapabilities capabilities = cm.getNetworkCapabilities(cm.getActiveNetwork());
-        return capabilities != null && (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR));
+        // An emulator can report Ethernet or another supported transport rather than Wi-Fi.
+        // Internet capability is the meaningful condition for product lookups.
+        return capabilities != null
+                && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
     }
 }
