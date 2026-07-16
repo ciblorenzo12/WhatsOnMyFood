@@ -63,7 +63,7 @@ public class ProductDetailsActivity extends BaseActivity {
 
     public static final String EXTRA_BARCODE = "com.ciblorenzo.whatsonmyfood.BARCODE";
     public static final String EXTRA_AI_ENABLED = "com.ciblorenzo.whatsonmyfood.AI_ENABLED";
-    private static final String AI_CACHE_PREFIX = "BITWISE_AI_CACHE_V8:";
+    private static final String AI_CACHE_PREFIX = "BITWISE_AI_CACHE_V9:";
     private static final String AI_CACHE_LEGACY_PREFIX = "BITWISE_AI_CACHE_";
 
     private ProductRepository productRepository;

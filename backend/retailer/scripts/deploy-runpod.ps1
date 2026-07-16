@@ -119,7 +119,7 @@ if ([string]::IsNullOrWhiteSpace($geminiApiKey)) {
     throw "A Gemini API key is required to enable the AI service."
 }
 
-$geminiModel = if ([string]::IsNullOrWhiteSpace([string]$config.GEMINI_MODEL)) { "gemini-2.5-flash" } else { [string]$config.GEMINI_MODEL }
+$geminiModel = if ([string]::IsNullOrWhiteSpace([string]$config.GEMINI_MODEL)) { "gemini-3.1-pro-preview" } else { [string]$config.GEMINI_MODEL }
 $runtimeValues = [ordered]@{
     PORT = "$port"
     GEMINI_API_KEY = $geminiApiKey

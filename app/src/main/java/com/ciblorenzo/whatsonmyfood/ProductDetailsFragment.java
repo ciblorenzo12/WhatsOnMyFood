@@ -67,7 +67,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
     private static final String ARG_BARCODE = "barcode";
     private static final String ARG_AI_ENABLED = "ai_enabled";
-    private static final String AI_CACHE_PREFIX = "BITWISE_AI_CACHE_V8:";
+    private static final String AI_CACHE_PREFIX = "BITWISE_AI_CACHE_V9:";
     private static final String AI_CACHE_LEGACY_PREFIX = "BITWISE_AI_CACHE_";
 
     private ProductRepository productRepository;
