@@ -58,11 +58,16 @@ $config = Read-ConfigFile -Path $ConfigPath
 $sshTarget = Require-Value -Values $config -Name "RUNPOD_SSH_TARGET"
 $sshKeyPath = Require-Value -Values $config -Name "RUNPOD_SSH_KEY_PATH"
 $publicUrl = (Require-Value -Values $config -Name "RUNPOD_PUBLIC_URL").TrimEnd("/")
+$sshPortText = if ($config.ContainsKey("RUNPOD_SSH_PORT")) { [string]$config.RUNPOD_SSH_PORT } else { "" }
 $portText = if ($config.ContainsKey("PORT")) { [string]$config.PORT } else { "8000" }
 $port = 0
+$sshPort = 0
 
 if (-not [int]::TryParse($portText, [ref]$port) -or $port -lt 1 -or $port -gt 65535) {
     throw "PORT must be a number between 1 and 65535."
+}
+if (-not [string]::IsNullOrWhiteSpace($sshPortText) -and (-not [int]::TryParse($sshPortText, [ref]$sshPort) -or $sshPort -lt 1 -or $sshPort -gt 65535)) {
+    throw "RUNPOD_SSH_PORT must be a number between 1 and 65535 when it is set."
 }
 if (-not (Test-Path -LiteralPath $sshKeyPath)) {
     throw "SSH key not found: $sshKeyPath"
@@ -105,7 +110,11 @@ try {
     Compress-Archive -LiteralPath $archiveItems -DestinationPath $archivePath -Force
     [IO.File]::WriteAllText($runtimePath, ($runtimeValues | ConvertTo-Json -Compress), [Text.UTF8Encoding]::new($false))
 
-    $sshArguments = @("-i", $sshKeyPath, $sshTarget)
+    $sshArguments = @("-i", $sshKeyPath)
+    if ($sshPort -gt 0) {
+        $sshArguments += @("-p", "$sshPort")
+    }
+    $sshArguments += $sshTarget
     Write-Host "Checking the RunPod connection..."
     & ssh @sshArguments "printf 'connected\\n'"
     if ($LASTEXITCODE -ne 0) {

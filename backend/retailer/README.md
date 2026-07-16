@@ -143,9 +143,10 @@ Copy-Item runpod.local.env.example runpod.local.env
 ```
 
 Edit `runpod.local.env` with the exact SSH command details from the pod's **Connect**
-tab and its HTTP proxy URL. Keep `GEMINI_API_KEY` blank; the script requests it as a
-masked local prompt and sends it only to the RunPod server. The local file is ignored
-by Git.
+tab and its HTTP proxy URL. For **SSH over exposed TCP**, use `root@HOST` as
+`RUNPOD_SSH_TARGET` and put the mapped port in `RUNPOD_SSH_PORT`. Keep
+`GEMINI_API_KEY` blank; the script requests it as a masked local prompt and sends it
+only to the RunPod server. The local file is ignored by Git.
 
 Deploy or update the backend with one command:
 
