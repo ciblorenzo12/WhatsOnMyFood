@@ -5,6 +5,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -13,13 +14,17 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.util.Size;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -58,14 +63,21 @@ import java.util.concurrent.Executors;
 
 public class ScanBarcodeActivity extends BaseActivity {
 
+    private static final String SCANNER_PREFERENCES = "scanner_preferences";
+    private static final String CAMERA_PERMISSION_REQUESTED = "camera_permission_requested";
+    private static final long BARCODE_SCAN_TIMEOUT_MS = 12_000L;
+
     public enum ScanMode {
         BARCODE, INGREDIENTS
     }
 
     private PreviewView previewView;
     private TextView offlineIndicator, modeTextView, statusTextView, modeToggleHintText;
+    private LinearLayout scannerStatePanel;
+    private TextView scannerStateTitle, scannerStateMessage;
+    private Button scannerStatePrimaryButton, scannerStateSecondaryButton;
     private ImageButton modeToggleButton;
-    private ToggleButton barcodeAiToggleButton;
+    private ToggleButton barcodeAiToggleButton, torchButton;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private ProcessCameraProvider cameraProvider;
     private ExecutorService cameraExecutor;
@@ -79,9 +91,13 @@ public class ScanBarcodeActivity extends BaseActivity {
     private ConnectivityManager.NetworkCallback networkCallback;
     private Boolean lastKnownOnline;
     private boolean networkCallbackRegistered;
+    private boolean cameraStarting;
+    private boolean returningFromAppSettings;
+    private ScanMode pendingRecoveryMode;
 
     private final Handler launchHandler = new Handler(Looper.getMainLooper());
     private Runnable launchRunnable;
+    private final Runnable barcodeScanTimeoutRunnable = this::showFailedScanRecovery;
     private AnimatorSet modeToggleGlowAnimator;
     private final Runnable hideConnectionMessageRunnable = () -> {
         if (offlineIndicator != null && NetworkUtils.isOnline(this)) {
@@ -107,10 +123,10 @@ public class ScanBarcodeActivity extends BaseActivity {
 
     private final ActivityResultLauncher<String> requestCameraPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
         if (isGranted) {
+            hideScannerState();
             startCamera();
         } else {
-            Toast.makeText(this, "Camera permission is required to use the scanner.", Toast.LENGTH_LONG).show();
-            finish();
+            showCameraPermissionDenied();
         }
     });
 
@@ -130,13 +146,30 @@ public class ScanBarcodeActivity extends BaseActivity {
         modeToggleButton = findViewById(R.id.mode_toggle_button);
         modeToggleHintText = findViewById(R.id.mode_toggle_hint_text);
         barcodeAiToggleButton = findViewById(R.id.barcode_ai_toggle_button);
+        torchButton = findViewById(R.id.torch_button);
         transitionProgressBar = findViewById(R.id.loading_progress_bar);
+        scannerStatePanel = findViewById(R.id.scanner_state_panel);
+        scannerStateTitle = findViewById(R.id.scanner_state_title);
+        scannerStateMessage = findViewById(R.id.scanner_state_message);
+        scannerStatePrimaryButton = findViewById(R.id.scanner_state_primary_button);
+        scannerStateSecondaryButton = findViewById(R.id.scanner_state_secondary_button);
         connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         cameraExecutor = Executors.newSingleThreadExecutor();
 
+        getSupportFragmentManager().setFragmentResultListener(
+                ProductDetailsFragment.SCAN_RECOVERY_RESULT,
+                this,
+                (requestKey, result) -> {
+                    String action = result.getString(ProductDetailsFragment.SCAN_RECOVERY_ACTION, "");
+                    pendingRecoveryMode = ProductDetailsFragment.SCAN_RECOVERY_INGREDIENTS.equals(action)
+                            ? ScanMode.INGREDIENTS
+                            : ScanMode.BARCODE;
+                }
+        );
+
         if (scanningOverlay != null) {
             scanningOverlay.setMode(ScanningOverlayView.OverlayMode.BARCODE);
-            scanningOverlay.startScanning();
+            scanningOverlay.stopScanning();
         }
 
         textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
@@ -165,11 +198,7 @@ public class ScanBarcodeActivity extends BaseActivity {
                     .build());
         });
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            startCamera();
-        } else {
-            requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA);
-        }
+        prepareCameraAccess();
 
         launchHandler.postDelayed(this::showModeToggleHintIfNeeded, 900);
     }
@@ -179,6 +208,17 @@ public class ScanBarcodeActivity extends BaseActivity {
         super.onResume();
         registerNetworkCallback();
         updateConnectionStatus();
+        if (returningFromAppSettings) {
+            returningFromAppSettings = false;
+            if (hasCameraPermission()) {
+                hideScannerState();
+                startCamera();
+            } else {
+                showCameraPermissionDenied();
+            }
+        } else if (hasCameraPermission() && cameraProvider != null && !isScannerStateVisible()) {
+            scheduleBarcodeScanTimeout();
+        }
     }
 
     @Override
@@ -186,6 +226,7 @@ public class ScanBarcodeActivity extends BaseActivity {
         super.onPause();
         unregisterNetworkCallback();
         launchHandler.removeCallbacks(hideConnectionMessageRunnable);
+        cancelBarcodeScanTimeout();
     }
 
     @Override
@@ -201,19 +242,135 @@ public class ScanBarcodeActivity extends BaseActivity {
         stopModeToggleGlow();
     }
 
+    private boolean hasCameraPermission() {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void prepareCameraAccess() {
+        if (hasCameraPermission()) {
+            startCamera();
+            return;
+        }
+
+        SharedPreferences preferences = getSharedPreferences(SCANNER_PREFERENCES, MODE_PRIVATE);
+        if (!preferences.getBoolean(CAMERA_PERMISSION_REQUESTED, false)) {
+            showScannerState(
+                    R.string.camera_permission_first_title,
+                    R.string.camera_permission_first_message,
+                    R.string.continue_to_camera,
+                    () -> {
+                        preferences.edit().putBoolean(CAMERA_PERMISSION_REQUESTED, true).apply();
+                        requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+                    },
+                    R.string.not_now,
+                    this::showCameraPermissionDenied
+            );
+        } else {
+            showCameraPermissionDenied();
+        }
+    }
+
+    private void showCameraPermissionDenied() {
+        if (statusTextView != null) statusTextView.setText(R.string.camera_permission_denied_title);
+        showScannerState(
+                R.string.camera_permission_denied_title,
+                R.string.camera_permission_denied_message,
+                R.string.open_android_settings,
+                this::openAndroidAppSettings,
+                R.string.scan_from_photo,
+                this::openPhotoPicker
+        );
+    }
+
+    private void openAndroidAppSettings() {
+        returningFromAppSettings = true;
+        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        intent.setData(Uri.parse("package:" + getPackageName()));
+        startActivity(intent);
+    }
+
+    private void openPhotoPicker() {
+        pickMediaLauncher.launch(new PickVisualMediaRequest.Builder()
+                .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE)
+                .build());
+    }
+
+    private void showScannerState(int titleRes, int messageRes, int primaryTextRes, Runnable primaryAction,
+                                  int secondaryTextRes, Runnable secondaryAction) {
+        cancelBarcodeScanTimeout();
+        isScanLocked = true;
+        if (transitionProgressBar != null) transitionProgressBar.setVisibility(View.GONE);
+        if (scanningOverlay != null) scanningOverlay.stopScanning();
+        scannerStateTitle.setText(titleRes);
+        scannerStateMessage.setText(messageRes);
+        scannerStatePrimaryButton.setText(primaryTextRes);
+        scannerStateSecondaryButton.setText(secondaryTextRes);
+        scannerStatePrimaryButton.setOnClickListener(v -> primaryAction.run());
+        scannerStateSecondaryButton.setOnClickListener(v -> secondaryAction.run());
+        if (modeToggleButton != null) modeToggleButton.setEnabled(false);
+        if (barcodeAiToggleButton != null) barcodeAiToggleButton.setEnabled(false);
+        if (torchButton != null) torchButton.setEnabled(false);
+        scannerStatePanel.setVisibility(View.VISIBLE);
+    }
+
+    private void hideScannerState() {
+        if (scannerStatePanel != null) scannerStatePanel.setVisibility(View.GONE);
+        if (scannerStatePrimaryButton != null) scannerStatePrimaryButton.setOnClickListener(null);
+        if (scannerStateSecondaryButton != null) scannerStateSecondaryButton.setOnClickListener(null);
+        if (modeToggleButton != null) modeToggleButton.setEnabled(true);
+        if (barcodeAiToggleButton != null) barcodeAiToggleButton.setEnabled(true);
+        if (torchButton != null) torchButton.setEnabled(true);
+    }
+
+    private boolean isScannerStateVisible() {
+        return scannerStatePanel != null && scannerStatePanel.getVisibility() == View.VISIBLE;
+    }
+
     private void startCamera() {
+        if (!hasCameraPermission()) {
+            showCameraPermissionDenied();
+            return;
+        }
+        if (cameraProvider != null) {
+            hideScannerState();
+            bindCameraUseCases(cameraProvider);
+            return;
+        }
+        if (cameraStarting) return;
+        cameraStarting = true;
+        hideScannerState();
+        isScanLocked = true;
+        if (statusTextView != null) statusTextView.setText(R.string.camera_starting);
+        if (transitionProgressBar != null) transitionProgressBar.setVisibility(View.VISIBLE);
         cameraProviderFuture = ProcessCameraProvider.getInstance(this);
         cameraProviderFuture.addListener(() -> {
             try {
                 cameraProvider = cameraProviderFuture.get();
                 bindCameraUseCases(cameraProvider);
             } catch (Exception e) {
-                Toast.makeText(this, "Error starting camera", Toast.LENGTH_SHORT).show();
+                showCameraUnavailable();
+            } finally {
+                cameraStarting = false;
             }
         }, ContextCompat.getMainExecutor(this));
     }
 
+    private void showCameraUnavailable() {
+        if (statusTextView != null) statusTextView.setText(R.string.camera_unavailable_title);
+        showScannerState(
+                R.string.camera_unavailable_title,
+                R.string.camera_unavailable_message,
+                R.string.try_again,
+                this::startCamera,
+                R.string.open_android_settings,
+                this::openAndroidAppSettings
+        );
+    }
+
     private void toggleScanMode() {
+        cancelBarcodeScanTimeout();
+        hideScannerState();
+        isScanLocked = false;
         if (currentMode == ScanMode.BARCODE) {
             currentMode = ScanMode.INGREDIENTS;
             modeTextView.setText(R.string.ingredient_mode);
@@ -352,6 +509,7 @@ public class ScanBarcodeActivity extends BaseActivity {
                         });
 
                         if (!isScanLocked && barcodeValue != null) {
+                            cancelBarcodeScanTimeout();
                             isScanLocked = true;
                             launchRunnable = () -> handleBarcode(barcodeValue);
                             launchHandler.postDelayed(launchRunnable, 300);
@@ -413,8 +571,22 @@ public class ScanBarcodeActivity extends BaseActivity {
             cameraProvider.unbindAll();
             camera = cameraProvider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageAnalysis);
             setupTorchControl();
+            isScanLocked = false;
+            if (transitionProgressBar != null) transitionProgressBar.setVisibility(View.GONE);
+            if (statusTextView != null) {
+                statusTextView.setText(currentMode == ScanMode.BARCODE
+                        ? R.string.point_camera_barcode
+                        : R.string.point_camera_ingredients);
+            }
+            if (scanningOverlay != null) {
+                scanningOverlay.setMode(currentMode == ScanMode.BARCODE
+                        ? ScanningOverlayView.OverlayMode.BARCODE
+                        : ScanningOverlayView.OverlayMode.INGREDIENTS);
+                scanningOverlay.startScanning();
+            }
+            scheduleBarcodeScanTimeout();
         } catch (Exception e) {
-            e.printStackTrace();
+            showCameraUnavailable();
         }
     }
 
@@ -466,6 +638,7 @@ public class ScanBarcodeActivity extends BaseActivity {
     }
 
     private void handleIngredientsWithBarcode(String text, Bitmap bitmap, String barcode) {
+        cancelBarcodeScanTimeout();
         String processedText = text;
         String lowerText = text.toLowerCase();
         
@@ -515,7 +688,6 @@ public class ScanBarcodeActivity extends BaseActivity {
     }
 
     private void setupTorchControl() {
-        ToggleButton torchButton = findViewById(R.id.torch_button);
         if (camera != null && camera.getCameraInfo().hasFlashUnit()) {
             torchButton.setVisibility(View.VISIBLE);
             camera.getCameraInfo().getTorchState().observe(this, torchState -> {
@@ -545,14 +717,14 @@ public class ScanBarcodeActivity extends BaseActivity {
                 if (currentMode == ScanMode.INGREDIENTS) {
                     analyzeUploadedIngredients(bitmap);
                 } else {
-                    Toast.makeText(this, "No barcode found in image", Toast.LENGTH_SHORT).show();
+                    showFailedScanRecovery();
                 }
             }
         }).addOnFailureListener(e -> {
             if (currentMode == ScanMode.INGREDIENTS) {
                 analyzeUploadedIngredients(bitmap);
             } else {
-                Toast.makeText(this, "Error scanning image", Toast.LENGTH_SHORT).show();
+                showFailedScanRecovery();
             }
         });
     }
@@ -600,6 +772,7 @@ public class ScanBarcodeActivity extends BaseActivity {
     }
 
     private void handleBarcode(String barcode) {
+        cancelBarcodeScanTimeout();
         if (cameraProvider != null) {
             cameraProvider.unbindAll();
         }
@@ -611,9 +784,14 @@ public class ScanBarcodeActivity extends BaseActivity {
             public void onFragmentViewDestroyed(@NonNull FragmentManager fm, @NonNull Fragment f) {
                 super.onFragmentViewDestroyed(fm, f);
                 if (f == fragment) {
+                    ScanMode requestedRecoveryMode = pendingRecoveryMode;
+                    pendingRecoveryMode = null;
                     resetScannerState();
                     if (ContextCompat.checkSelfPermission(ScanBarcodeActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
                         startCamera();
+                    }
+                    if (requestedRecoveryMode == ScanMode.INGREDIENTS) {
+                        launchHandler.post(ScanBarcodeActivity.this::scanIngredientsInstead);
                     }
                     getSupportFragmentManager().unregisterFragmentLifecycleCallbacks(this);
                 }
@@ -626,6 +804,7 @@ public class ScanBarcodeActivity extends BaseActivity {
     private void resetScannerState() {
         isScanLocked = false;
         launchHandler.removeCallbacks(launchRunnable);
+        hideScannerState();
         AiGlowManager.stopGlow(this);
         
         // Reset to Barcode Mode after a successful scan
@@ -645,6 +824,72 @@ public class ScanBarcodeActivity extends BaseActivity {
             scanningOverlay.setMode(ScanningOverlayView.OverlayMode.BARCODE);
             scanningOverlay.clearDetections();
             scanningOverlay.startScanning();
+        }
+        if (statusTextView != null) statusTextView.setText(R.string.point_camera_barcode);
+        scheduleBarcodeScanTimeout();
+    }
+
+    private void scheduleBarcodeScanTimeout() {
+        cancelBarcodeScanTimeout();
+        if (currentMode == ScanMode.BARCODE
+                && hasCameraPermission()
+                && !isScanLocked
+                && !isScannerStateVisible()
+                && !isFinishing()) {
+            launchHandler.postDelayed(barcodeScanTimeoutRunnable, BARCODE_SCAN_TIMEOUT_MS);
+        }
+    }
+
+    private void cancelBarcodeScanTimeout() {
+        launchHandler.removeCallbacks(barcodeScanTimeoutRunnable);
+    }
+
+    private void showFailedScanRecovery() {
+        if (currentMode != ScanMode.BARCODE || isFinishing()) return;
+        if (statusTextView != null) statusTextView.setText(R.string.barcode_not_detected_title);
+        showScannerState(
+                R.string.barcode_not_detected_title,
+                R.string.barcode_not_detected_message,
+                R.string.try_again,
+                this::retryBarcodeScan,
+                R.string.scan_ingredients_instead,
+                this::scanIngredientsInstead
+        );
+    }
+
+    private void retryBarcodeScan() {
+        hideScannerState();
+        currentMode = ScanMode.BARCODE;
+        isScanLocked = false;
+        modeTextView.setText(R.string.barcode_mode);
+        modeToggleButton.setImageResource(R.drawable.ic_scan);
+        modeToggleButton.setContentDescription(getString(R.string.barcode_mode));
+        if (barcodeAiToggleButton != null) barcodeAiToggleButton.setVisibility(View.VISIBLE);
+        if (statusTextView != null) statusTextView.setText(R.string.point_camera_barcode);
+        if (scanningOverlay != null) {
+            scanningOverlay.setMode(ScanningOverlayView.OverlayMode.BARCODE);
+            scanningOverlay.clearDetections();
+            scanningOverlay.startScanning();
+        }
+        if (cameraProvider == null) startCamera();
+        else scheduleBarcodeScanTimeout();
+    }
+
+    private void scanIngredientsInstead() {
+        if (!hasCameraPermission()) {
+            currentMode = ScanMode.INGREDIENTS;
+            modeTextView.setText(R.string.ingredient_mode);
+            if (statusTextView != null) statusTextView.setText(R.string.camera_permission_denied_title);
+            showCameraPermissionDenied();
+            openPhotoPicker();
+            return;
+        }
+        hideScannerState();
+        isScanLocked = false;
+        if (currentMode == ScanMode.BARCODE) {
+            toggleScanMode();
+        } else if (cameraProvider != null) {
+            bindCameraUseCases(cameraProvider);
         }
     }
 

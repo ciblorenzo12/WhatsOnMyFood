@@ -64,6 +64,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ProductDetailsFragment extends BottomSheetDialogFragment {
+    public static final String SCAN_RECOVERY_RESULT = "product_scan_recovery_result";
+    public static final String SCAN_RECOVERY_ACTION = "product_scan_recovery_action";
+    public static final String SCAN_RECOVERY_RETRY = "retry_barcode";
+    public static final String SCAN_RECOVERY_INGREDIENTS = "scan_ingredients";
 
     private static final String ARG_BARCODE = "barcode";
     private static final String ARG_AI_ENABLED = "ai_enabled";
@@ -282,7 +286,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                 if (getActivity() == null || !isAdded()) return;
                 getActivity().runOnUiThread(() -> {
                     if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
-                    showErrorAndDismiss("Error: " + e.getMessage());
+                    showScanFailureAndDismiss();
                 });
             }
         });
@@ -1178,17 +1182,36 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     private void showAddProductDialog(String barcode) {
         if(getContext() == null) return;
         new AlertDialog.Builder(requireContext())
-            .setTitle("Product Not Found")
-            .setMessage("This product is not in our database yet. Would you like to add it?")
-            .setPositiveButton("Add Product", (dialog, which) -> {
+            .setTitle(R.string.product_not_found_title)
+            .setMessage(R.string.product_not_found_message)
+            .setPositiveButton(R.string.try_again, (dialog, which) -> sendScanRecovery(SCAN_RECOVERY_RETRY))
+            .setNegativeButton(R.string.scan_ingredients_instead, (dialog, which) -> sendScanRecovery(SCAN_RECOVERY_INGREDIENTS))
+            .setNeutralButton(R.string.add_product, (dialog, which) -> {
                 Intent intent = new Intent(getActivity(), AddProductActivity.class);
                 intent.putExtra(AddProductActivity.EXTRA_BARCODE, barcode);
                 startActivity(intent);
                 dismiss();
             })
-            .setNegativeButton("Cancel", (dialog, which) -> dismiss())
             .setOnCancelListener(dialog -> dismiss())
             .show();
+    }
+
+    private void showScanFailureAndDismiss() {
+        if (getContext() == null) return;
+        new AlertDialog.Builder(requireContext())
+                .setTitle(R.string.product_lookup_failed_title)
+                .setMessage(R.string.product_lookup_failed_message)
+                .setPositiveButton(R.string.try_again, (dialog, which) -> sendScanRecovery(SCAN_RECOVERY_RETRY))
+                .setNegativeButton(R.string.scan_ingredients_instead, (dialog, which) -> sendScanRecovery(SCAN_RECOVERY_INGREDIENTS))
+                .setOnCancelListener(dialog -> dismiss())
+                .show();
+    }
+
+    private void sendScanRecovery(String action) {
+        Bundle result = new Bundle();
+        result.putString(SCAN_RECOVERY_ACTION, action);
+        getParentFragmentManager().setFragmentResult(SCAN_RECOVERY_RESULT, result);
+        dismiss();
     }
 
     private void showScoreExplanation(String title, String message) {

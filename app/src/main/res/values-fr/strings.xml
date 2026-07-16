@@ -211,4 +211,24 @@
     <string name="off_password_required">Votre mot de passe Open Food Facts est requis.</string>
     <string name="off_confirmation_required">Confirmez avoir v&#233;rifi&#233; l\'&#233;tiquette de l\'emballage avant l\'envoi.</string>
     <string name="off_invalid_barcode">Ce produit ne poss&#232;de pas de code-barres valide pour Open Food Facts.</string>
+    <string name="camera_permission_first_title">Utilisez la cam&#233;ra pour scanner un aliment</string>
+    <string name="camera_permission_first_message">What&#8217;s On My Food utilise la cam&#233;ra uniquement pendant le scan d&#8217;un code-barres ou d&#8217;une liste d&#8217;ingr&#233;dients. Les photos ne sont pas enregistr&#233;es sauf si vous choisissez de les utiliser.</string>
+    <string name="continue_to_camera">Continuer</string>
+    <string name="not_now">Pas maintenant</string>
+    <string name="camera_permission_denied_title">L&#8217;acc&#232;s &#224; la cam&#233;ra est d&#233;sactiv&#233;</string>
+    <string name="camera_permission_denied_message">L&#8217;acc&#232;s &#224; la cam&#233;ra est n&#233;cessaire pour le scan en direct. Ouvrez les param&#232;tres Android pour l&#8217;autoriser ou scannez une photo.</string>
+    <string name="open_android_settings">Ouvrir les param&#232;tres Android</string>
+    <string name="scan_from_photo">Scanner depuis une photo</string>
+    <string name="camera_starting">D&#233;marrage de la cam&#233;ra&#8230;</string>
+    <string name="camera_unavailable_title">Impossible de d&#233;marrer la cam&#233;ra</string>
+    <string name="camera_unavailable_message">Essayez de red&#233;marrer la cam&#233;ra. Si elle ne s&#8217;ouvre toujours pas, v&#233;rifiez son autorisation dans les param&#232;tres Android.</string>
+    <string name="barcode_not_detected_title">Code-barres non d&#233;tect&#233;</string>
+    <string name="barcode_not_detected_message">Gardez le code-barres &#224; plat, bien &#233;clair&#233; et enti&#232;rement dans le cadre. Vous pouvez r&#233;essayer ou scanner la liste d&#8217;ingr&#233;dients.</string>
+    <string name="try_again">R&#233;essayer</string>
+    <string name="scan_ingredients_instead">Scanner les ingr&#233;dients</string>
+    <string name="product_not_found_title">Produit introuvable</string>
+    <string name="product_not_found_message">Le code-barres a &#233;t&#233; lu, mais les informations du produit n&#8217;ont pas pu &#234;tre charg&#233;es. R&#233;essayez, scannez les ingr&#233;dients ou ajoutez le produit manuellement.</string>
+    <string name="add_product">Ajouter le produit</string>
+    <string name="product_lookup_failed_title">Impossible de charger le produit</string>
+    <string name="product_lookup_failed_message">Le code-barres a &#233;t&#233; lu, mais le service n&#8217;a pas renvoy&#233; d&#8217;informations utilisables. R&#233;essayez ou scannez la liste d&#8217;ingr&#233;dients.</string>
 </resources>

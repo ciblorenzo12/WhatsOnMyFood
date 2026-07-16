@@ -211,4 +211,24 @@
     <string name="off_password_required">Se requiere tu contrase&#241;a de Open Food Facts.</string>
     <string name="off_confirmation_required">Confirma que revisaste la etiqueta del envase antes de enviar.</string>
     <string name="off_invalid_barcode">Este producto no tiene un c&#243;digo de barras v&#225;lido para Open Food Facts.</string>
+    <string name="camera_permission_first_title">Usa la c&#225;mara para escanear alimentos</string>
+    <string name="camera_permission_first_message">What&#8217;s On My Food usa la c&#225;mara solo mientras escaneas un c&#243;digo de barras o una etiqueta de ingredientes. Las fotos no se guardan a menos que decidas usarlas.</string>
+    <string name="continue_to_camera">Continuar</string>
+    <string name="not_now">Ahora no</string>
+    <string name="camera_permission_denied_title">El acceso a la c&#225;mara est&#225; desactivado</string>
+    <string name="camera_permission_denied_message">Se necesita acceso a la c&#225;mara para escanear en vivo. Abre los ajustes de Android para permitirlo o escanea una foto.</string>
+    <string name="open_android_settings">Abrir ajustes de Android</string>
+    <string name="scan_from_photo">Escanear desde una foto</string>
+    <string name="camera_starting">Iniciando la c&#225;mara&#8230;</string>
+    <string name="camera_unavailable_title">No se pudo iniciar la c&#225;mara</string>
+    <string name="camera_unavailable_message">Intenta iniciar la c&#225;mara de nuevo. Si no se abre, revisa el acceso a la c&#225;mara en los ajustes de Android.</string>
+    <string name="barcode_not_detected_title">No se detect&#243; el c&#243;digo de barras</string>
+    <string name="barcode_not_detected_message">Mant&#233;n el c&#243;digo plano, bien iluminado y completamente dentro del marco. Puedes intentarlo de nuevo o escanear la etiqueta de ingredientes.</string>
+    <string name="try_again">Intentar de nuevo</string>
+    <string name="scan_ingredients_instead">Escanear ingredientes</string>
+    <string name="product_not_found_title">Producto no encontrado</string>
+    <string name="product_not_found_message">Se ley&#243; el c&#243;digo, pero no se pudo cargar la informaci&#243;n. Int&#233;ntalo otra vez, escanea los ingredientes o agrega el producto manualmente.</string>
+    <string name="add_product">Agregar producto</string>
+    <string name="product_lookup_failed_title">No se pudo cargar el producto</string>
+    <string name="product_lookup_failed_message">Se ley&#243; el c&#243;digo, pero el servicio no devolvi&#243; informaci&#243;n utilizable. Int&#233;ntalo de nuevo o escanea la etiqueta de ingredientes.</string>
 </resources>
