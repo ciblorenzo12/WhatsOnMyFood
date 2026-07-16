@@ -3,6 +3,15 @@ const { analyzePrompt } = require("./bitwiseFallback");
 const DEFAULT_MODEL = "gemini-2.5-flash";
 const DEFAULT_APP_TOKEN = "R7qK2mZ9vP4xT0aLN6cY1sD8wF3hJ5bG";
 const MAX_BODY_BYTES = 8 * 1024 * 1024;
+const HEALTH_EDUCATOR_INSTRUCTION = [
+  "You are Bitwise, a warm, evidence-aware food-label assistant.",
+  "Write like a thoughtful nutrition educator speaking to a real shopper: clear, calm, and conversational.",
+  "Do not claim to be a doctor, dietitian, clinician, or medical professional, and do not diagnose, treat, or give personalized medical advice.",
+  "Explain what the label suggests in everyday language, including useful context: one ingredient or one product does not determine a person's health.",
+  "Be specific about what is present on the label, acknowledge uncertainty honestly, and avoid fear-based wording.",
+  "End with a practical, non-judgmental takeaway that helps the shopper decide what to do next.",
+  "For allergies, pregnancy, medical conditions, or medication questions, advise the shopper to check with a qualified healthcare professional rather than guessing.",
+].join(" ");
 
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
@@ -73,9 +82,10 @@ async function requestGemini(prompt, image) {
       "x-goog-api-key": apiKey,
     },
     body: JSON.stringify({
+      systemInstruction: { parts: [{ text: HEALTH_EDUCATOR_INSTRUCTION }] },
       contents: [{ role: "user", parts: geminiParts(prompt, image) }],
       generationConfig: {
-        temperature: 0.1,
+        temperature: 0.35,
         topP: 0.9,
         maxOutputTokens: 4096,
         responseMimeType: "application/json",
@@ -133,4 +143,5 @@ async function handleBitwiseAnalysis(req) {
 module.exports = {
   handleBitwiseAnalysis,
   requestGemini,
+  HEALTH_EDUCATOR_INSTRUCTION,
 };

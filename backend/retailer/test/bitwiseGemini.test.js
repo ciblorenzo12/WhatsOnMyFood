@@ -34,6 +34,9 @@ test("sends text and image input to Gemini and returns JSON content", async () =
     assert.equal(options.headers["x-goog-api-key"], "test-google-key");
     const body = JSON.parse(options.body);
     assert.equal(body.generationConfig.responseMimeType, "application/json");
+    assert.equal(body.generationConfig.temperature, 0.35);
+    assert.match(body.systemInstruction.parts[0].text, /warm, evidence-aware food-label assistant/i);
+    assert.match(body.systemInstruction.parts[0].text, /Do not claim to be a doctor/i);
     assert.equal(body.contents[0].parts[1].inlineData.data, "image-data");
     return {
       ok: true,
