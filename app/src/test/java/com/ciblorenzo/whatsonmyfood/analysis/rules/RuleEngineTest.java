@@ -107,14 +107,26 @@ public class RuleEngineTest {
                 .withIngredients(ingredients)
                 .withAddedSugars(51.0)
                 .withSugars(25.0)
-                .withNovaGroup("4")
                 .build();
 
         // ACT
         ProductAnalysisReport report = ruleEngine.analyze(product);
 
-        // ASSERT: 100 - 50(Added) - 20(Main) - 20(Flavor) - 15(High) - 10(Ultra) = -15, which clamps to 0.
-        assertEquals("The score should clamp to 0 when total penalties exceed 100", 0, report.getOverallScore());
+        // NOVA is no longer an automatic penalty; the score reflects the label's actual sugar and flavor signals.
+        assertEquals("The score should reflect the specific label signals", 20, report.getOverallScore());
+    }
+
+    @Test
+    public void analyze_novaGroupAloneDoesNotCreateANegativeFinding() {
+        ProductWithDetails product = new ProductBuilder("nova_only")
+                .withNovaGroup("4")
+                .build();
+
+        ProductAnalysisReport report = ruleEngine.analyze(product);
+
+        assertEquals(100, report.getOverallScore());
+        assertFalse(report.getResults().stream()
+                .anyMatch(result -> result.getMessage().contains("NOVA")));
     }
 
     @Test

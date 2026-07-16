@@ -31,7 +31,6 @@ public class RuleEngine {
                 new HighSugarRule(),
                 new TextureAdditivesRule(),
                 new ArtificialFlavorRule(),
-                new UltraProcessedFoodRule(),
                 new NutriScoreRule(),
                 new HighSaturatedFatRule(),
                 new NonOrganicWheatRule(),

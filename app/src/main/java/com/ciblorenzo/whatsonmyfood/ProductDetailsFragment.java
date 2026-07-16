@@ -67,7 +67,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
     private static final String ARG_BARCODE = "barcode";
     private static final String ARG_AI_ENABLED = "ai_enabled";
-    private static final String AI_CACHE_PREFIX = "BITWISE_AI_CACHE_V7:";
+    private static final String AI_CACHE_PREFIX = "BITWISE_AI_CACHE_V8:";
     private static final String AI_CACHE_LEGACY_PREFIX = "BITWISE_AI_CACHE_";
 
     private ProductRepository productRepository;
@@ -614,7 +614,8 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         org.json.JSONArray sources = cachedInsight.sources;
         if (latestVerdict != null
                 && latestVerdict.getStatus() == HealthVerdict.Status.NOT_HEALTHY
-                && currentReport != null) {
+                && currentReport != null
+                && HealthVerdictExplanationBuilder.isContradictingNotHealthy(summary)) {
             String localExplanation = HealthVerdictExplanationBuilder.buildNotHealthyExplanation(product, currentReport.getResults());
             if (!localExplanation.isEmpty()) {
                 summary = localExplanation;
@@ -916,7 +917,8 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         }
         if (latestVerdict != null
                 && latestVerdict.getStatus() == HealthVerdict.Status.NOT_HEALTHY
-                && currentReport != null) {
+                && currentReport != null
+                && HealthVerdictExplanationBuilder.isContradictingNotHealthy(text)) {
             String localExplanation = HealthVerdictExplanationBuilder.buildNotHealthyExplanation(product, currentReport.getResults());
             if (!localExplanation.isEmpty()) {
                 text = localExplanation;

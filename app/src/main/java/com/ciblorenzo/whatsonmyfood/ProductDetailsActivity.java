@@ -63,7 +63,7 @@ public class ProductDetailsActivity extends BaseActivity {
 
     public static final String EXTRA_BARCODE = "com.ciblorenzo.whatsonmyfood.BARCODE";
     public static final String EXTRA_AI_ENABLED = "com.ciblorenzo.whatsonmyfood.AI_ENABLED";
-    private static final String AI_CACHE_PREFIX = "BITWISE_AI_CACHE_V7:";
+    private static final String AI_CACHE_PREFIX = "BITWISE_AI_CACHE_V8:";
     private static final String AI_CACHE_LEGACY_PREFIX = "BITWISE_AI_CACHE_";
 
     private ProductRepository productRepository;
@@ -458,7 +458,8 @@ public class ProductDetailsActivity extends BaseActivity {
                                     getIngredientCount(product)
                             );
                             if (summaryVerdict.getStatus() == HealthVerdict.Status.NOT_HEALTHY
-                                    && currentReport != null) {
+                                    && currentReport != null
+                                    && HealthVerdictExplanationBuilder.isContradictingNotHealthy(summary)) {
                                 String localExplanation = HealthVerdictExplanationBuilder.buildNotHealthyExplanation(product, currentReport.getResults());
                                 if (!localExplanation.isEmpty()) {
                                     summary = localExplanation;
@@ -543,7 +544,8 @@ public class ProductDetailsActivity extends BaseActivity {
         org.json.JSONArray sources = cachedInsight.sources;
         if (latestVerdict != null
                 && latestVerdict.getStatus() == HealthVerdict.Status.NOT_HEALTHY
-                && currentReport != null) {
+                && currentReport != null
+                && HealthVerdictExplanationBuilder.isContradictingNotHealthy(summary)) {
             String localExplanation = HealthVerdictExplanationBuilder.buildNotHealthyExplanation(product, currentReport.getResults());
             if (!localExplanation.isEmpty()) {
                 summary = localExplanation;

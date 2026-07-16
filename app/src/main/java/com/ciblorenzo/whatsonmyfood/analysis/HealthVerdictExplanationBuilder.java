@@ -25,23 +25,16 @@ public final class HealthVerdictExplanationBuilder {
                 : "This product";
 
         StringBuilder builder = new StringBuilder();
-        builder.append("<b>Why this rating</b><br>");
         builder.append(escape(productName)).append(" is marked <b>Not Healthy</b> because ");
-        builder.append(primaryReason(concerns)).append("<br><br>");
-
-        builder.append("<b>What to watch</b><br>");
+        builder.append(explainConcern(concerns.get(0)));
         for (int i = 0; i < Math.min(2, concerns.size()); i++) {
+            if (i == 0) continue;
             AnalysisResult concern = concerns.get(i);
-            builder.append(escape(concern.getMessage()));
-            if (concern.getTriggeringIngredient() != null && !concern.getTriggeringIngredient().trim().isEmpty()) {
-                builder.append(": ").append(escape(concern.getTriggeringIngredient().trim()));
-            }
-            builder.append(". ");
-            builder.append(escape(shorten(concern.getExplanation()))).append("<br>");
+            builder.append(" A second concern is that ").append(explainConcern(concern));
         }
 
-        builder.append("<br><b>Recommendation</b><br>");
-        builder.append("Use it occasionally instead of as an everyday pantry staple, and compare it with a similar product that has fewer processing warnings, less added sugar, lower sodium, or a shorter ingredient list.");
+        builder.append("<br><br><b>Bottom line</b><br>");
+        builder.append("This is not a safety warning about one serving. When choosing between similar products, compare the ingredient list with added sugar, sodium, and serving size to find the option that best fits your routine.");
         return builder.toString();
     }
 
@@ -91,16 +84,18 @@ public final class HealthVerdictExplanationBuilder {
         return concerns;
     }
 
-    private static String primaryReason(List<AnalysisResult> concerns) {
-        AnalysisResult primary = concerns.get(0);
-        String message = primary.getMessage() != null ? primary.getMessage() : "it has one or more caution signals";
-        if (message.toLowerCase(Locale.US).contains("nova 4")) {
-            return "Open Food Facts classifies it as <b>NOVA Group 4</b>, the highest processing category for ultra-processed foods.";
+    private static String explainConcern(AnalysisResult concern) {
+        String ingredient = concern.getTriggeringIngredient() != null ? concern.getTriggeringIngredient().trim() : "";
+        String explanation = shorten(concern.getExplanation());
+        if (!ingredient.isEmpty()) {
+            return "the label lists <b>" + escape(ingredient) + "</b>. "
+                    + (explanation.isEmpty() ? "That ingredient is the specific reason this result needs a closer look." : escape(explanation));
         }
-        if (primary.getTriggeringIngredient() != null && !primary.getTriggeringIngredient().trim().isEmpty()) {
-            return "the ingredient list contains <b>" + escape(primary.getTriggeringIngredient().trim()) + "</b>, a concern flagged by the app's rules.";
+        if (!explanation.isEmpty()) {
+            return escape(explanation);
         }
-        return "the app found <b>" + escape(message) + "</b> in the product data.";
+        String message = concern.getMessage() != null ? concern.getMessage().trim() : "a specific label concern";
+        return "the label shows <b>" + escape(message) + "</b>.";
     }
 
     private static String sourceName(String url, AnalysisResult result) {
