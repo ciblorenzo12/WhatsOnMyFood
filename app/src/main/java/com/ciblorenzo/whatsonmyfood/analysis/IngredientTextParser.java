@@ -57,9 +57,18 @@ public final class IngredientTextParser {
         String[] markers = {
                 "ingredients:",
                 "ingredient list:",
+                "ingrédients :",
+                "ingrédients:",
+                "ingrédients",
+                "ingredientes:",
+                "ingredientes",
                 "ingredients",
                 "contains:",
-                "contains"
+                "contains",
+                "contient :",
+                "contient:",
+                "contiene:",
+                "contiene"
         };
         int start = -1;
         for (String marker : markers) {
@@ -100,6 +109,10 @@ public final class IngredientTextParser {
                 "warnings",
                 "allergens:",
                 "allergens",
+                "allergènes :",
+                "allergènes:",
+                "alérgenos:",
+                "alergenos:",
                 "distributed by",
                 "manufactured by",
                 "where can i buy",

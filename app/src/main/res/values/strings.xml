@@ -164,13 +164,15 @@
     <string name="source_status_information_may_be_outdated">Information may be outdated.</string>
     <string name="source_status_ingredients_recovered">Ingredients recovered from label or supporting service.</string>
     <string name="point_camera_barcode">Point the camera at a barcode</string>
-    <string name="point_camera_ingredients">Point the camera at the ingredients list</string>
+    <string name="point_camera_ingredients">Fill the frame with the ingredients list. Hold the label flat and steady.</string>
     <string name="barcode_mode">Barcode Mode</string>
     <string name="ingredient_mode">Ingredient Mode</string>
     <string name="barcode_ai_toggle">Barcode AI</string>
     <string name="barcode_ai_on">AI On</string>
     <string name="barcode_ai_off">AI Off</string>
-    <string name="mode_toggle_hint">Tap the icon to switch between Barcode Mode and Ingredients Mode.</string>
+    <string name="mode_toggle_hint">Tap this row to switch between Barcode Mode and Ingredient Mode.</string>
+    <string name="ingredients_not_read_title">Ingredients not readable</string>
+    <string name="ingredients_not_read_message">Keep the full ingredient list in the frame, flatten curved packaging, avoid glare, and hold still. Try again or choose a clearer photo.</string>
     <string name="camera_permission_first_title">Use your camera to scan food</string>
     <string name="camera_permission_first_message">What’s On My Food uses the camera only while you scan a barcode or ingredient label. Photos are not saved unless you choose to use them.</string>
     <string name="continue_to_camera">Continue</string>
@@ -202,6 +204,8 @@
     <string name="rule_scored">Rule Scored</string>
     <string name="health_score_rule_based">Verdict: %1$s (Rule-Based)</string>
     <string name="bitwise_reasoning">Bitwise AI is reasoning...</string>
+    <string name="bitwise_reasoning_background">Score and ingredient findings are ready. Bitwise is adding the full explanation…</string>
+    <string name="bitwise_retry_explanation">Bitwise is taking longer than expected. Tap here to try the explanation again.</string>
     <string name="analyzing">Analyzing...</string>
     <string name="identifying_ingredients">Identifying ingredients...</string>
     <string name="home_title">Your healthy pantry starts here</string>

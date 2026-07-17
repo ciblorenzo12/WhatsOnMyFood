@@ -9,6 +9,11 @@ import static org.junit.Assert.assertTrue;
 public class BitwiseBackendClientTest {
 
     @Test
+    public void interactiveAnalysisDoesNotUseLongSilentRetries() {
+        assertEquals(0, BitwiseBackendClient.MAX_TRANSIENT_RETRIES);
+    }
+
+    @Test
     public void detectsRunPodHtmlResponse() {
         String body = "<!DOCTYPE html><html><head><title>Waiting for service to respond - RunPod</title></head></html>";
 

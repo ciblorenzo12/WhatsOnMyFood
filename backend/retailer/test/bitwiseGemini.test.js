@@ -8,6 +8,7 @@ const {
   attachVerifiedSources,
   productContextForFactCheck,
   factCheckSourcesForPrompt,
+  groundedResponsePrompt,
   urlContextSources,
 } = require("../src/bitwiseGemini");
 
@@ -120,6 +121,13 @@ test("keeps JSON formatting instructions out of the fact-check query", () => {
   );
   assert.match(context, /^Product: Plain almond butter/);
   assert.doesNotMatch(context, /JSON shape/i);
+});
+
+test("does not duplicate product label context in the grounded request", () => {
+  const prompt = "Product: Plain almond butter. Ingredients: almonds. Use this exact JSON shape: {}";
+  const groundedPrompt = groundedResponsePrompt(prompt, [{ name: "FDA", url: "https://www.fda.gov/food" }]);
+  assert.equal(groundedPrompt.split("Product: Plain almond butter").length - 1, 1);
+  assert.doesNotMatch(groundedPrompt, /PRODUCT LABEL DATA TO FACT-CHECK/);
 });
 
 test("selects nutrition sources that match the scanned label", () => {

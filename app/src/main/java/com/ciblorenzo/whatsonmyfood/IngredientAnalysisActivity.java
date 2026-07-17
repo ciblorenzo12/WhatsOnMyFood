@@ -64,6 +64,8 @@ public class IngredientAnalysisActivity extends BaseActivity {
     private View loadingOverlay;
     private String analysisInputText;
     private String rawOcrText;
+    private String sourceBarcode;
+    private BitwiseAnalysisService bitwiseAnalysisService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -130,26 +132,32 @@ public class IngredientAnalysisActivity extends BaseActivity {
         }
 
         List<String> rules = new RuleEngine().getRuleDescriptions();
-        String barcode = getIntent().getStringExtra(EXTRA_BARCODE);
-        String detectedIngredientLabel = hasIngredientMarker(initialText)
-                ? IngredientTextParser.trimToLikelyIngredientList(initialText)
-                : "";
+        sourceBarcode = BarcodeScanGate.normalizeAndValidate(getIntent().getStringExtra(EXTRA_BARCODE));
+        IngredientLabelValidator.Result labelValidation = IngredientLabelValidator.validate(initialText);
+        if (!labelValidation.readable) {
+            showUnreadableLabelDialog();
+            return;
+        }
+        rawOcrText = labelValidation.cleanedText;
+        String detectedIngredientLabel = IngredientTextParser.trimToLikelyIngredientList(rawOcrText);
         String analysisPrompt = "response_language: " + LanguageManager.getLanguageName(this) + "\n"
                 + "scan_mode: ingredients\n"
                 + "image_attached: " + (capturedBitmap != null ? "true" : "false") + "\n"
-                + "available_barcode: " + (barcode != null ? barcode : "") + "\n"
-                + "task: Prioritize the scanned ingredient label. Use product identity only to name the product or as a fallback when no ingredient label is present.\n"
+                + "available_barcode: " + (sourceBarcode != null ? sourceBarcode : "") + "\n"
+                + "task: Parse the scanned ingredient label for scoring. Use visible package text and the ingredient pattern to identify the product, but do not replace or invent label ingredients.\n"
                 + "detected_ingredient_label:\n"
                 + detectedIngredientLabel + "\n"
                 + "product_ocr_text:\n"
-                + (initialText != null ? initialText : "Product Image Analysis");
+                + rawOcrText;
         analyzeWithAI(analysisPrompt, rules, capturedBitmap, healthScoreView, rawIngredientsView, analysisRecyclerView, progressBar);
     }
 
     private void analyzeWithAI(String prompt, List<String> rules, Bitmap bitmap, TextView healthScoreView, TextView rawIngredientsView, RecyclerView analysisRecyclerView, ProgressBar progressBar) {
         analysisInputText = prompt;
         if (loadingOverlay != null) loadingOverlay.setVisibility(View.VISIBLE);
-        new BitwiseAnalysisService().analyzeWithRules(prompt, rules, bitmap, new BitwiseAnalysisService.AnalysisCallback() {
+        if (bitwiseAnalysisService != null) bitwiseAnalysisService.cancelActiveCall();
+        bitwiseAnalysisService = new BitwiseAnalysisService();
+        bitwiseAnalysisService.analyzeWithRules(prompt, rules, bitmap, new BitwiseAnalysisService.AnalysisCallback() {
             @Override
             public void onResult(String jsonResult) {
                 runOnUiThread(() -> {
@@ -187,7 +195,7 @@ public class IngredientAnalysisActivity extends BaseActivity {
             if (brand.isEmpty() || brand.equalsIgnoreCase("Brand") || brand.equalsIgnoreCase("Brand Unknown")) {
                 brand = ocrIdentity.brand != null ? ocrIdentity.brand : "Brand Unknown";
             }
-            String fakeBarcode = "ai-" + System.currentTimeMillis();
+            String productKey = sourceBarcode != null ? sourceBarcode : "ai-" + System.currentTimeMillis();
 
             JSONArray sourcesArr = obj.optJSONArray("sources");
             android.text.SpannableStringBuilder sourcesBuilder = new android.text.SpannableStringBuilder();
@@ -224,13 +232,10 @@ public class IngredientAnalysisActivity extends BaseActivity {
             if (brandView != null && !brand.equalsIgnoreCase("Brand")) brandView.setText(brand);
 
             // 2. Ingredients
-            List<Ingredient> ingredientList = readIngredientsForScoring(obj, fakeBarcode);
-            if (ingredientList.isEmpty()) {
-                ingredientList = inferIngredientsFromIdentity(productName, brand, fakeBarcode);
-            }
+            List<Ingredient> ingredientList = readIngredientsForScoring(obj, productKey);
 
             detectedProduct = new ProductWithDetails();
-            detectedProduct.product = new Product(fakeBarcode, productName, brand, null, null, null, null, null, null, null, null, null, buildAiInsightCache(summary, sourcesArr), null);
+            detectedProduct.product = new Product(productKey, productName, brand, null, null, null, null, null, null, null, null, null, buildAiInsightCache(summary, sourcesArr), null);
             detectedProduct.ingredients = ingredientList;
             if (retailerCommerceViewBinder != null) {
                 retailerCommerceViewBinder.bind(detectedProduct);
@@ -318,58 +323,17 @@ public class IngredientAnalysisActivity extends BaseActivity {
     private List<Ingredient> readIngredientsForScoring(JSONObject obj, String barcode) {
         List<Ingredient> ingredients = new ArrayList<>();
         Set<String> seen = new LinkedHashSet<>();
+        List<String> modelIngredients = new ArrayList<>();
         JSONArray ingredientArray = obj.optJSONArray("ingredients");
         if (ingredientArray != null) {
             for (int i = 0; i < ingredientArray.length(); i++) {
-                List<String> parsedItems = IngredientTextParser.parseIngredientCandidates(ingredientArray.optString(i, ""));
-                for (String text : parsedItems) {
-                    addIngredientIfUseful(ingredients, seen, barcode, text);
-                }
+                modelIngredients.add(ingredientArray.optString(i, ""));
             }
         }
-
-        if (ingredients.isEmpty() && hasIngredientMarker(rawOcrText)) {
-            for (String text : IngredientTextParser.parseIngredientCandidates(rawOcrText)) {
-                addIngredientIfUseful(ingredients, seen, barcode, text);
-            }
+        for (String text : IngredientScoringInput.select(rawOcrText, modelIngredients)) {
+            addIngredientIfUseful(ingredients, seen, barcode, text);
         }
-
         return ingredients;
-    }
-
-    private boolean hasIngredientMarker(String text) {
-        if (text == null) return false;
-        String lower = text.toLowerCase(Locale.US);
-        return lower.contains("ingredients:")
-                || lower.contains("ingredient list:")
-                || lower.contains("contains:")
-                || lower.contains("ingredients")
-                || lower.contains("ingredient list")
-                || lower.contains("contains")
-                || lower.contains("ingredientes:")
-                || lower.contains("ingredientes")
-                || lower.contains("ingrédients:")
-                || lower.contains("ingrédients");
-    }
-
-    private List<Ingredient> inferIngredientsFromIdentity(String productName, String brand, String barcode) {
-        List<Ingredient> inferred = new ArrayList<>();
-        String identity = ((brand != null ? brand : "") + " " + (productName != null ? productName : "")).toLowerCase(Locale.US);
-        if (identity.contains("vita coco") && identity.contains("coconut water")) {
-            inferred.add(new Ingredient(barcode, "Organic coconut water", 0));
-            return inferred;
-        }
-        if (identity.contains("coconut water")) {
-            inferred.add(new Ingredient(barcode, productName != null && productName.toLowerCase(Locale.US).contains("organic")
-                    ? "Organic coconut water"
-                    : "Coconut water", 0));
-            return inferred;
-        }
-        if (identity.matches(".*\\b(water|spring water|mineral water)\\b.*")) {
-            inferred.add(new Ingredient(barcode, "Water", 0));
-            return inferred;
-        }
-        return inferred;
     }
 
     private void addIngredientIfUseful(List<Ingredient> ingredients, Set<String> seen, String barcode, String text) {
@@ -401,14 +365,6 @@ public class IngredientAnalysisActivity extends BaseActivity {
             return "";
         }
         return cleaned;
-    }
-
-    private String trimToLikelyIngredientList(String text) {
-        return IngredientTextParser.trimToLikelyIngredientList(text);
-    }
-
-    private String cleanIngredientText(String text) {
-        return IngredientTextParser.cleanIngredientText(text);
     }
 
     private AnalysisResult.WarningLevel parseAiWarningLevel(String impact) {
@@ -451,7 +407,8 @@ public class IngredientAnalysisActivity extends BaseActivity {
         if (text == null || text.trim().isEmpty()) return ProductIdentity.empty();
 
         List<String> candidates = new ArrayList<>();
-        String[] lines = IngredientTextParser.stripPromptMetadata(text).split("\\r?\\n");
+        String identityText = textBeforeIngredientMarker(IngredientTextParser.stripPromptMetadata(text));
+        String[] lines = identityText.split("\\r?\\n");
         for (String line : lines) {
             String cleaned = cleanProductIdentityLine(line);
             if (!cleaned.isEmpty()) {
@@ -477,6 +434,29 @@ public class IngredientAnalysisActivity extends BaseActivity {
             if (name.length() > 58) break;
         }
         return new ProductIdentity(toDisplayCase(name.toString()), toDisplayCase(brand));
+    }
+
+    private String textBeforeIngredientMarker(String text) {
+        if (text == null) return "";
+        String lower = text.toLowerCase(Locale.US);
+        String[] markers = {"ingredients", "ingredient list", "ingrédients", "ingredientes", "contains:", "contient:", "contiene:"};
+        int stop = -1;
+        for (String marker : markers) {
+            int index = lower.indexOf(marker);
+            if (index >= 0 && (stop == -1 || index < stop)) stop = index;
+        }
+        return stop >= 0 ? text.substring(0, stop) : text;
+    }
+
+    private void showUnreadableLabelDialog() {
+        if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.ingredients_not_read_title)
+                .setMessage(R.string.ingredients_not_read_message)
+                .setCancelable(false)
+                .setPositiveButton(R.string.try_again, (dialog, which) -> finish())
+                .setNegativeButton(android.R.string.cancel, (dialog, which) -> finish())
+                .show();
     }
 
     private boolean looksLikeVitaCoco(String lowerText) {
@@ -740,6 +720,9 @@ public class IngredientAnalysisActivity extends BaseActivity {
 
     @Override
     protected void onDestroy() {
+        if (bitwiseAnalysisService != null) {
+            bitwiseAnalysisService.cancelActiveCall();
+        }
         super.onDestroy();
         if (productRepository != null) {
             productRepository.close();

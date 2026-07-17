@@ -201,7 +201,6 @@ function groundedResponsePrompt(prompt, sources) {
     + "against the authoritative sources listed below. "
     + "Base portion advice on the printed serving size and never invent an amount. Then follow the full Bitwise JSON instructions below.\n\n"
     + `AUTHORITATIVE FACT-CHECK SOURCES:\n${sourceList}\n\n`
-    + `PRODUCT LABEL DATA TO FACT-CHECK:\n${productContextForFactCheck(prompt)}\n\n`
     + `FULL BITWISE RESPONSE INSTRUCTIONS:\n${prompt}`;
 }
 
@@ -389,5 +388,6 @@ module.exports = {
   BITWISE_RESPONSE_SCHEMA,
   productContextForFactCheck,
   factCheckSourcesForPrompt,
+  groundedResponsePrompt,
   urlContextSources,
 };

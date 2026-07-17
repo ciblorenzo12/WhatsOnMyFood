@@ -139,13 +139,15 @@
     <string name="source_status_information_may_be_outdated">La información puede estar desactualizada.</string>
     <string name="source_status_ingredients_recovered">Ingredientes recuperados de la etiqueta o de un servicio de apoyo.</string>
     <string name="point_camera_barcode">Apunta la camara al codigo</string>
-    <string name="point_camera_ingredients">Apunta la camara a la lista de ingredientes</string>
+    <string name="point_camera_ingredients">Llena el encuadre con la lista de ingredientes. Mantén la etiqueta plana y firme.</string>
     <string name="barcode_mode">Modo codigo de barras</string>
     <string name="ingredient_mode">Modo ingredientes</string>
     <string name="barcode_ai_toggle">IA para c&#243;digos de barras</string>
     <string name="barcode_ai_on">IA activada</string>
     <string name="barcode_ai_off">IA desactivada</string>
-    <string name="mode_toggle_hint">Toca el icono para cambiar entre el modo de c&#243;digo de barras y el modo de ingredientes.</string>
+    <string name="mode_toggle_hint">Toca esta fila para cambiar entre el modo de código de barras y el modo de ingredientes.</string>
+    <string name="ingredients_not_read_title">No se pueden leer los ingredientes</string>
+    <string name="ingredients_not_read_message">Mantén toda la lista en el encuadre, aplana el envase curvo, evita reflejos y no muevas la cámara. Inténtalo de nuevo o elige una foto más clara.</string>
     <string name="source">Fuente</string>
     <string name="source_article">Articulo fuente</string>
     <string name="source_viewer">Visor de fuente</string>
@@ -157,6 +159,8 @@
     <string name="rule_scored">Puntaje por reglas</string>
     <string name="health_score_rule_based">Veredicto: %1$s (por reglas)</string>
     <string name="bitwise_reasoning">Bitwise AI esta razonando...</string>
+    <string name="bitwise_reasoning_background">La puntuación y los hallazgos de ingredientes están listos. Bitwise está añadiendo la explicación completa…</string>
+    <string name="bitwise_retry_explanation">Bitwise está tardando más de lo esperado. Toca aquí para volver a intentar la explicación.</string>
     <string name="analyzing">Analizando...</string>
     <string name="identifying_ingredients">Identificando ingredientes...</string>
     <string name="home_title">Tu despensa saludable empieza aqui</string>

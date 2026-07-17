@@ -75,6 +75,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     private static final String AI_CACHE_LEGACY_PREFIX = "BITWISE_AI_CACHE_";
 
     private ProductRepository productRepository;
+    private ScanFailureLogger scanFailureLogger;
     private RetailerRepository retailerRepository;
     private ExecutorService executorService;
     private AppDatabase db;
@@ -109,6 +110,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     private View aiSourcesDivider;
     private View aiSourcesLabel;
     private HealthVerdict latestVerdict;
+    private BitwiseAnalysisService bitwiseAnalysisService;
 
     public static ProductDetailsFragment newInstance(String barcode) {
         return newInstance(barcode, true);
@@ -127,6 +129,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         productRepository = new ProductRepository(requireActivity().getApplication());
+        scanFailureLogger = new ScanFailureLogger(requireContext());
         retailerRepository = new RetailerRepository(requireActivity().getApplication());
         executorService = Executors.newSingleThreadExecutor();
         db = AppDatabase.getDatabase(requireContext());
@@ -247,6 +250,9 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
     @Override
     public void onDestroy() {
+        if (bitwiseAnalysisService != null) {
+            bitwiseAnalysisService.cancelActiveCall();
+        }
         super.onDestroy();
         if (productRepository != null) {
             productRepository.close();
@@ -262,7 +268,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     private void loadProductDetails(String barcode) {
         if (loadingOverlay != null) loadingOverlay.setVisibility(View.VISIBLE);
         showCachedProductWhileRefreshing(barcode);
-        productRepository.getProductByBarcode(barcode, new ProductRepository.RepositoryCallback<ProductRepository.ProductResult>() {
+        ProductLookupDispatcher.dispatch(barcode, productRepository, new ProductRepository.RepositoryCallback<ProductRepository.ProductResult>() {
             @Override
             public void onComplete(ProductRepository.ProductResult result) {
                 if (getActivity() == null || !isAdded()) return;
@@ -276,6 +282,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                             checkIfProductInPantry(barcode);
                         });
                     } else {
+                        scanFailureLogger.record("repository_lookup", barcode, "product_not_found", "No product returned by repository");
                         showAddProductDialog(barcode);
                     }
                 });
@@ -283,6 +290,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
             @Override
             public void onError(Exception e) {
+                scanFailureLogger.record("repository_lookup", barcode, "repository_error", e);
                 if (getActivity() == null || !isAdded()) return;
                 getActivity().runOnUiThread(() -> {
                     if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
@@ -453,7 +461,8 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
         aiSummaryContainer.setVisibility(View.VISIBLE);
         GlassMotion.enter(aiSummaryContainer, 120L);
-        aiSummaryTextView.setText(R.string.bitwise_reasoning);
+        aiSummaryTextView.setText(R.string.bitwise_reasoning_background);
+        aiSummaryContainer.setOnClickListener(null);
         AiGlowManager.startGlow(getActivity());
 
         StringBuilder productData = new StringBuilder();
@@ -468,7 +477,9 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
             productData.append("\nNutrition: ").append(productDetails.nutriments.toString());
         }
 
-        new BitwiseAnalysisService().analyzeWithRules(productData.toString(), null, new BitwiseAnalysisService.AnalysisCallback() {
+        if (bitwiseAnalysisService != null) bitwiseAnalysisService.cancelActiveCall();
+        bitwiseAnalysisService = new BitwiseAnalysisService();
+        bitwiseAnalysisService.analyzeWithRules(productData.toString(), null, new BitwiseAnalysisService.AnalysisCallback() {
             @Override
             public void onResult(String result) {
                 if (getActivity() == null || !isAdded()) return;
@@ -585,7 +596,8 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
                         AiGlowManager.stopGlow(getActivity());
-                        aiSummaryTextView.setText(t.getMessage());
+                        aiSummaryTextView.setText(R.string.bitwise_retry_explanation);
+                        aiSummaryContainer.setOnClickListener(v -> fetchAiInsight(productDetails));
                     });
                 }
             }

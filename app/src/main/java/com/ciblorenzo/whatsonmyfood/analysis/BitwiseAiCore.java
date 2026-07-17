@@ -6,6 +6,8 @@ import android.graphics.Bitmap;
 import com.ciblorenzo.whatsonmyfood.AiGlowManager;
 import com.ciblorenzo.whatsonmyfood.api.SecureAiService;
 
+import okhttp3.Call;
+
 /**
  * Central Bitwise AI analysis entry point.
  * Keeps the model response small, structured, and safe to render in Android TextViews.
@@ -17,10 +19,10 @@ public class BitwiseAiCore {
         void onError(Throwable t);
     }
 
-    public static void startAnalysis(Activity activity, String productData, Bitmap bitmap, AiCallback callback) {
+    public static Call startAnalysis(Activity activity, String productData, Bitmap bitmap, AiCallback callback) {
         if (activity != null) AiGlowManager.startGlow(activity);
 
-        SecureAiService.analyzeProduct(buildProductPrompt(productData), bitmap, new SecureAiService.AiCallback() {
+        return SecureAiService.analyzeProduct(buildProductPrompt(productData), bitmap, new SecureAiService.AiCallback() {
             @Override
             public void onResult(String result) {
                 if (activity != null) AiGlowManager.stopGlow(activity);

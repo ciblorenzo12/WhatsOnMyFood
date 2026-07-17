@@ -14,7 +14,7 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class ProductRepository {
+public class ProductRepository implements ProductLookupGateway {
 
     private final ProductDao productDao;
     private final List<BarcodeApiClient> apiClients;
@@ -82,6 +82,7 @@ public class ProductRepository {
         this.executorService = Executors.newSingleThreadExecutor();
     }
 
+    @Override
     public void getProductByBarcode(String barcode, RepositoryCallback<ProductResult> callback) {
         idlingResource.increment();
         executorService.execute(() -> {

@@ -25,7 +25,8 @@ public class BitwiseBackendClient {
     private static final String TAG = "BitwiseBackendClient";
     private static final String APP_TOKEN = "R7qK2mZ9vP4xT0aLN6cY1sD8wF3hJ5bG";
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-    private static final int MAX_TRANSIENT_RETRIES = 4;
+    // Avoid making users wait through several long, invisible server retries.
+    static final int MAX_TRANSIENT_RETRIES = 0;
 
     private final OkHttpClient client;
     private final Gson gson = new Gson();
@@ -39,8 +40,9 @@ public class BitwiseBackendClient {
     public BitwiseBackendClient() {
         client = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(90, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(25, TimeUnit.SECONDS)
+                .writeTimeout(15, TimeUnit.SECONDS)
+                .callTimeout(25, TimeUnit.SECONDS)
                 .retryOnConnectionFailure(true)
                 .build();
     }
