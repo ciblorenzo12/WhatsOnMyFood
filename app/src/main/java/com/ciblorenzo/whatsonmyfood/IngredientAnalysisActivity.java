@@ -52,6 +52,7 @@ public class IngredientAnalysisActivity extends BaseActivity {
     public static final String EXTRA_INGREDIENTS_TEXT = "extra_ingredients_text";
     public static final String EXTRA_IMAGE_BYTES = "extra_image_bytes";
     public static final String EXTRA_BARCODE = "extra_barcode";
+    public static final String EXTRA_SUPPLEMENTAL_ATTEMPT = "extra_supplemental_attempt";
     private static final String AI_CACHE_PREFIX = "BITWISE_AI_CACHE_V2:";
 
     private ProductWithDetails detectedProduct;
@@ -66,6 +67,8 @@ public class IngredientAnalysisActivity extends BaseActivity {
     private String rawOcrText;
     private String sourceBarcode;
     private BitwiseAnalysisService bitwiseAnalysisService;
+    private int supplementalAttempt;
+    private boolean supplementalScanRequested;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -133,6 +136,7 @@ public class IngredientAnalysisActivity extends BaseActivity {
 
         List<String> rules = new RuleEngine().getRuleDescriptions();
         sourceBarcode = BarcodeScanGate.normalizeAndValidate(getIntent().getStringExtra(EXTRA_BARCODE));
+        supplementalAttempt = Math.max(0, getIntent().getIntExtra(EXTRA_SUPPLEMENTAL_ATTEMPT, 0));
         IngredientLabelValidator.Result labelValidation = IngredientLabelValidator.validate(initialText);
         if (!labelValidation.readable) {
             showUnreadableLabelDialog();
@@ -173,6 +177,11 @@ public class IngredientAnalysisActivity extends BaseActivity {
                 runOnUiThread(() -> {
                     if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
                     AiGlowManager.stopGlow(IngredientAnalysisActivity.this);
+                    ProductIdentity identity = inferProductIdentityFromOcr(rawOcrText);
+                    if (identity.productName == null) {
+                        requestSupplementalOcr(false, "", "");
+                        return;
+                    }
                     healthScoreView.setText("N/A");
                     Toast.makeText(IngredientAnalysisActivity.this, "Bitwise AI is busy. Try again soon.", Toast.LENGTH_SHORT).show();
                 });
@@ -189,9 +198,11 @@ public class IngredientAnalysisActivity extends BaseActivity {
             String summary = com.ciblorenzo.whatsonmyfood.analysis.AiSummaryFormatter.format(obj.optString("summary", ""));
             ProductIdentity ocrIdentity = inferProductIdentityFromOcr(rawOcrText);
 
-            if (isUnknownProductName(productName) || looksLikePromptInstruction(productName)) {
+            boolean productNameMissing = isUnknownProductName(productName) || looksLikePromptInstruction(productName);
+            if (productNameMissing) {
                 productName = ocrIdentity.productName != null ? ocrIdentity.productName : "Scanned Product";
             }
+            productNameMissing = isUnknownProductName(productName) || looksLikePromptInstruction(productName);
             if (brand.isEmpty() || brand.equalsIgnoreCase("Brand") || brand.equalsIgnoreCase("Brand Unknown")) {
                 brand = ocrIdentity.brand != null ? ocrIdentity.brand : "Brand Unknown";
             }
@@ -233,6 +244,11 @@ public class IngredientAnalysisActivity extends BaseActivity {
 
             // 2. Ingredients
             List<Ingredient> ingredientList = readIngredientsForScoring(obj, productKey);
+            boolean ingredientsMissing = ingredientList.isEmpty();
+            if (ingredientsMissing || productNameMissing) {
+                requestSupplementalOcr(ingredientsMissing, productName, brand);
+                return;
+            }
 
             detectedProduct = new ProductWithDetails();
             detectedProduct.product = new Product(productKey, productName, brand, null, null, null, null, null, null, null, null, null, buildAiInsightCache(summary, sourcesArr), null);
@@ -446,6 +462,69 @@ public class IngredientAnalysisActivity extends BaseActivity {
             if (index >= 0 && (stop == -1 || index < stop)) stop = index;
         }
         return stop >= 0 ? text.substring(0, stop) : text;
+    }
+
+    private void requestSupplementalOcr(boolean ingredientsMissing, String productName, String brand) {
+        if (supplementalScanRequested || isFinishing()) return;
+        supplementalScanRequested = true;
+
+        int titleRes = ingredientsMissing
+                ? R.string.missing_ingredients_scan_title
+                : R.string.missing_product_name_scan_title;
+        int messageRes = ingredientsMissing
+                ? R.string.missing_ingredients_scan_message
+                : R.string.missing_product_name_scan_message;
+
+        new AlertDialog.Builder(this)
+                .setTitle(titleRes)
+                .setMessage(messageRes)
+                .setCancelable(false)
+                .setPositiveButton(R.string.continue_to_camera, (dialog, which) -> {
+                    Intent scannerIntent = new Intent(this, ScanBarcodeActivity.class);
+                    scannerIntent.putExtra(
+                            ScanBarcodeActivity.EXTRA_SUPPLEMENTAL_TARGET,
+                            ingredientsMissing
+                                    ? ScanBarcodeActivity.TARGET_INGREDIENTS
+                                    : ScanBarcodeActivity.TARGET_PRODUCT_NAME
+                    );
+                    scannerIntent.putExtra(
+                            ScanBarcodeActivity.EXTRA_EXISTING_INGREDIENT_TEXT,
+                            ingredientsMissing ? "" : rawOcrText
+                    );
+                    scannerIntent.putExtra(
+                            ScanBarcodeActivity.EXTRA_EXISTING_PRODUCT_TEXT,
+                            ingredientsMissing ? buildProductIdentityContext(productName, brand) : ""
+                    );
+                    if (sourceBarcode != null) {
+                        scannerIntent.putExtra(ScanBarcodeActivity.EXTRA_SOURCE_BARCODE, sourceBarcode);
+                    }
+                    scannerIntent.putExtra(
+                            ScanBarcodeActivity.EXTRA_SUPPLEMENTAL_ATTEMPT,
+                            supplementalAttempt + 1
+                    );
+                    startActivity(scannerIntent);
+                    finish();
+                })
+                .setNegativeButton(android.R.string.cancel, (dialog, which) -> finish())
+                .show();
+    }
+
+    private String buildProductIdentityContext(String productName, String brand) {
+        StringBuilder context = new StringBuilder();
+        if (!isUnknownProductName(productName) && !looksLikePromptInstruction(productName)) {
+            context.append(productName.trim());
+        }
+        if (brand != null
+                && !brand.trim().isEmpty()
+                && !brand.equalsIgnoreCase("Brand")
+                && !brand.equalsIgnoreCase("Brand Unknown")) {
+            if (context.length() > 0) context.append('\n');
+            context.append(brand.trim());
+        }
+        if (context.length() == 0) {
+            context.append(textBeforeIngredientMarker(rawOcrText).trim());
+        }
+        return context.toString().trim();
     }
 
     private void showUnreadableLabelDialog() {

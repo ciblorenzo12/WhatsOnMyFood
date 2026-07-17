@@ -34,6 +34,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.PickVisualMediaRequest;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
@@ -66,6 +67,13 @@ import java.util.concurrent.Executors;
 public class ScanBarcodeActivity extends BaseActivity {
 
     public static final String EXTRA_DISABLE_SCAN_TIMEOUTS_FOR_TESTS = "extra_disable_scan_timeouts_for_tests";
+    public static final String EXTRA_SUPPLEMENTAL_TARGET = "extra_supplemental_target";
+    public static final String EXTRA_EXISTING_INGREDIENT_TEXT = "extra_existing_ingredient_text";
+    public static final String EXTRA_EXISTING_PRODUCT_TEXT = "extra_existing_product_text";
+    public static final String EXTRA_SOURCE_BARCODE = "extra_source_barcode";
+    public static final String EXTRA_SUPPLEMENTAL_ATTEMPT = "extra_supplemental_attempt";
+    public static final String TARGET_PRODUCT_NAME = "product_name";
+    public static final String TARGET_INGREDIENTS = "ingredients";
     private static final String SCANNER_PREFERENCES = "scanner_preferences";
     private static final String CAMERA_PERMISSION_REQUESTED = "camera_permission_requested";
     static final String PRODUCT_DETAILS_TAG = "scanned_product_details";
@@ -74,6 +82,10 @@ public class ScanBarcodeActivity extends BaseActivity {
 
     public enum ScanMode {
         BARCODE, INGREDIENTS
+    }
+
+    private enum SupplementalTarget {
+        NONE, PRODUCT_NAME, INGREDIENTS
     }
 
     private PreviewView previewView;
@@ -104,6 +116,11 @@ public class ScanBarcodeActivity extends BaseActivity {
     private ScanFailureLogger scanFailureLogger;
     private boolean scanTimeoutsEnabled = true;
     private boolean uiTestMode;
+    private SupplementalTarget supplementalTarget = SupplementalTarget.NONE;
+    private String existingIngredientText = "";
+    private String existingProductText = "";
+    private String supplementalBarcode;
+    private int supplementalAttempt;
 
     private final Handler launchHandler = new Handler(Looper.getMainLooper());
     private Runnable launchRunnable;
@@ -115,7 +132,15 @@ public class ScanBarcodeActivity extends BaseActivity {
     };
     private final Runnable ingredientScanTimeoutRunnable = () -> {
         if (scanFailureLogger != null) {
-            scanFailureLogger.record("ocr_camera", "", "timeout", "No readable ingredient list detected within 15 seconds");
+            boolean productNameScan = supplementalTarget == SupplementalTarget.PRODUCT_NAME;
+            scanFailureLogger.record(
+                    productNameScan ? "ocr_product_name" : "ocr_camera",
+                    supplementalBarcode == null ? "" : supplementalBarcode,
+                    "timeout",
+                    productNameScan
+                            ? "No readable product name detected within 15 seconds"
+                            : "No readable ingredient list detected within 15 seconds"
+            );
         }
         showIngredientScanRecovery();
     };
@@ -185,6 +210,7 @@ public class ScanBarcodeActivity extends BaseActivity {
         connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         cameraExecutor = Executors.newSingleThreadExecutor();
         scanFailureLogger = new ScanFailureLogger(this);
+        readSupplementalRequest();
 
         getSupportFragmentManager().setFragmentResultListener(
                 ProductDetailsFragment.SCAN_RECOVERY_RESULT,
@@ -240,7 +266,10 @@ public class ScanBarcodeActivity extends BaseActivity {
                     .build());
         });
 
-        if (!uiTestMode) {
+        if (supplementalTarget != SupplementalTarget.NONE) {
+            configureSupplementalMode();
+            showSupplementalScanPrompt();
+        } else if (!uiTestMode) {
             prepareCameraAccess();
             launchHandler.postDelayed(this::showModeToggleHintIfNeeded, 900);
         }
@@ -285,6 +314,63 @@ public class ScanBarcodeActivity extends BaseActivity {
         if (textRecognizer != null) textRecognizer.close();
         launchHandler.removeCallbacksAndMessages(null);
         stopModeToggleGlow();
+    }
+
+    private void readSupplementalRequest() {
+        String target = getIntent().getStringExtra(EXTRA_SUPPLEMENTAL_TARGET);
+        if (TARGET_PRODUCT_NAME.equals(target)) {
+            supplementalTarget = SupplementalTarget.PRODUCT_NAME;
+        } else if (TARGET_INGREDIENTS.equals(target)) {
+            supplementalTarget = SupplementalTarget.INGREDIENTS;
+        }
+        existingIngredientText = safeExtra(EXTRA_EXISTING_INGREDIENT_TEXT);
+        existingProductText = safeExtra(EXTRA_EXISTING_PRODUCT_TEXT);
+        supplementalBarcode = BarcodeScanGate.normalizeAndValidate(getIntent().getStringExtra(EXTRA_SOURCE_BARCODE));
+        supplementalAttempt = Math.max(0, getIntent().getIntExtra(EXTRA_SUPPLEMENTAL_ATTEMPT, 0));
+    }
+
+    private String safeExtra(String key) {
+        String value = getIntent().getStringExtra(key);
+        return value == null ? "" : value.trim();
+    }
+
+    private void configureSupplementalMode() {
+        currentMode = ScanMode.INGREDIENTS;
+        boolean productNameScan = supplementalTarget == SupplementalTarget.PRODUCT_NAME;
+        modeTextView.setText(productNameScan ? R.string.product_name_scan_mode : R.string.ingredient_mode);
+        statusTextView.setText(productNameScan ? R.string.point_camera_product_name : R.string.point_camera_ingredients);
+        modeToggleButton.setImageResource(R.drawable.ic_ingredients_list);
+        modeToggleButton.setContentDescription(getString(
+                productNameScan ? R.string.product_name_scan_mode : R.string.ingredient_mode
+        ));
+        modeToggleButton.setEnabled(false);
+        if (modeSwitchContainer != null) modeSwitchContainer.setEnabled(false);
+        if (barcodeAiToggleButton != null) barcodeAiToggleButton.setVisibility(View.GONE);
+        if (scanningOverlay != null) {
+            scanningOverlay.setMode(ScanningOverlayView.OverlayMode.INGREDIENTS);
+            scanningOverlay.stopScanning();
+        }
+    }
+
+    private void showSupplementalScanPrompt() {
+        boolean productNameScan = supplementalTarget == SupplementalTarget.PRODUCT_NAME;
+        new AlertDialog.Builder(this)
+                .setTitle(productNameScan
+                        ? R.string.missing_product_name_scan_title
+                        : R.string.missing_ingredients_scan_title)
+                .setMessage(productNameScan
+                        ? R.string.missing_product_name_scan_message
+                        : R.string.missing_ingredients_scan_message)
+                .setCancelable(false)
+                .setPositiveButton(R.string.continue_to_camera, (dialog, which) -> prepareCameraAccess())
+                .setNegativeButton(android.R.string.cancel, (dialog, which) -> finish())
+                .show();
+    }
+
+    private int textScanInstructionRes() {
+        return supplementalTarget == SupplementalTarget.PRODUCT_NAME
+                ? R.string.point_camera_product_name
+                : R.string.point_camera_ingredients;
     }
 
     private boolean hasCameraPermission() {
@@ -362,7 +448,8 @@ public class ScanBarcodeActivity extends BaseActivity {
         if (scannerStatePanel != null) scannerStatePanel.setVisibility(View.GONE);
         if (scannerStatePrimaryButton != null) scannerStatePrimaryButton.setOnClickListener(null);
         if (scannerStateSecondaryButton != null) scannerStateSecondaryButton.setOnClickListener(null);
-        if (modeToggleButton != null) modeToggleButton.setEnabled(true);
+        if (modeToggleButton != null) modeToggleButton.setEnabled(supplementalTarget == SupplementalTarget.NONE);
+        if (modeSwitchContainer != null) modeSwitchContainer.setEnabled(supplementalTarget == SupplementalTarget.NONE);
         if (barcodeAiToggleButton != null) barcodeAiToggleButton.setEnabled(true);
         if (torchButton != null) torchButton.setEnabled(true);
     }
@@ -413,6 +500,7 @@ public class ScanBarcodeActivity extends BaseActivity {
     }
 
     private void toggleScanMode() {
+        if (supplementalTarget != SupplementalTarget.NONE) return;
         cancelScanTimeouts();
         hideScannerState();
         isScanLocked = false;
@@ -583,13 +671,16 @@ public class ScanBarcodeActivity extends BaseActivity {
                 ).addOnCompleteListener(task -> image.close());
             } else {
                 textRecognizer.process(inputImage).addOnSuccessListener(text -> {
-                    int bestIngredientConfidence = 0;
+                    int bestTextConfidence = 0;
                     int bestIndex = -1;
                     List<Rect> textBoxes = new ArrayList<>();
+                    boolean productNameScan = supplementalTarget == SupplementalTarget.PRODUCT_NAME;
                     
                     for (com.google.mlkit.vision.text.Text.TextBlock block : text.getTextBlocks()) {
                         String blockText = block.getText();
-                        int ingredientConfidence = IngredientOcrHeuristics.confidence(blockText);
+                        int textConfidence = productNameScan
+                                ? ProductNameOcrValidator.validate(blockText).confidence
+                                : IngredientOcrHeuristics.confidence(blockText);
                         
                         Rect blockBox = block.getBoundingBox();
                         int mappedIndex = -1;
@@ -598,8 +689,8 @@ public class ScanBarcodeActivity extends BaseActivity {
                             textBoxes.add(blockBox);
                         }
                         
-                        if (ingredientConfidence > bestIngredientConfidence) {
-                            bestIngredientConfidence = ingredientConfidence;
+                        if (textConfidence > bestTextConfidence) {
+                            bestTextConfidence = textConfidence;
                             bestIndex = mappedIndex;
                         }
                     }
@@ -611,14 +702,18 @@ public class ScanBarcodeActivity extends BaseActivity {
                         }
                     });
 
-                    // Ingredient Mode should launch from an actual ingredient label, not front-package branding.
-                    if (bestIngredientConfidence > 25) {
+                    String fullContextText = IngredientOcrHeuristics.prepareRecognizedText(text.getText());
+                    boolean readyToCapture = productNameScan
+                            ? ProductNameOcrValidator.validate(fullContextText).readable
+                            : bestTextConfidence > 25;
+                    if (readyToCapture) {
                         if (!isScanLocked) {
                             isScanLocked = true;
-                            final String fullContextText = IngredientOcrHeuristics.prepareRecognizedText(text.getText());
                             Bitmap rawBitmap = BitmapUtils.getBitmap(image);
                             final Bitmap bitmap = rawBitmap;
-                            launchRunnable = () -> handleIngredients(fullContextText, bitmap);
+                            launchRunnable = productNameScan
+                                    ? () -> handleSupplementalProductName(fullContextText, bitmap, supplementalBarcode)
+                                    : () -> handleIngredientsWithBarcode(fullContextText, bitmap, supplementalBarcode);
                             launchHandler.postDelayed(launchRunnable, 700);
                         }
                     }
@@ -638,7 +733,7 @@ public class ScanBarcodeActivity extends BaseActivity {
             if (statusTextView != null) {
                 statusTextView.setText(currentMode == ScanMode.BARCODE
                         ? R.string.point_camera_barcode
-                        : R.string.point_camera_ingredients);
+                        : textScanInstructionRes());
             }
             if (scanningOverlay != null) {
                 scanningOverlay.setMode(currentMode == ScanMode.BARCODE
@@ -650,10 +745,6 @@ public class ScanBarcodeActivity extends BaseActivity {
         } catch (Exception e) {
             showCameraUnavailable();
         }
-    }
-
-    private void handleIngredients(String text, Bitmap bitmap) {
-        handleIngredientsWithBarcode(text, bitmap, null);
     }
 
     private void handleIngredientsWithBarcode(String text, Bitmap bitmap, String barcode) {
@@ -673,16 +764,47 @@ public class ScanBarcodeActivity extends BaseActivity {
         }
         processedText = validation.cleanedText;
 
+        String analysisText = supplementalTarget == SupplementalTarget.INGREDIENTS
+                ? SupplementalOcrMerger.merge(existingProductText, processedText)
+                : processedText;
+        launchIngredientAnalysis(analysisText, bitmap, barcode);
+    }
+
+    private void handleSupplementalProductName(String text, Bitmap bitmap, String barcode) {
+        cancelScanTimeouts();
+        ProductNameOcrValidator.Result validation = ProductNameOcrValidator.validate(text);
+        if (!validation.readable) {
+            scanFailureLogger.record(
+                    "ocr_product_name",
+                    barcode == null ? "" : barcode,
+                    "no_reliable_product_name",
+                    "OCR output did not contain useful front-label identity text"
+            );
+            runOnUiThread(this::showProductNameScanRecovery);
+            return;
+        }
+
+        String analysisText = SupplementalOcrMerger.merge(validation.cleanedText, existingIngredientText);
+        launchIngredientAnalysis(analysisText, bitmap, barcode);
+    }
+
+    private void launchIngredientAnalysis(String analysisText, Bitmap bitmap, String barcode) {
+        if (!IngredientLabelValidator.validate(analysisText).readable) {
+            runOnUiThread(this::showIngredientScanRecovery);
+            return;
+        }
+
         isScanLocked = true;
         
         Intent intent = new Intent(this, IngredientAnalysisActivity.class);
-        intent.putExtra(IngredientAnalysisActivity.EXTRA_INGREDIENTS_TEXT, processedText.trim());
+        intent.putExtra(IngredientAnalysisActivity.EXTRA_INGREDIENTS_TEXT, analysisText.trim());
+        intent.putExtra(IngredientAnalysisActivity.EXTRA_SUPPLEMENTAL_ATTEMPT, supplementalAttempt);
         if (barcode != null) {
             intent.putExtra(IngredientAnalysisActivity.EXTRA_BARCODE, barcode);
         }
         if (bitmap != null) {
             byte[] bytes = BitmapUtils.bitmapToByteArray(bitmap);
-            intent.putExtra("extra_image_bytes", bytes);
+            intent.putExtra(IngredientAnalysisActivity.EXTRA_IMAGE_BYTES, bytes);
         }
 
         runOnUiThread(() -> {
@@ -696,7 +818,11 @@ public class ScanBarcodeActivity extends BaseActivity {
             runOnUiThread(() -> {
                 if (transitionProgressBar != null) transitionProgressBar.setVisibility(View.GONE);
             });
-            launchHandler.postDelayed(this::resetScannerState, 3000);
+            if (supplementalTarget != SupplementalTarget.NONE) {
+                finish();
+            } else {
+                launchHandler.postDelayed(this::resetScannerState, 3000);
+            }
         }, 300);
     }
 
@@ -735,7 +861,10 @@ public class ScanBarcodeActivity extends BaseActivity {
             }
             if (acceptedBarcode != null) {
                 if (currentMode == ScanMode.INGREDIENTS) {
-                    analyzeUploadedIngredientsWithBarcode(bitmap, acceptedBarcode);
+                    String barcodeForAnalysis = supplementalBarcode == null
+                            ? acceptedBarcode
+                            : supplementalBarcode;
+                    analyzeUploadedIngredientsWithBarcode(bitmap, barcodeForAnalysis);
                 } else {
                     handleBarcode(acceptedBarcode);
                 }
@@ -768,14 +897,14 @@ public class ScanBarcodeActivity extends BaseActivity {
         recognizeImportedIngredientText(bitmap, new ImportedOcrCallback() {
             @Override
             public void onSuccess(String fullText) {
-                handleIngredientsWithBarcode(fullText.isEmpty() ? "Image upload" : fullText, bitmap, barcode);
+                routeImportedOcr(fullText.isEmpty() ? "Image upload" : fullText, bitmap, barcode);
                 hideImportedOcrProgress();
             }
 
             @Override
             public void onFailure(Exception error) {
                 scanFailureLogger.record("ocr_photo", barcode, "original_and_enhanced_failed", error);
-                handleIngredientsWithBarcode("Image upload (OCR failed)", bitmap, barcode);
+                routeImportedOcr("Image upload (OCR failed)", bitmap, barcode);
                 hideImportedOcrProgress();
             }
         });
@@ -792,17 +921,25 @@ public class ScanBarcodeActivity extends BaseActivity {
         recognizeImportedIngredientText(bitmap, new ImportedOcrCallback() {
             @Override
             public void onSuccess(String fullText) {
-                handleIngredients(fullText.isEmpty() ? "Image upload" : fullText, bitmap);
+                routeImportedOcr(fullText.isEmpty() ? "Image upload" : fullText, bitmap, supplementalBarcode);
                 hideImportedOcrProgress();
             }
 
             @Override
             public void onFailure(Exception error) {
                 scanFailureLogger.record("ocr_photo", "", "original_and_enhanced_failed", error);
-                handleIngredients("Image upload (OCR failed)", bitmap);
+                routeImportedOcr("Image upload (OCR failed)", bitmap, supplementalBarcode);
                 hideImportedOcrProgress();
             }
         });
+    }
+
+    private void routeImportedOcr(String text, Bitmap bitmap, String barcode) {
+        if (supplementalTarget == SupplementalTarget.PRODUCT_NAME) {
+            handleSupplementalProductName(text, bitmap, barcode);
+        } else {
+            handleIngredientsWithBarcode(text, bitmap, barcode);
+        }
     }
 
     private void recognizeImportedIngredientText(Bitmap bitmap, ImportedOcrCallback callback) {
@@ -988,10 +1125,27 @@ public class ScanBarcodeActivity extends BaseActivity {
 
     private void showIngredientScanRecovery() {
         if (currentMode != ScanMode.INGREDIENTS || isFinishing()) return;
+        if (supplementalTarget == SupplementalTarget.PRODUCT_NAME) {
+            showProductNameScanRecovery();
+            return;
+        }
         if (statusTextView != null) statusTextView.setText(R.string.ingredients_not_read_title);
         showScannerState(
                 R.string.ingredients_not_read_title,
                 R.string.ingredients_not_read_message,
+                R.string.try_again,
+                this::retryIngredientScan,
+                R.string.scan_from_photo,
+                this::openPhotoPicker
+        );
+    }
+
+    private void showProductNameScanRecovery() {
+        if (currentMode != ScanMode.INGREDIENTS || isFinishing()) return;
+        if (statusTextView != null) statusTextView.setText(R.string.product_name_not_read_title);
+        showScannerState(
+                R.string.product_name_not_read_title,
+                R.string.product_name_not_read_message,
                 R.string.try_again,
                 this::retryIngredientScan,
                 R.string.scan_from_photo,
@@ -1004,11 +1158,16 @@ public class ScanBarcodeActivity extends BaseActivity {
         currentMode = ScanMode.INGREDIENTS;
         isScanLocked = false;
         barcodeScanGate.reset();
-        modeTextView.setText(R.string.ingredient_mode);
+        boolean productNameScan = supplementalTarget == SupplementalTarget.PRODUCT_NAME;
+        modeTextView.setText(productNameScan ? R.string.product_name_scan_mode : R.string.ingredient_mode);
         modeToggleButton.setImageResource(R.drawable.ic_ingredients_list);
-        modeToggleButton.setContentDescription(getString(R.string.ingredient_mode));
+        modeToggleButton.setContentDescription(getString(
+                productNameScan ? R.string.product_name_scan_mode : R.string.ingredient_mode
+        ));
+        modeToggleButton.setEnabled(supplementalTarget == SupplementalTarget.NONE);
+        if (modeSwitchContainer != null) modeSwitchContainer.setEnabled(supplementalTarget == SupplementalTarget.NONE);
         if (barcodeAiToggleButton != null) barcodeAiToggleButton.setVisibility(View.GONE);
-        if (statusTextView != null) statusTextView.setText(R.string.point_camera_ingredients);
+        if (statusTextView != null) statusTextView.setText(textScanInstructionRes());
         if (scanningOverlay != null) {
             scanningOverlay.setMode(ScanningOverlayView.OverlayMode.INGREDIENTS);
             scanningOverlay.clearDetections();

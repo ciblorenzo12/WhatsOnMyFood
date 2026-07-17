@@ -167,6 +167,14 @@
     <string name="point_camera_ingredients">Fill the frame with the ingredients list. Hold the label flat and steady.</string>
     <string name="barcode_mode">Barcode Mode</string>
     <string name="ingredient_mode">Ingredient Mode</string>
+    <string name="product_name_scan_mode">Product Name Scan</string>
+    <string name="point_camera_product_name">Fill the frame with the product name and brand on the front of the package.</string>
+    <string name="missing_product_name_scan_title">One more scan: product name</string>
+    <string name="missing_product_name_scan_message">The ingredients were found, but the product name was not. Turn the package to the front and scan the product name and brand.</string>
+    <string name="missing_ingredients_scan_title">One more scan: ingredients</string>
+    <string name="missing_ingredients_scan_message">The product was identified, but its ingredients were not readable. Scan the complete ingredient list on the back of the package.</string>
+    <string name="product_name_not_read_title">Product name not readable</string>
+    <string name="product_name_not_read_message">Keep the product name and brand fully visible, avoid glare, and hold still. Try again or choose a clearer front-label photo.</string>
     <string name="barcode_ai_toggle">Barcode AI</string>
     <string name="barcode_ai_on">AI On</string>
     <string name="barcode_ai_off">AI Off</string>

@@ -142,6 +142,14 @@
     <string name="point_camera_ingredients">Remplissez le cadre avec la liste des ingrédients. Gardez l’étiquette à plat et immobile.</string>
     <string name="barcode_mode">Mode code-barres</string>
     <string name="ingredient_mode">Mode ingredients</string>
+    <string name="product_name_scan_mode">Scan du nom du produit</string>
+    <string name="point_camera_product_name">Remplissez le cadre avec le nom et la marque sur le devant de l’emballage.</string>
+    <string name="missing_product_name_scan_title">Un scan de plus : nom du produit</string>
+    <string name="missing_product_name_scan_message">Les ingrédients ont été trouvés, mais pas le nom du produit. Tournez l’emballage et scannez le nom et la marque.</string>
+    <string name="missing_ingredients_scan_title">Un scan de plus : ingrédients</string>
+    <string name="missing_ingredients_scan_message">Le produit a été identifié, mais les ingrédients sont illisibles. Scannez la liste complète au dos de l’emballage.</string>
+    <string name="product_name_not_read_title">Nom du produit illisible</string>
+    <string name="product_name_not_read_message">Gardez le nom et la marque visibles, évitez les reflets et restez immobile. Réessayez ou choisissez une photo plus nette de la face avant.</string>
     <string name="barcode_ai_toggle">IA du code-barres</string>
     <string name="barcode_ai_on">IA activ&#233;e</string>
     <string name="barcode_ai_off">IA d&#233;sactiv&#233;e</string>
