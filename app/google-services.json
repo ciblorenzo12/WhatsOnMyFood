@@ -30,6 +30,14 @@
           }
         },
         {
+          "client_id": "759803394674-p8fqeqt4mn7rkcktt90bpsco9jetf0kr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ciblorenzo.whatsonmyfood",
+            "certificate_hash": "eca9e08c11b4d92f3c951c0648586cccd32630d3"
+          }
+        },
+        {
           "client_id": "759803394674-kmnvdlbqj7mcqaj1junntc0toqu8r59q.apps.googleusercontent.com",
           "client_type": 3
         }
