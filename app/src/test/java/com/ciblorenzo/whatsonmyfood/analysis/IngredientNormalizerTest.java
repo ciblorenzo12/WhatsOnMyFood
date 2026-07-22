@@ -13,6 +13,7 @@ public class IngredientNormalizerTest {
     public void normalizesCapitalizationSpacesAndBoundaryPunctuation() {
         assertEquals("cane sugar", IngredientNormalizer.normalize("  CANE   SUGAR.;  "));
         assertEquals("rose water", IngredientNormalizer.normalize("*** Rose Water !!!"));
+        assertEquals("cocoa", IngredientNormalizer.normalize("cocoa)"));
     }
 
     @Test

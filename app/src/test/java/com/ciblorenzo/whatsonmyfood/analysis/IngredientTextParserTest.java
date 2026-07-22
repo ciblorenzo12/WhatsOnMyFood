@@ -119,4 +119,79 @@ public class IngredientTextParserTest {
         assertEquals(java.util.Arrays.asList("flour", "contains 2% or less of: salt", "yeast"), label.ingredients);
         assertEquals(java.util.Collections.singletonList("wheat"), label.containsAllergens);
     }
+
+    @Test
+    public void parseLabel_separatesInlineAllergenHeadingFromLastIngredient() {
+        IngredientTextParser.ParsedLabel label = IngredientTextParser.parseLabel(
+                "Ingredients: sugar, palm oil, hazelnuts, vanillin an artificial flavor allergens: milk, nuts, soybeans"
+        );
+
+        assertEquals(
+                java.util.Arrays.asList("sugar", "palm oil", "hazelnuts", "vanillin an artificial flavor"),
+                label.ingredients
+        );
+        assertEquals(java.util.Arrays.asList("milk", "nuts", "soybeans"), label.containsAllergens);
+        assertTrue(label.mayContainAllergens.isEmpty());
+    }
+
+    @Test
+    public void parseLabel_removesNutritionAndServingSections() {
+        IngredientTextParser.ParsedLabel label = IngredientTextParser.parseLabel(
+                "Ingredients. Water, lemon juice, sea salt. Nutrition Facts Calories 20 Serving Size 1 bottle"
+        );
+
+        assertEquals(java.util.Arrays.asList("water", "lemon juice", "sea salt"), label.ingredients);
+    }
+
+    @Test
+    public void parseLabel_removesPackageDirectionsStorageAndWarnings() {
+        IngredientTextParser.ParsedLabel label = IngredientTextParser.parseLabel(
+                "Ingredients: oats, honey, cinnamon. Directions: Add milk and stir. "
+                        + "Storage instructions: Keep refrigerated. Warning: Do not consume seal."
+        );
+
+        assertEquals(java.util.Arrays.asList("oats", "honey", "cinnamon"), label.ingredients);
+    }
+
+    @Test
+    public void parseLabel_removesAiPromptMetadataButKeepsPayload() {
+        IngredientTextParser.ParsedLabel label = IngredientTextParser.parseLabel(
+                "response_language: English\n"
+                        + "scan_mode: ingredients\n"
+                        + "image_attached: true\n"
+                        + "task: Parse the scanned label and return JSON.\n"
+                        + "detected_ingredient_label:\n"
+                        + "Water, cane sugar, citric acid\n"
+                        + "baseline_health_score: 100"
+        );
+
+        assertEquals(java.util.Arrays.asList("water", "cane sugar", "citric acid"), label.ingredients);
+    }
+
+    @Test
+    public void parseLabel_repairsCorruptedQuotedIngredientHeading() {
+        IngredientTextParser.ParsedLabel label = IngredientTextParser.parseLabel(
+                "\u00e2\u20ac\u0153Ingredients.\u00e2\u20ac\u009d Water, cocoa, sea salt"
+        );
+
+        assertEquals(java.util.Arrays.asList("water", "cocoa", "sea salt"), label.ingredients);
+    }
+
+    @Test
+    public void parseLabel_preservesIngredientNamesThatResemblePackageLanguage() {
+        IngredientTextParser.ParsedLabel label = IngredientTextParser.parseLabel(
+                "Ingredients: nutritional yeast, cooking oil, cultured dextrose, calcium carbonate, natural flavor (vanilla)"
+        );
+
+        assertEquals(
+                java.util.Arrays.asList(
+                        "nutritional yeast",
+                        "cooking oil",
+                        "cultured dextrose",
+                        "calcium carbonate",
+                        "natural flavor (vanilla)"
+                ),
+                label.ingredients
+        );
+    }
 }

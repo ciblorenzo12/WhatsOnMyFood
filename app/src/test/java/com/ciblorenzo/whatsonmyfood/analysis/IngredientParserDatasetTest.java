@@ -28,7 +28,8 @@ public class IngredientParserDatasetTest {
             "measurements_percentages",
             "duplicate_ingredients",
             "multilingual",
-            "malformed"
+            "malformed",
+            "noise_removal"
     ));
 
     @Test

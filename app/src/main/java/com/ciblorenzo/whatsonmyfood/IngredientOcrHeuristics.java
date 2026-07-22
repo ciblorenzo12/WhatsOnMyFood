@@ -2,9 +2,15 @@ package com.ciblorenzo.whatsonmyfood;
 
 import java.text.Normalizer;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /** Text cleanup and scoring shared by live and imported ingredient OCR. */
 public final class IngredientOcrHeuristics {
+
+    private static final Pattern UI_NOISE_LINE = Pattern.compile(
+            "(?im)^\\s*(share|download(?:\\s+label)?|related searches|uploaded(?:\\s+successfully)?|submit a photo|view source|web results)\\b.*$"
+    );
 
     private IngredientOcrHeuristics() {
     }
@@ -65,13 +71,10 @@ public final class IngredientOcrHeuristics {
 
     public static String trimUiNoise(String text) {
         String processed = prepareRecognizedText(text);
-        String[] uiNoise = {"share", "download", "label", "content", "uploaded", "related searches"};
-        int earliestIndex = Integer.MAX_VALUE;
-        for (String noise : uiNoise) {
-            int index = processed.toLowerCase(Locale.ROOT).indexOf(noise);
-            if (index > 20) earliestIndex = Math.min(earliestIndex, index);
+        Matcher noiseMatcher = UI_NOISE_LINE.matcher(processed);
+        if (noiseMatcher.find() && noiseMatcher.start() > 20) {
+            processed = processed.substring(0, noiseMatcher.start()).trim();
         }
-        if (earliestIndex != Integer.MAX_VALUE) processed = processed.substring(0, earliestIndex).trim();
         return processed;
     }
 

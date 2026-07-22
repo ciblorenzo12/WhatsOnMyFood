@@ -52,7 +52,7 @@
     },
     {
       "id": "nutrition_facts_after_ingredients",
-      "categories": ["nutrition_facts"],
+      "categories": ["nutrition_facts", "noise_removal"],
       "input": "Ingredients: whole grain oats, sugar, salt. Nutrition Facts Calories 140 Total Fat 2 g",
       "expectedIngredients": ["whole grain oats", "sugar", "salt"],
       "containsAllergens": [],
@@ -175,6 +175,62 @@
       "categories": ["malformed", "nested_groups"],
       "input": "Ingredients: seasoning (salt, garlic, onion, sunflower oil",
       "expectedIngredients": ["seasoning (salt, garlic, onion, sunflower oil"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "noise_ai_prompt_metadata",
+      "categories": ["noisy_ocr", "noise_removal"],
+      "input": "response_language: English\nscan_mode: ingredients\nimage_attached: true\ntask: Parse the scanned label and return JSON.\ndetected_ingredient_label:\nWater, cane sugar, citric acid\nbaseline_health_score: 100",
+      "expectedIngredients": ["water", "cane sugar", "citric acid"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "noise_package_instructions",
+      "categories": ["noise_removal"],
+      "input": "Ingredients: oats, honey, cinnamon. Directions: Add milk and stir. Storage instructions: Keep refrigerated.",
+      "expectedIngredients": ["oats", "honey", "cinnamon"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "noise_serving_size_without_nutrition_heading",
+      "categories": ["nutrition_facts", "noise_removal"],
+      "input": "Ingredients: water, lemon juice, salt\nServing Size 1 bottle\nCalories 20",
+      "expectedIngredients": ["water", "lemon juice", "salt"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "noise_non_allergen_warning",
+      "categories": ["noise_removal"],
+      "input": "Ingredients: almonds, cocoa, sea salt. Warning: Small objects may present a choking hazard.",
+      "expectedIngredients": ["almonds", "cocoa", "sea salt"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "noise_corrupted_quoted_heading_preserves_names",
+      "categories": ["noisy_ocr", "noise_removal"],
+      "input": "\u00e2\u20ac\u0153Ingredients.\u00e2\u20ac\u009d Nutritional yeast, cooking oil, cultured dextrose, calcium carbonate, natural flavor (vanilla)",
+      "expectedIngredients": ["nutritional yeast", "cooking oil", "cultured dextrose", "calcium carbonate", "natural flavor (vanilla)"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "inline_allergen_heading_after_last_ingredient",
+      "categories": ["allergen_statements", "noisy_ocr"],
+      "input": "Ingredients: sugar, palm oil, hazelnuts, vanillin an artificial flavor allergens: milk, nuts, soybeans",
+      "expectedIngredients": ["sugar", "palm oil", "hazelnuts", "vanillin an artificial flavor"],
+      "containsAllergens": ["milk", "nuts", "soybeans"],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "editor_capture_with_mojibake_heading_and_status_bar",
+      "categories": ["noisy_ocr", "noise_removal", "malformed"],
+      "input": "New T View Edit File H1 V\na€oIngredients. afd Water, cocoa, saltwater, cocoa, salt\nPlain text, 56 characters, Ln 1, Col 56, Windows (CRLF)",
+      "expectedIngredients": ["water", "cocoa", "saltwater", "salt"],
       "containsAllergens": [],
       "mayContainAllergens": []
     }

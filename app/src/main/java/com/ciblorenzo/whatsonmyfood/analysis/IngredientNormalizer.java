@@ -32,6 +32,13 @@ public final class IngredientNormalizer {
 
         if (normalized.isEmpty()) return "";
 
+        if (normalized.endsWith(")") && normalized.indexOf('(') < 0) {
+            normalized = normalized.substring(0, normalized.length() - 1).trim();
+        }
+        if (normalized.startsWith("(") && normalized.indexOf(')') < 0) {
+            normalized = normalized.substring(1).trim();
+        }
+
         // Treat OCR/layout hyphens between words consistently while retaining values such as omega-3.
         normalized = normalized.replaceAll("(?<=\\p{L})[-\\u2010-\\u2015](?=\\p{L})", " ");
         normalized = normalized

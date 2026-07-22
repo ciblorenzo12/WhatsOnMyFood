@@ -413,7 +413,8 @@ public class IngredientAnalysisActivity extends BaseActivity {
                 || normalized.contains("extract only")
                 || normalized.contains("ingredient list from")
                 || normalized.startsWith("task:")
-                || normalized.startsWith("identify the visible product");
+                || normalized.startsWith("identify the visible product")
+                || looksLikeEditorChrome(normalized);
     }
 
     private boolean isUnknownProductName(String value) {
@@ -580,6 +581,7 @@ public class IngredientAnalysisActivity extends BaseActivity {
         if (cleaned.length() < 3 || cleaned.length() > 42) return "";
 
         String lower = cleaned.toLowerCase(Locale.US);
+        if (looksLikeEditorChrome(lower)) return "";
         if (lower.startsWith("ingredients")
                 || lower.startsWith("nutrition")
                 || lower.startsWith("serving")
@@ -592,6 +594,18 @@ public class IngredientAnalysisActivity extends BaseActivity {
             return "";
         }
         return cleaned;
+    }
+
+    private boolean looksLikeEditorChrome(String value) {
+        if (value == null) return false;
+        String padded = " " + value.toLowerCase(Locale.US).replaceAll("[^a-z0-9]+", " ").trim() + " ";
+        boolean editorMenu = padded.contains(" file ")
+                && padded.contains(" edit ")
+                && padded.contains(" view ");
+        boolean editorStatus = padded.contains(" plain text ")
+                || (padded.contains(" characters ") && padded.contains(" col "))
+                || padded.contains(" windows crlf ");
+        return editorMenu || editorStatus;
     }
 
     private String toDisplayCase(String value) {

@@ -4,9 +4,7 @@ import com.ciblorenzo.whatsonmyfood.analysis.IngredientTextParser;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 /** Selects parsed label fields for scoring while keeping OCR authoritative over model guesses. */
 public final class IngredientScoringInput {
@@ -43,15 +41,62 @@ public final class IngredientScoringInput {
                     ? new Selection(validation.ingredients, validation.containsAllergens, validation.mayContainAllergens)
                     : new Selection(Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
         }
-        List<String> parsed = new ArrayList<>();
-        Set<String> containsAllergens = new LinkedHashSet<>();
-        Set<String> mayContainAllergens = new LinkedHashSet<>();
-        for (String modelIngredient : modelIngredients) {
-            IngredientTextParser.ParsedLabel parsedLabel = IngredientTextParser.parseLabel(modelIngredient);
-            parsed.addAll(parsedLabel.ingredients);
-            containsAllergens.addAll(parsedLabel.containsAllergens);
-            mayContainAllergens.addAll(parsedLabel.mayContainAllergens);
+        StringBuilder combinedModelText = new StringBuilder();
+        int firstIngredientMarker = firstIngredientMarker(modelIngredients);
+        for (int i = 0; i < modelIngredients.size(); i++) {
+            if (firstIngredientMarker >= 0 && i < firstIngredientMarker) continue;
+            String modelIngredient = modelIngredients.get(i);
+            if (modelIngredient == null || modelIngredient.trim().isEmpty()) continue;
+            if (isEditorOrPromptNoise(modelIngredient)) continue;
+            if (combinedModelText.length() > 0) combinedModelText.append(", ");
+            combinedModelText.append(modelIngredient.trim());
         }
-        return new Selection(parsed, new ArrayList<>(containsAllergens), new ArrayList<>(mayContainAllergens));
+        IngredientTextParser.ParsedLabel parsedLabel = IngredientTextParser.parseLabel(combinedModelText.toString());
+        return new Selection(
+                parsedLabel.ingredients,
+                parsedLabel.containsAllergens,
+                parsedLabel.mayContainAllergens
+        );
+    }
+
+    private static int firstIngredientMarker(List<String> values) {
+        for (int i = 0; i < values.size(); i++) {
+            String value = values.get(i);
+            if (value == null) continue;
+            String lower = value.toLowerCase(java.util.Locale.US);
+            if (lower.contains("ingredients")
+                    || lower.contains("ingredient list")
+                    || lower.contains("ingrédients")
+                    || lower.contains("ingredientes")) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static boolean isEditorOrPromptNoise(String value) {
+        String normalized = value.toLowerCase(java.util.Locale.US)
+                .replaceAll("[^a-z0-9]+", " ")
+                .trim();
+        if (normalized.contains("ingredients")) return false;
+
+        return normalized.equals("file")
+                || normalized.equals("fess")
+                || normalized.equals("view")
+                || normalized.equals("edit")
+                || normalized.equals("edit view")
+                || normalized.equals("config")
+                || normalized.equals("env")
+                || normalized.equals("new t")
+                || normalized.equals("a r")
+                || normalized.equals("plain text")
+                || normalized.equals("appjs")
+                || normalized.equals("app js")
+                || normalized.contains("requirement")
+                || normalized.contains("characters")
+                || normalized.matches(".*\\b(?:ln|line|col)\\s*\\d+.*")
+                || normalized.contains("windows crlf")
+                || normalized.contains("build and run")
+                || normalized.contains("clear search");
     }
 }

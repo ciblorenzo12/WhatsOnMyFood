@@ -48,4 +48,16 @@ public class IngredientOcrHeuristicsTest {
                 IngredientOcrHeuristics.trimUiNoise(text)
         );
     }
+
+    @Test
+    public void preservesPromptTextAndIngredientPayloadWhenTaskMentionsLabel() {
+        String text = "task: Parse the scanned label and return JSON.\n"
+                + "detected_ingredient_label:\n"
+                + "water, cane sugar, citric acid";
+
+        assertEquals(
+                IngredientOcrHeuristics.prepareRecognizedText(text),
+                IngredientOcrHeuristics.trimUiNoise(text)
+        );
+    }
 }

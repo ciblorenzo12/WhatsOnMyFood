@@ -14,15 +14,21 @@ public final class IngredientTextParser {
     private static final int MAX_INGREDIENTS = 80;
 
     private static final Pattern METADATA_LINE = Pattern.compile(
-            "(?im)^\\s*(response_language|language|baseline_health_score|detected_ingredient_label|contains_allergens|may_contain_allergens|product_ocr_text|ocr_text|product data)\\s*[:=].*$"
+            "(?im)^\\s*(response_language|language|scan_mode|image_attached|available_barcode|baseline_health_score|contains_allergens|may_contain_allergens|product_name|brand|category|quantity|serving_size|source|model|temperature)\\s*[:=].*$"
+    );
+    private static final Pattern PAYLOAD_FIELD = Pattern.compile(
+            "(?im)^\\s*(detected_ingredient_label|product_ocr_text|ocr_text)\\s*[:=]\\s*(.*)$"
+    );
+    private static final Pattern PROMPT_INSTRUCTION_LINE = Pattern.compile(
+            "(?im)^\\s*(task\\s*:|instructions?\\s*:|system_prompt\\s*:|user_prompt\\s*:|you are\\b|your task\\b|analy[sz]e\\b|parse\\b|return\\b|respond\\b|output\\b|use visible\\b|do not\\b|never\\b|important\\s*:).*$"
     );
     private static final Pattern FIELD_PREFIX = Pattern.compile("(?i)^\\s*[a-z][a-z_ ]{2,30}\\s*[:=]\\s*");
     private static final Pattern MEASUREMENT = Pattern.compile("(?i).*\\b\\d+(\\.\\d+)?\\s*(fl\\s*oz|oz|ml|l|g|kg|lb|ct|count)\\b.*");
     private static final Pattern INGREDIENT_HEADING = Pattern.compile(
-            "(?i)\\b(ingredient\\s+list|ingredients|ingrédients|ingredientes)\\s*:?[\\t ]*"
+            "(?i)(?:\\b|a[\\p{S}\\p{Punct}]+[a-z]?)(ingredient\\s+list|ingredients|ingrédients|ingredientes)\\b[\\t \"'\\u2018\\u2019\\u201c\\u201d]*[:.\\-\\u2013\\u2014]?[\\t \"'\\u2018\\u2019\\u201c\\u201d]*"
     );
     private static final Pattern ALLERGEN_HEADING = Pattern.compile(
-            "(?im)(^|[.;][\\t ]*|\\r?\\n[\\t ]*)(may[\\t ]+contain|contains(?![\\t ]+(?:less[\\t ]+than[\\t ]+)?\\d)|allergens?|allergènes|alérgenos)\\s*:?[\\t ]*"
+            "(?im)(^|[.,;][\\t ]*|\\r?\\n[\\t ]*|[\\t ]+(?=allergens?\\s*:))(may[\\t ]+contain|contains(?![\\t ]+(?:less[\\t ]+than[\\t ]+)?\\d)|allergens?|allergènes|alérgenos)\\s*:?[\\t ]*"
     );
 
     public static final class ParsedLabel {
@@ -85,8 +91,19 @@ public final class IngredientTextParser {
 
     public static String stripPromptMetadata(String text) {
         if (text == null) return "";
-        String cleaned = text.replaceAll("(?i)\\bresponse_language\\s*[:=]\\s*[^,\\n]+,?\\s*", " ");
-        return METADATA_LINE.matcher(cleaned).replaceAll(" ").replace("PRODUCT DATA:", " ");
+        String cleaned = repairCommonMojibake(text)
+                .replaceAll("(?i)\\bresponse_language\\s*[:=]\\s*[^,\\n]+,?\\s*", " ");
+
+        Matcher payloadMatcher = PAYLOAD_FIELD.matcher(cleaned);
+        StringBuffer unwrapped = new StringBuffer();
+        while (payloadMatcher.find()) {
+            payloadMatcher.appendReplacement(unwrapped, Matcher.quoteReplacement(payloadMatcher.group(2)));
+        }
+        payloadMatcher.appendTail(unwrapped);
+
+        cleaned = METADATA_LINE.matcher(unwrapped.toString()).replaceAll(" ");
+        cleaned = PROMPT_INSTRUCTION_LINE.matcher(cleaned).replaceAll(" ");
+        return cleaned.replaceAll("(?im)^\\s*product data\\s*:\\s*$", " ").trim();
     }
 
     public static String trimToLikelyIngredientList(String text) {
@@ -113,7 +130,8 @@ public final class IngredientTextParser {
 
     private static String extractIngredientSection(String source, List<AllergenSection> sections) {
         Matcher ingredientMatcher = INGREDIENT_HEADING.matcher(source);
-        int ingredientStart = ingredientMatcher.find() ? ingredientMatcher.end() : 0;
+        boolean hasIngredientHeading = ingredientMatcher.find();
+        int ingredientStart = hasIngredientHeading ? ingredientMatcher.end() : 0;
         int ingredientEnd = source.length();
         for (AllergenSection section : sections) {
             if (section.start >= ingredientStart) {
@@ -123,7 +141,23 @@ public final class IngredientTextParser {
         }
 
         String ingredientSection = source.substring(Math.min(ingredientStart, ingredientEnd), ingredientEnd);
+        if (hasIngredientHeading) ingredientSection = stripLeadingEncodingArtifact(ingredientSection);
         return cutAtStopMarker(ingredientSection).trim();
+    }
+
+    private static String stripLeadingEncodingArtifact(String text) {
+        String trimmed = text == null ? "" : text.trim();
+        int firstSpace = trimmed.indexOf(' ');
+        if (firstSpace <= 0) return trimmed;
+
+        String token = trimmed.substring(0, firstSpace);
+        String lower = token.toLowerCase(Locale.US);
+        boolean encodingArtifact = token.indexOf('\u20ac') >= 0
+                || token.indexOf('\ufffd') >= 0
+                || token.indexOf('\u25a1') >= 0
+                || lower.startsWith("â")
+                || lower.equals("afd");
+        return encodingArtifact ? trimmed.substring(firstSpace + 1).trim() : trimmed;
     }
 
     private static List<String> parseIngredientsFromSection(String source) {
@@ -193,11 +227,29 @@ public final class IngredientTextParser {
         String lower = text.toLowerCase(Locale.US);
         String[] stopMarkers = {
                 "nutrition facts",
+                "nutrition information",
+                "nutritional information",
                 "supplement facts",
+                "serving size",
+                "servings per container",
+                "amount per serving",
                 "phenylketonurics:",
                 "phenylketonurics",
                 "directions",
+                "preparation instructions",
+                "cooking instructions",
+                "usage instructions",
+                "storage instructions",
+                "how to prepare",
+                "keep refrigerated",
+                "refrigerate after opening",
+                "shake well",
+                "warning",
                 "warnings",
+                "caution",
+                "plain text",
+                "characters",
+                "windows (crlf",
                 "distributed by",
                 "manufactured by",
                 "where can i buy",
@@ -212,6 +264,14 @@ public final class IngredientTextParser {
             if (index >= 0 && (stop == -1 || index < stop)) stop = index;
         }
         return stop >= 0 ? text.substring(0, stop) : text;
+    }
+
+    private static String repairCommonMojibake(String text) {
+        return text
+                .replace("\u00e2\u20ac\u0153", "\"")
+                .replace("\u00e2\u20ac\u009d", "\"")
+                .replace("\u00e2\u20ac\u02dc", "'")
+                .replace("\u00e2\u20ac\u2122", "'");
     }
 
     private static boolean isNonIngredientLine(String lower, String original) {

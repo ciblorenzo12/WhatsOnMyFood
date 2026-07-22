@@ -43,6 +43,57 @@ public class IngredientScoringInputTest {
     }
 
     @Test
+    public void modelFallbackCropsEditorChromeAroundEmbeddedIngredientHeading() {
+        List<String> noisyModelItems = Arrays.asList(
+                "de",
+                "new t",
+                "requirement analysis",
+                "view",
+                "edit",
+                "file",
+                "a€oIngredients. afd Water",
+                "cocoa",
+                "saltwater",
+                "cocoa",
+                "salt",
+                "Plain text",
+                "56 characters",
+                "Ln 1 Col 56",
+                "Windows (CRLF)"
+        );
+
+        assertEquals(
+                Arrays.asList("water", "cocoa", "saltwater", "salt"),
+                IngredientScoringInput.select("Image upload (OCR failed)", noisyModelItems)
+        );
+    }
+
+    @Test
+    public void modelFallbackFiltersEditorItemsWithoutDroppingLaterIngredients() {
+        List<String> noisyModelItems = Arrays.asList(
+                "file",
+                "fess",
+                "edit view",
+                "config",
+                "â€ ingredients:â€ water",
+                "requirement",
+                "env",
+                "saltwater",
+                "cocoa)",
+                "plain text",
+                "appjs",
+                "salt",
+                "build and run",
+                "requirement requirement"
+        );
+
+        assertEquals(
+                Arrays.asList("water", "saltwater", "cocoa", "salt"),
+                IngredientScoringInput.select("Image upload (OCR failed)", noisyModelItems)
+        );
+    }
+
+    @Test
     public void allergensReachAnalysisInputWithoutJoiningIngredients() {
         IngredientScoringInput.Selection selection = IngredientScoringInput.selectWithAllergens(
                 "Ingredients: oats, cocoa. Contains: milk, soy. May contain: peanuts.",
