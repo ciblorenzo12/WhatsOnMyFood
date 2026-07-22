@@ -26,6 +26,11 @@ public class HighSodiumRule implements ProductAnalysisRule {
 
     @Override
     public String getRuleDescription() {
-        return "Detects products with high sodium content (above 600mg per 100g). Excessive sodium is linked to high blood pressure and heart disease.";
+        return "High sodium: subtracts 20 points when nutrition data reports more than 600 mg sodium per 100 g.";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.SODIUM;
     }
 }

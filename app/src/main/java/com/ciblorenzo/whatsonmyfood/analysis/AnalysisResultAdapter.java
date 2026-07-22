@@ -41,7 +41,8 @@ public class AnalysisResultAdapter extends RecyclerView.Adapter<AnalysisResultAd
         GlassMotion.enter(holder.itemView, Math.min(position * 25L, 160L));
 
         AnalysisResult.WarningLevel level = result.getLevel() != null ? result.getLevel() : AnalysisResult.WarningLevel.INFO;
-        String compactExplanation = compactExplanation(result.getExplanation());
+        String displayExplanation = displayExplanation(result);
+        String compactExplanation = compactExplanation(displayExplanation);
         switch (level) {
             case POSITIVE:
                 holder.severityChip.setText("GOOD");
@@ -71,7 +72,7 @@ public class AnalysisResultAdapter extends RecyclerView.Adapter<AnalysisResultAd
         holder.itemView.setOnClickListener(v -> {
             new AlertDialog.Builder(v.getContext())
                     .setTitle(result.getMessage())
-                    .setMessage(result.getExplanation())
+                    .setMessage(displayExplanation)
                     .setPositiveButton("OK", null)
                     .show();
         });
@@ -115,6 +116,24 @@ public class AnalysisResultAdapter extends RecyclerView.Adapter<AnalysisResultAd
             cleaned = cleaned.substring(0, sentenceEnd + 1);
         }
         return cleaned;
+    }
+
+    private String displayExplanation(AnalysisResult result) {
+        String message = result.getMessage() == null ? "" : result.getMessage();
+        String allergens = result.getTriggeringIngredient() == null
+                ? ""
+                : result.getTriggeringIngredient().trim();
+        if (!allergens.isEmpty() && message.startsWith("Allergen statement: Contains")) {
+            return "Contains: " + allergens
+                    + " - informational only (0 points). "
+                    + result.getExplanation();
+        }
+        if (!allergens.isEmpty() && message.startsWith("Allergen advisory: May contain")) {
+            return "May contain: " + allergens
+                    + " - informational only (0 points). "
+                    + result.getExplanation();
+        }
+        return result.getScoringExplanation();
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {

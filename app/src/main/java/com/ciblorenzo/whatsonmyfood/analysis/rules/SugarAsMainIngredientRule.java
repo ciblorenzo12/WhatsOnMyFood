@@ -43,7 +43,17 @@ public class SugarAsMainIngredientRule implements ProductAnalysisRule {
 
     @Override
     public String getRuleDescription() {
-        return "Detects if sugar or sweeteners are among the top three ingredients. High sugar content at the top of the list indicates a low-nutrient product.";
+        return "Sugar near the top: subtracts 20 points when sugar or another listed sweetener is among the first three ingredients. It shares the added-sugar group, so this does not stack with another added-sugar penalty.";
+    }
+
+    @Override
+    public String getScoringGroup() {
+        return "added_sugar";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.SUGAR;
     }
 
     private boolean isNutritionClaimNotIngredient(String normalizedIngredient) {

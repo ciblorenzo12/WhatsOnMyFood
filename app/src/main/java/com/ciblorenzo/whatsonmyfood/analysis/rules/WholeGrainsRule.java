@@ -32,4 +32,14 @@ public class WholeGrainsRule implements ProductAnalysisRule {
         }
         return results;
     }
+
+    @Override
+    public String getRuleDescription() {
+        return "Whole grains: restores up to 10 points when a named whole grain appears among the first three ingredients. Multiple whole grains count only once, and the final score cannot exceed 100.";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.POSITIVE_INGREDIENT_SIGNALS;
+    }
 }

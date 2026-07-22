@@ -55,6 +55,11 @@ public class RefinedFlourRule implements ProductAnalysisRule {
 
     @Override
     public String getRuleDescription() {
-        return "Detects refined flour in the first three ingredients unless it is clearly whole grain.";
+        return "Refined flour: subtracts 10 points when refined flour appears among the first three ingredients, unless that ingredient is clearly labeled whole grain.";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.PROCESSING_LEVEL;
     }
 }

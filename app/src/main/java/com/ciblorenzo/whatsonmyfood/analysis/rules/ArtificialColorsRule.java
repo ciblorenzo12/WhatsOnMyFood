@@ -36,6 +36,11 @@ public class ArtificialColorsRule implements ProductAnalysisRule {
 
     @Override
     public String getRuleDescription() {
-        return "Detects artificial food dyes (Red 40, Yellow 5, etc.). Synthetic colors are linked to hyperactivity in children and offer no nutritional value.";
+        return "Artificial color: subtracts 20 points when a listed dye or caramel-color term is found. Multiple color matches are reported as one scoring penalty.";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.ADDITIVES_AND_PRESERVATIVES;
     }
 }

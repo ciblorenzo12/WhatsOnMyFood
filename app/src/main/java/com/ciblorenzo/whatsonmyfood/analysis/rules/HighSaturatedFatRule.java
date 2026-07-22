@@ -21,4 +21,14 @@ public class HighSaturatedFatRule implements ProductAnalysisRule {
         }
         return results;
     }
+
+    @Override
+    public String getRuleDescription() {
+        return "High saturated fat: subtracts 20 points when nutrition data reports more than 5 g of saturated fat per 100 g.";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.GENERAL_NUTRITION;
+    }
 }

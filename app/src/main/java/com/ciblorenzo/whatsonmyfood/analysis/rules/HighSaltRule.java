@@ -23,4 +23,14 @@ public class HighSaltRule implements ProductAnalysisRule {
         }
         return results;
     }
+
+    @Override
+    public String getRuleDescription() {
+        return "High salt: subtracts 20 points when sodium is above 0.6 g per 100 g, the equivalent of 1.5 g salt. This legacy rule is not part of the active rule set because the sodium rule covers the same signal.";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.SODIUM;
+    }
 }

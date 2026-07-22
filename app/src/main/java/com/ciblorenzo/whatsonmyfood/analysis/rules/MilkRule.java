@@ -35,6 +35,16 @@ public class MilkRule implements ProductAnalysisRule {
         return results;
     }
 
+    @Override
+    public String getRuleDescription() {
+        return "Milk: subtracts 25 points when milk is listed without an organic or Non-GMO claim. With either claim, milk is shown as information and does not change the score.";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.INGREDIENT_SOURCING;
+    }
+
     private boolean hasOrganicOrNonGmoClaim(ProductWithDetails productWithDetails) {
         if (productWithDetails == null || productWithDetails.product == null) {
             return false;

@@ -35,17 +35,30 @@ public final class AnalysisResultDeduplicator {
     }
 
     private static AnalysisResult stronger(AnalysisResult first, AnalysisResult second) {
-        if (severityRank(second.getLevel()) > severityRank(first.getLevel())) {
+        if (isStrongerScoreEffect(second, first)) {
             carrySource(second, first);
             return second;
         }
-        if (severityRank(second.getLevel()) == severityRank(first.getLevel())
-                && Math.abs(second.getScorePenalty()) > Math.abs(first.getScorePenalty())) {
+        if (second.getScorePenalty() == first.getScorePenalty()
+                && severityRank(second.getLevel()) > severityRank(first.getLevel())) {
             carrySource(second, first);
             return second;
         }
         carrySource(first, second);
         return first;
+    }
+
+    private static boolean isStrongerScoreEffect(AnalysisResult candidate, AnalysisResult existing) {
+        int candidatePenalty = candidate.getScorePenalty();
+        int existingPenalty = existing.getScorePenalty();
+        if (candidatePenalty >= 0 && existingPenalty >= 0) {
+            return candidatePenalty > existingPenalty;
+        }
+        if (candidatePenalty <= 0 && existingPenalty <= 0) {
+            return candidatePenalty < existingPenalty;
+        }
+        // A concern takes precedence over a positive or informational duplicate.
+        return candidatePenalty > 0;
     }
 
     private static void carrySource(AnalysisResult target, AnalysisResult source) {
@@ -73,6 +86,9 @@ public final class AnalysisResultDeduplicator {
     }
 
     private static String keyFor(AnalysisResult result) {
+        if (!isBlank(result.getScoringGroup())) {
+            return "scoring_group|" + normalize(result.getScoringGroup());
+        }
         String message = normalize(result.getMessage());
         String trigger = normalize(result.getTriggeringIngredient());
 

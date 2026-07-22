@@ -39,6 +39,11 @@ public class NutriScoreRule implements ProductAnalysisRule {
 
     @Override
     public String getRuleDescription() {
-        return "Flags Nutri-Score D/E from Open Food Facts as a nutrition quality concern.";
+        return "Low Nutri-Score: subtracts 15 points for grade D or 25 points for grade E when Open Food Facts supplies that grade.";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.GENERAL_NUTRITION;
     }
 }

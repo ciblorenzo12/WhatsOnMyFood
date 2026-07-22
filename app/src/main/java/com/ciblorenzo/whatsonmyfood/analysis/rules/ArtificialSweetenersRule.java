@@ -42,6 +42,11 @@ public class ArtificialSweetenersRule implements ProductAnalysisRule {
 
     @Override
     public String getRuleDescription() {
-        return "Detects artificial sweeteners and sugar alcohols, separating caution signals from neutral informational notes.";
+        return "Alternative sweetener: subtracts 5 points when a listed artificial sweetener is found. A listed sugar alcohol is informational and changes the score by 0; multiple matches do not stack.";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.ADDITIVES_AND_PRESERVATIVES;
     }
 }

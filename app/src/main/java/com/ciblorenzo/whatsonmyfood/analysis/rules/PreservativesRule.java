@@ -56,6 +56,11 @@ public class PreservativesRule implements ProductAnalysisRule {
 
     @Override
     public String getRuleDescription() {
-        return "Detects common preservatives such as BHA, BHT, TBHQ, benzoates, sorbates, propionates, sulfites, and EDTA.";
+        return "Shelf-life preservatives: subtracts 10 points when one or more listed preservatives are found. All matches are explained together and the penalty is applied once.";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.ADDITIVES_AND_PRESERVATIVES;
     }
 }

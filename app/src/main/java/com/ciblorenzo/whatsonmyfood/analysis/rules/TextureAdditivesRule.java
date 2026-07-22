@@ -40,4 +40,14 @@ public class TextureAdditivesRule implements ProductAnalysisRule {
 
         return results;
     }
+
+    @Override
+    public String getRuleDescription() {
+        return "Texture additives: subtracts 10 points when more than two different listed gums or emulsifiers are found. The penalty is applied once, regardless of how many additional matches appear.";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.ADDITIVES_AND_PRESERVATIVES;
+    }
 }

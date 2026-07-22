@@ -36,4 +36,19 @@ public class PartiallyHydrogenatedOilsRule implements ProductAnalysisRule {
         }
         return results;
     }
+
+    @Override
+    public String getRuleDescription() {
+        return "Hydrogenated oil: subtracts 30 points when the ingredient list names hydrogenated or partially hydrogenated oil. Multiple matching terms count only once.";
+    }
+
+    @Override
+    public String getScoringGroup() {
+        return "trans_fat";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.OILS;
+    }
 }

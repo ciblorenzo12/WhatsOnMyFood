@@ -38,6 +38,11 @@ public class ArtificialFlavorRule implements ProductAnalysisRule {
 
     @Override
     public String getRuleDescription() {
-        return "Detects artificial flavor terms in the ingredient list so AI summaries cannot claim artificial flavors are absent.";
+        return "Artificial flavor: subtracts 10 points when an ingredient contains artificial plus flavor or flavour. The penalty is applied once.";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.FLAVORS;
     }
 }

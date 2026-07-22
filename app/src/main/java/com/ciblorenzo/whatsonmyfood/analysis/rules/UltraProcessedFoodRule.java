@@ -33,4 +33,14 @@ public class UltraProcessedFoodRule implements ProductAnalysisRule {
         }
         return results;
     }
+
+    @Override
+    public String getRuleDescription() {
+        return "NOVA 4: subtracts 25 points when Open Food Facts classifies a product as ultra-processed. This metadata rule is not part of the active ingredient-scoring set.";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.PROCESSING_LEVEL;
+    }
 }

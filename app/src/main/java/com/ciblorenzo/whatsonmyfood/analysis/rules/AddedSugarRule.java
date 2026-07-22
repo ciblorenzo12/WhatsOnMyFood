@@ -49,7 +49,17 @@ public class AddedSugarRule implements ProductAnalysisRule {
 
     @Override
     public String getRuleDescription() {
-        return "Compares added sugar to the FDA Daily Value of 50g. Amounts over the daily value are severe; lower amounts are highlighted as within the suggested limit.";
+        return "Added sugar: subtracts 10 points when present, 20 points when it is among the first three ingredients, or 50 points when reported added sugar is above 50 g. Only the largest added-sugar penalty is counted.";
+    }
+
+    @Override
+    public String getScoringGroup() {
+        return "added_sugar";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.SUGAR;
     }
 
     private void addIngredientTextAddedSugarResult(ProductWithDetails productWithDetails, List<AnalysisResult> results) {

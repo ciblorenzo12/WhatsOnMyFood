@@ -13,6 +13,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -92,7 +93,7 @@ public class RuleEngineTest {
 
         ProductAnalysisReport report = ruleEngine.analyze(product);
 
-        assertTrue("A clean product should have a score of at least 100", report.getOverallScore() >= 100);
+        assertEquals("A clean product should stop at the maximum score", RuleEngine.MAXIMUM_SCORE, report.getOverallScore());
     }
 
     @Test
@@ -113,7 +114,13 @@ public class RuleEngineTest {
         ProductAnalysisReport report = ruleEngine.analyze(product);
 
         // NOVA is no longer an automatic penalty; the score reflects the label's actual sugar and flavor signals.
-        assertEquals("The score should reflect the specific label signals", 20, report.getOverallScore());
+        assertEquals("Only the strongest added-sugar penalty should count", 40, report.getOverallScore());
+        int calculatedRawScore = report.getStartingScore();
+        for (AnalysisResult result : report.getResults()) {
+            calculatedRawScore += result.getScoreAdjustment();
+        }
+        assertEquals("Every displayed result must reconcile to the raw score", calculatedRawScore, report.getRawScore());
+        assertTrue(report.getScoreExplanation().contains("Raw score: " + calculatedRawScore));
     }
 
     @Test
@@ -130,7 +137,7 @@ public class RuleEngineTest {
     }
 
     @Test
-    public void analyze_oilNameAloneDoesNotCreateANegativeFinding() {
+    public void analyze_vegetableOilsApplyOnePenalty() {
         ProductWithDetails product = new ProductBuilder("oil_only")
                 .withIngredients(Arrays.asList(
                         new Ingredient("oil_only", "Sunflower oil", 1),
@@ -140,9 +147,46 @@ public class RuleEngineTest {
 
         ProductAnalysisReport report = ruleEngine.analyze(product);
 
+        long oilPenalties = report.getResults().stream()
+                .filter(result -> "Contains vegetable oil".equals(result.getMessage()))
+                .count();
+
+        assertEquals(1, oilPenalties);
+        assertEquals(95, report.getOverallScore()); // 100 - 15 oil penalty + 10 short-list adjustment
+    }
+
+    @Test
+    public void analyze_oliveAvocadoAndCoconutOilsArePositiveAndNotPenalized() {
+        ProductWithDetails product = new ProductBuilder("positive_oils")
+                .withIngredients(Arrays.asList(
+                        new Ingredient("positive_oils", "Olive oil", 1),
+                        new Ingredient("positive_oils", "Avocado oil", 2),
+                        new Ingredient("positive_oils", "Coconut oil", 3)
+                ))
+                .build();
+
+        ProductAnalysisReport report = ruleEngine.analyze(product);
+
         assertFalse(report.getResults().stream()
-                .anyMatch(result -> result.getLevel() == AnalysisResult.WarningLevel.WARNING
-                        || result.getLevel() == AnalysisResult.WarningLevel.SEVERE));
+                .anyMatch(result -> "Contains vegetable oil".equals(result.getMessage())));
+        assertTrue(report.getResults().stream()
+                .anyMatch(result -> "Contains beneficial oil".equals(result.getMessage())
+                        && result.getRuleEffect() == AnalysisResult.RuleEffect.POSITIVE));
+        assertEquals(115, report.getRawScore());
+        assertEquals(100, report.getOverallScore());
+    }
+
+    @Test
+    public void analyze_unlistedVegetableOilStillAppliesPolicyPenalty() {
+        ProductWithDetails product = new ProductBuilder("unlisted_oil")
+                .withIngredients(Collections.singletonList(new Ingredient("unlisted_oil", "Hazelnut oil", 1)))
+                .build();
+
+        ProductAnalysisReport report = ruleEngine.analyze(product);
+
+        assertTrue(report.getResults().stream()
+                .anyMatch(result -> "Contains vegetable oil".equals(result.getMessage())));
+        assertEquals(95, report.getOverallScore());
     }
 
     @Test
@@ -166,6 +210,8 @@ public class RuleEngineTest {
 
         // ASSERT
         assertEquals("The score should be clamped at 0 and not go negative", 0, report.getOverallScore());
+        assertTrue(report.getRawScore() < RuleEngine.MINIMUM_SCORE);
+        assertTrue(report.getScoreExplanation().contains("limited to 0-100"));
     }
 
     @Test
@@ -218,5 +264,121 @@ public class RuleEngineTest {
 
         assertNotNull(milkResult);
         assertEquals(AnalysisResult.WarningLevel.INFO, milkResult.getLevel());
+    }
+
+    @Test
+    public void analyze_sameInputAlwaysReturnsSameScoreAndExplanations() {
+        ProductWithDetails first = new ProductBuilder("deterministic_one")
+                .withIngredients(Arrays.asList(
+                        new Ingredient("deterministic_one", "Whole oats", 1),
+                        new Ingredient("deterministic_one", "Sugar", 2),
+                        new Ingredient("deterministic_one", "Natural flavor", 3)
+                ))
+                .build();
+        ProductWithDetails second = new ProductBuilder("deterministic_two")
+                .withIngredients(Arrays.asList(
+                        new Ingredient("deterministic_two", "Whole oats", 1),
+                        new Ingredient("deterministic_two", "Sugar", 2),
+                        new Ingredient("deterministic_two", "Natural flavor", 3)
+                ))
+                .build();
+
+        ProductAnalysisReport firstReport = ruleEngine.analyze(first);
+        ProductAnalysisReport secondReport = ruleEngine.analyze(second);
+
+        assertEquals(firstReport.getOverallScore(), secondReport.getOverallScore());
+        assertEquals(firstReport.getRawScore(), secondReport.getRawScore());
+        assertEquals(firstReport.getResults().size(), secondReport.getResults().size());
+        for (int i = 0; i < firstReport.getResults().size(); i++) {
+            assertEquals(firstReport.getResults().get(i).getMessage(), secondReport.getResults().get(i).getMessage());
+            assertEquals(firstReport.getResults().get(i).getScoringExplanation(), secondReport.getResults().get(i).getScoringExplanation());
+        }
+    }
+
+    @Test
+    public void analyze_overlappingSugarRulesCountOnlyStrongestPenalty() {
+        ProductWithDetails product = new ProductBuilder("sugar_overlap")
+                .withIngredients(Collections.singletonList(new Ingredient("sugar_overlap", "High fructose corn syrup", 1)))
+                .withAddedSugars(51.0)
+                .build();
+
+        ProductAnalysisReport report = ruleEngine.analyze(product);
+        long sugarFindings = report.getResults().stream()
+                .filter(result -> "added_sugar".equals(result.getScoringGroup()))
+                .count();
+
+        assertEquals(1, sugarFindings);
+        assertEquals(60, report.getRawScore()); // 100 - 50 added sugar + 10 short-list adjustment
+    }
+
+    @Test
+    public void analyze_positiveAdjustmentIsCappedAtMaximumAndExplained() {
+        ProductWithDetails product = new ProductBuilder("positive_cap")
+                .withIngredients(Collections.singletonList(new Ingredient("positive_cap", "Water", 1)))
+                .build();
+
+        ProductAnalysisReport report = ruleEngine.analyze(product);
+
+        assertEquals(110, report.getRawScore());
+        assertEquals(RuleEngine.MAXIMUM_SCORE, report.getOverallScore());
+        assertTrue(report.getScoreExplanation().contains("restores 10"));
+        assertTrue(report.getScoreExplanation().contains("limited to 0-100"));
+    }
+
+    @Test
+    public void getRuleDescriptions_explainsEveryActiveRuleAndScoreEffect() {
+        List<String> descriptions = ruleEngine.getRuleDescriptions();
+
+        assertEquals(28, descriptions.size());
+        for (String description : descriptions) {
+            assertNotNull(description);
+            assertFalse(description.trim().isEmpty());
+            assertTrue(description, description.contains("points") || description.contains("score"));
+        }
+    }
+
+    @Test
+    public void getRuleDescriptionsByCategory_assignsEveryActiveRuleExactlyOnce() {
+        Map<ProductAnalysisRule.RuleCategory, List<String>> categories = ruleEngine.getRuleDescriptionsByCategory();
+
+        assertEquals(4, categories.get(ProductAnalysisRule.RuleCategory.SUGAR).size());
+        assertEquals(1, categories.get(ProductAnalysisRule.RuleCategory.SODIUM).size());
+        assertEquals(4, categories.get(ProductAnalysisRule.RuleCategory.OILS).size());
+        assertEquals(5, categories.get(ProductAnalysisRule.RuleCategory.ADDITIVES_AND_PRESERVATIVES).size());
+        assertEquals(2, categories.get(ProductAnalysisRule.RuleCategory.FLAVORS).size());
+        assertEquals(1, categories.get(ProductAnalysisRule.RuleCategory.PROCESSING_LEVEL).size());
+        assertEquals(6, categories.get(ProductAnalysisRule.RuleCategory.POSITIVE_INGREDIENT_SIGNALS).size());
+        assertEquals(2, categories.get(ProductAnalysisRule.RuleCategory.GENERAL_NUTRITION).size());
+        assertEquals(2, categories.get(ProductAnalysisRule.RuleCategory.INGREDIENT_SOURCING).size());
+        assertEquals(1, categories.get(ProductAnalysisRule.RuleCategory.ALLERGENS).size());
+
+        int categorizedRuleCount = categories.values().stream().mapToInt(List::size).sum();
+        assertEquals(ruleEngine.getRuleDescriptions().size(), categorizedRuleCount);
+    }
+
+    @Test
+    public void analyze_allergenStatementsReachAnalysisAsSeparateInformationalFindings() {
+        ProductWithDetails product = new ProductBuilder("allergen_analysis")
+                .withIngredients(Collections.singletonList(new Ingredient("allergen_analysis", "Oats", 1)))
+                .build();
+        product.containsAllergens = Arrays.asList("milk", "wheat");
+        product.mayContainAllergens = Collections.singletonList("peanuts");
+
+        ProductAnalysisReport report = ruleEngine.analyze(product);
+        AnalysisResult contains = report.getResults().stream()
+                .filter(result -> "Allergen statement: Contains".equals(result.getMessage()))
+                .findFirst()
+                .orElse(null);
+        AnalysisResult mayContain = report.getResults().stream()
+                .filter(result -> "Allergen advisory: May contain".equals(result.getMessage()))
+                .findFirst()
+                .orElse(null);
+
+        assertNotNull(contains);
+        assertNotNull(mayContain);
+        assertEquals(AnalysisResult.RuleEffect.INFORMATIONAL, contains.getRuleEffect());
+        assertEquals(AnalysisResult.RuleEffect.INFORMATIONAL, mayContain.getRuleEffect());
+        assertEquals(0, contains.getScorePenalty());
+        assertEquals(0, mayContain.getScorePenalty());
     }
 }

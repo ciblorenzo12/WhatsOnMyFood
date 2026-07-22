@@ -36,4 +36,14 @@ public class ProcessedMeatPreservativesRule implements ProductAnalysisRule {
         }
         return results;
     }
+
+    @Override
+    public String getRuleDescription() {
+        return "Nitrites or nitrates: subtracts 25 points when sodium nitrite, sodium nitrate, or potassium nitrite appears in the ingredient list.";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.ADDITIVES_AND_PRESERVATIVES;
+    }
 }

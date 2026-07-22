@@ -30,4 +30,19 @@ public class HighFructoseCornSyrupRule implements ProductAnalysisRule {
         }
         return results;
     }
+
+    @Override
+    public String getRuleDescription() {
+        return "High-fructose corn syrup: subtracts 25 points when it is among the first three ingredients, or 15 points when it appears later. It shares the added-sugar group, so only the largest sugar penalty counts.";
+    }
+
+    @Override
+    public String getScoringGroup() {
+        return "added_sugar";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.SUGAR;
+    }
 }

@@ -27,4 +27,14 @@ public class NonOrganicWheatRule implements ProductAnalysisRule {
         }
         return results;
     }
+
+    @Override
+    public String getRuleDescription() {
+        return "Conventional wheat: subtracts 20 points when an ingredient names wheat without calling that ingredient organic.";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.INGREDIENT_SOURCING;
+    }
 }

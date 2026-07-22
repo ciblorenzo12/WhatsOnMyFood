@@ -24,6 +24,11 @@ public class HighSugarRule implements ProductAnalysisRule {
 
     @Override
     public String getRuleDescription() {
-        return "Detects products with high total sugar content (above 22.5g per 100g). High sugar intake is linked to obesity and metabolic issues.";
+        return "High total sugar: subtracts 15 points when nutrition data reports more than 22.5 g total sugar per 100 g. This can stack with added sugar because total sugar is a separate nutrition signal.";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.SUGAR;
     }
 }

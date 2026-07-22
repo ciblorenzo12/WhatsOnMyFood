@@ -30,6 +30,16 @@ public class TransFatNutritionRule implements ProductAnalysisRule {
 
     @Override
     public String getRuleDescription() {
-        return "Detects measurable trans fat from nutrition data and applies a severe penalty.";
+        return "Measured trans fat: subtracts 30 points when nutrition data reports more than 0 g. It shares the trans-fat group with hydrogenated oil, so the concern counts only once.";
+    }
+
+    @Override
+    public String getScoringGroup() {
+        return "trans_fat";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.OILS;
     }
 }

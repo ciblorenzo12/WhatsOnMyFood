@@ -25,4 +25,19 @@ public class OrganicIngredientRule implements ProductAnalysisRule {
         }
         return results;
     }
+
+    @Override
+    public String getRuleDescription() {
+        return "Organic ingredient: restores up to 5 points when any ingredient is labeled organic. Organic bonuses do not stack with one another, and the final score cannot exceed 100.";
+    }
+
+    @Override
+    public String getScoringGroup() {
+        return "organic_ingredients";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.POSITIVE_INGREDIENT_SIGNALS;
+    }
 }

@@ -34,4 +34,14 @@ public class NaturalFlavorRule implements ProductAnalysisRule {
 
         return results;
     }
+
+    @Override
+    public String getRuleDescription() {
+        return "Natural flavor: subtracts 5 points when the ingredient list uses the broad term natural flavor or natural flavors. Repeated mentions count only once.";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.FLAVORS;
+    }
 }

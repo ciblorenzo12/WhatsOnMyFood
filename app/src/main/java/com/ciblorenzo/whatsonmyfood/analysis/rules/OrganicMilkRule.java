@@ -27,4 +27,19 @@ public class OrganicMilkRule implements ProductAnalysisRule {
         }
         return results;
     }
+
+    @Override
+    public String getRuleDescription() {
+        return "Organic milk: restores up to 10 points when an ingredient names organic milk. Organic bonuses do not stack, and the final score cannot exceed 100.";
+    }
+
+    @Override
+    public String getScoringGroup() {
+        return "organic_ingredients";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.POSITIVE_INGREDIENT_SIGNALS;
+    }
 }

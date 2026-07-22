@@ -28,4 +28,19 @@ public class OrganicWheatRule implements ProductAnalysisRule {
         }
         return results;
     }
+
+    @Override
+    public String getRuleDescription() {
+        return "Organic wheat: restores up to 10 points when an ingredient names organic wheat. Organic bonuses do not stack, and the final score cannot exceed 100.";
+    }
+
+    @Override
+    public String getScoringGroup() {
+        return "organic_ingredients";
+    }
+
+    @Override
+    public RuleCategory getRuleCategory() {
+        return RuleCategory.POSITIVE_INGREDIENT_SIGNALS;
+    }
 }
