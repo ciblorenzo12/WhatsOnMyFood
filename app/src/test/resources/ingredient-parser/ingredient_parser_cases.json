@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "description": "Deterministic ingredient parser fixtures. Inputs pass through OCR text normalization before label parsing.",
+  "cases": [
+    {
+      "id": "clean_comma_list",
+      "categories": ["clean"],
+      "input": "Ingredients: Water, lemon juice, sea salt.",
+      "expectedIngredients": ["water", "lemon juice", "sea salt"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "clean_semicolon_list",
+      "categories": ["clean"],
+      "input": "Ingredients: oats; honey; cinnamon",
+      "expectedIngredients": ["oats", "honey", "cinnamon"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "clean_nested_groups",
+      "categories": ["clean", "nested_groups"],
+      "input": "Ingredients: chocolate (sugar, cocoa butter, milk powder), wafer (wheat flour; palm oil), salt",
+      "expectedIngredients": ["chocolate (sugar, cocoa butter, milk powder)", "wafer (wheat flour; palm oil)", "salt"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "noisy_ocr_heading_and_line_break",
+      "categories": ["noisy_ocr", "malformed"],
+      "input": "INGRED1ENTS: whole oats, sun-\nflower oil, sea salt",
+      "expectedIngredients": ["whole oats", "sunflower oil", "sea salt"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "noisy_ocr_bullets_and_spacing",
+      "categories": ["noisy_ocr"],
+      "input": "  INGREDIENTS:\n Water   •   Cane Sugar • Citric Acid  ",
+      "expectedIngredients": ["water", "cane sugar", "citric acid"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "noisy_ocr_trailing_ui",
+      "categories": ["noisy_ocr"],
+      "input": "Ingredients: oats, sugar, salt\nDownload label\nRelated searches",
+      "expectedIngredients": ["oats", "sugar", "salt"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "nutrition_facts_after_ingredients",
+      "categories": ["nutrition_facts"],
+      "input": "Ingredients: whole grain oats, sugar, salt. Nutrition Facts Calories 140 Total Fat 2 g",
+      "expectedIngredients": ["whole grain oats", "sugar", "salt"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "supplement_facts_after_ingredients",
+      "categories": ["nutrition_facts"],
+      "input": "Ingredients: water; citric acid; natural flavor\nSupplement Facts Serving Size 1 bottle",
+      "expectedIngredients": ["water", "citric acid", "natural flavor"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "nutrition_panel_on_new_line",
+      "categories": ["nutrition_facts", "measurements_percentages"],
+      "input": "Ingredients: corn, olive oil, salt\nNutrition Facts\nServing Size 30 g\nCalories 120",
+      "expectedIngredients": ["corn", "olive oil", "salt"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "contains_and_may_contain",
+      "categories": ["allergen_statements"],
+      "input": "Ingredients: oats, cocoa, salt. Contains: milk, wheat. May contain: peanuts, soy.",
+      "expectedIngredients": ["oats", "cocoa", "salt"],
+      "containsAllergens": ["milk", "wheat"],
+      "mayContainAllergens": ["peanuts", "soy"]
+    },
+    {
+      "id": "allergens_heading",
+      "categories": ["allergen_statements"],
+      "input": "Ingredients: rice flour; cocoa; sugar\nAllergens: milk and soy",
+      "expectedIngredients": ["rice flour", "cocoa", "sugar"],
+      "containsAllergens": ["milk", "soy"],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "contains_two_percent_is_ingredient_boundary",
+      "categories": ["allergen_statements", "measurements_percentages"],
+      "input": "Ingredients: flour; contains 2% or less of: salt, yeast. Contains: wheat.",
+      "expectedIngredients": ["flour", "contains 2% or less of: salt", "yeast"],
+      "containsAllergens": ["wheat"],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "front_measurement_before_heading",
+      "categories": ["measurements_percentages"],
+      "input": "NET WT 12 OZ\nIngredients: almonds, sea salt",
+      "expectedIngredients": ["almonds", "sea salt"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "ingredient_percentages",
+      "categories": ["measurements_percentages"],
+      "input": "Ingredients: tomatoes 60%, water, olive oil 5%, salt 0.8%",
+      "expectedIngredients": ["tomatoes 60%", "water", "olive oil 5%", "salt 0.8%"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "measurement_line_after_list",
+      "categories": ["measurements_percentages"],
+      "input": "Ingredients: water, lemon juice, salt\n500 ml",
+      "expectedIngredients": ["water", "lemon juice", "salt"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "duplicate_case_insensitive",
+      "categories": ["duplicate_ingredients"],
+      "input": "Ingredients: Water, water, WATER, salt",
+      "expectedIngredients": ["water", "salt"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "duplicate_punctuation_normalized",
+      "categories": ["duplicate_ingredients"],
+      "input": "Ingredients: cane sugar, Cane-Sugar, cocoa, cocoa",
+      "expectedIngredients": ["cane sugar", "cocoa"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "duplicate_nested_group",
+      "categories": ["duplicate_ingredients", "nested_groups"],
+      "input": "Ingredients: filling (sugar, cocoa), filling (sugar, cocoa), wafer",
+      "expectedIngredients": ["filling (sugar, cocoa)", "wafer"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "french_label",
+      "categories": ["multilingual"],
+      "input": "Ingrédients : farine de blé, sucre, huile de palme. Allergènes : blé, lait.",
+      "expectedIngredients": ["farine de blé", "sucre", "huile de palme"],
+      "containsAllergens": ["blé", "lait"],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "spanish_label",
+      "categories": ["multilingual"],
+      "input": "Ingredientes: maíz; aceite vegetal; sal. Alérgenos: leche y soja.",
+      "expectedIngredients": ["maíz", "aceite vegetal", "sal"],
+      "containsAllergens": ["leche y soja"],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "malformed_missing_colon",
+      "categories": ["malformed"],
+      "input": "INGREDIENTS water, sugar, salt",
+      "expectedIngredients": ["water", "sugar", "salt"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    },
+    {
+      "id": "malformed_unclosed_parenthesis",
+      "categories": ["malformed", "nested_groups"],
+      "input": "Ingredients: seasoning (salt, garlic, onion, sunflower oil",
+      "expectedIngredients": ["seasoning (salt, garlic, onion, sunflower oil"],
+      "containsAllergens": [],
+      "mayContainAllergens": []
+    }
+  ]
+}
