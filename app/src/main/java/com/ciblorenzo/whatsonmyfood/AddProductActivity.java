@@ -110,7 +110,8 @@ public class AddProductActivity extends BaseActivity {
         );
 
         List<Ingredient> ingredients = new ArrayList<>();
-        for (String ingredientText : IngredientTextParser.parseIngredientCandidates(ingredientsText)) {
+        IngredientTextParser.ParsedLabel parsedLabel = IngredientTextParser.parseLabel(ingredientsText);
+        for (String ingredientText : parsedLabel.ingredients) {
             ingredients.add(new Ingredient(barcode, ingredientText, ingredients.size()));
         }
 
@@ -118,6 +119,8 @@ public class AddProductActivity extends BaseActivity {
         productWithDetails.product = product;
         productWithDetails.ingredients = ingredients;
         productWithDetails.nutriments = null;
+        productWithDetails.containsAllergens = new ArrayList<>(parsedLabel.containsAllergens);
+        productWithDetails.mayContainAllergens = new ArrayList<>(parsedLabel.mayContainAllergens);
         return productWithDetails;
     }
 

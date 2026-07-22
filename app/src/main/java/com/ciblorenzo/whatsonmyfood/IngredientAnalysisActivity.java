@@ -66,6 +66,8 @@ public class IngredientAnalysisActivity extends BaseActivity {
     private String analysisInputText;
     private String rawOcrText;
     private String sourceBarcode;
+    private List<String> labelContainsAllergens = new ArrayList<>();
+    private List<String> labelMayContainAllergens = new ArrayList<>();
     private BitwiseAnalysisService bitwiseAnalysisService;
     private int supplementalAttempt;
     private boolean supplementalScanRequested;
@@ -143,6 +145,8 @@ public class IngredientAnalysisActivity extends BaseActivity {
             return;
         }
         rawOcrText = labelValidation.cleanedText;
+        labelContainsAllergens = new ArrayList<>(labelValidation.containsAllergens);
+        labelMayContainAllergens = new ArrayList<>(labelValidation.mayContainAllergens);
         String detectedIngredientLabel = IngredientTextParser.trimToLikelyIngredientList(rawOcrText);
         String analysisPrompt = "response_language: " + LanguageManager.getLanguageName(this) + "\n"
                 + "scan_mode: ingredients\n"
@@ -151,6 +155,8 @@ public class IngredientAnalysisActivity extends BaseActivity {
                 + "task: Parse the scanned ingredient label for scoring. Use visible package text and the ingredient pattern to identify the product, but do not replace or invent label ingredients.\n"
                 + "detected_ingredient_label:\n"
                 + detectedIngredientLabel + "\n"
+                + "contains_allergens: " + String.join(", ", labelContainsAllergens) + "\n"
+                + "may_contain_allergens: " + String.join(", ", labelMayContainAllergens) + "\n"
                 + "product_ocr_text:\n"
                 + rawOcrText;
         analyzeWithAI(analysisPrompt, rules, capturedBitmap, healthScoreView, rawIngredientsView, analysisRecyclerView, progressBar);
@@ -253,6 +259,8 @@ public class IngredientAnalysisActivity extends BaseActivity {
             detectedProduct = new ProductWithDetails();
             detectedProduct.product = new Product(productKey, productName, brand, null, null, null, null, null, null, null, null, null, buildAiInsightCache(summary, sourcesArr), null);
             detectedProduct.ingredients = ingredientList;
+            detectedProduct.containsAllergens = new ArrayList<>(labelContainsAllergens);
+            detectedProduct.mayContainAllergens = new ArrayList<>(labelMayContainAllergens);
             if (retailerCommerceViewBinder != null) {
                 retailerCommerceViewBinder.bind(detectedProduct);
             }

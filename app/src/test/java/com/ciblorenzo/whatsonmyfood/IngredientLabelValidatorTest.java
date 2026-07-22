@@ -81,4 +81,24 @@ public class IngredientLabelValidatorTest {
         assertTrue(IngredientLabelValidator.validate("Ingredients: Water").readable);
         assertFalse(IngredientLabelValidator.validate("Pure refreshing natural spring water").readable);
     }
+
+    @Test
+    public void allergenStatementAloneIsNotAcceptedAsAnIngredientList() {
+        IngredientLabelValidator.Result result = IngredientLabelValidator.validate("Contains: milk, soy. May contain peanuts.");
+
+        assertFalse(result.readable);
+        assertTrue(result.ingredients.isEmpty());
+    }
+
+    @Test
+    public void validatedLabelExposesAllergensSeparately() {
+        IngredientLabelValidator.Result result = IngredientLabelValidator.validate(
+                "Ingredients: flour, water, salt. Contains: wheat. May contain: sesame, soy."
+        );
+
+        assertTrue(result.readable);
+        assertEquals(Arrays.asList("flour", "water", "salt"), result.ingredients);
+        assertEquals(Arrays.asList("wheat"), result.containsAllergens);
+        assertEquals(Arrays.asList("sesame", "soy"), result.mayContainAllergens);
+    }
 }

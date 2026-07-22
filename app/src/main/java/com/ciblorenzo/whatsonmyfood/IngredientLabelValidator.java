@@ -22,12 +22,23 @@ public final class IngredientLabelValidator {
         public final boolean readable;
         public final String cleanedText;
         public final List<String> ingredients;
+        public final List<String> containsAllergens;
+        public final List<String> mayContainAllergens;
         public final FailureReason failureReason;
 
-        private Result(boolean readable, String cleanedText, List<String> ingredients, FailureReason failureReason) {
+        private Result(
+                boolean readable,
+                String cleanedText,
+                List<String> ingredients,
+                List<String> containsAllergens,
+                List<String> mayContainAllergens,
+                FailureReason failureReason
+        ) {
             this.readable = readable;
             this.cleanedText = cleanedText;
             this.ingredients = Collections.unmodifiableList(ingredients);
+            this.containsAllergens = Collections.unmodifiableList(containsAllergens);
+            this.mayContainAllergens = Collections.unmodifiableList(mayContainAllergens);
             this.failureReason = failureReason;
         }
     }
@@ -45,7 +56,8 @@ public final class IngredientLabelValidator {
         }
 
         boolean hasMarker = hasIngredientMarker(cleaned);
-        List<String> candidates = IngredientTextParser.parseIngredientCandidates(cleaned);
+        IngredientTextParser.ParsedLabel parsedLabel = IngredientTextParser.parseLabel(cleaned);
+        List<String> candidates = parsedLabel.ingredients;
         if (hasMarker && candidates.isEmpty()) {
             return failed(cleaned, FailureReason.HEADING_WITHOUT_INGREDIENTS);
         }
@@ -56,11 +68,16 @@ public final class IngredientLabelValidator {
 
         int confidence = IngredientOcrHeuristics.confidence(cleaned);
         boolean delimiterRichList = candidates.size() >= 2 && (cleaned.contains(",") || cleaned.contains(";"));
-        // Some single-purpose products print the formula without an Ingredients heading.
-        // Require both delimiters and ingredient-like vocabulary so marketing copy stays rejected.
         boolean readable = !candidates.isEmpty() && (hasMarker || (confidence >= 16 && delimiterRichList));
         return readable
-                ? new Result(true, cleaned, candidates, FailureReason.NONE)
+                ? new Result(
+                        true,
+                        cleaned,
+                        candidates,
+                        parsedLabel.containsAllergens,
+                        parsedLabel.mayContainAllergens,
+                        FailureReason.NONE
+                )
                 : failed(cleaned, FailureReason.NO_RELIABLE_INGREDIENT_LIST);
     }
 
@@ -70,11 +87,7 @@ public final class IngredientLabelValidator {
         return lower.contains("ingredients")
                 || lower.contains("ingredient list")
                 || lower.contains("ingrédients")
-                || lower.contains("ingredientes")
-                || lower.contains("contains:")
-                || lower.contains("contient:")
-                || lower.contains("contient :")
-                || lower.contains("contiene:");
+                || lower.contains("ingredientes");
     }
 
     private static boolean looksLikeNutritionPanel(String lower) {
@@ -85,6 +98,13 @@ public final class IngredientLabelValidator {
     }
 
     private static Result failed(String cleaned, FailureReason reason) {
-        return new Result(false, cleaned, Collections.emptyList(), reason);
+        return new Result(
+                false,
+                cleaned,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                reason
+        );
     }
 }

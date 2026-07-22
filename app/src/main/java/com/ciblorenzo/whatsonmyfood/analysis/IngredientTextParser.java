@@ -1,10 +1,12 @@
 package com.ciblorenzo.whatsonmyfood.analysis;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class IngredientTextParser {
@@ -12,36 +14,73 @@ public final class IngredientTextParser {
     private static final int MAX_INGREDIENTS = 80;
 
     private static final Pattern METADATA_LINE = Pattern.compile(
-            "(?im)^\\s*(response_language|language|baseline_health_score|detected_ingredient_label|product_ocr_text|ocr_text|product data)\\s*[:=].*$"
+            "(?im)^\\s*(response_language|language|baseline_health_score|detected_ingredient_label|contains_allergens|may_contain_allergens|product_ocr_text|ocr_text|product data)\\s*[:=].*$"
     );
     private static final Pattern FIELD_PREFIX = Pattern.compile("(?i)^\\s*[a-z][a-z_ ]{2,30}\\s*[:=]\\s*");
     private static final Pattern MEASUREMENT = Pattern.compile("(?i).*\\b\\d+(\\.\\d+)?\\s*(fl\\s*oz|oz|ml|l|g|kg|lb|ct|count)\\b.*");
+    private static final Pattern INGREDIENT_HEADING = Pattern.compile(
+            "(?i)\\b(ingredient\\s+list|ingredients|ingrédients|ingredientes)\\s*:?[\\t ]*"
+    );
+    private static final Pattern ALLERGEN_HEADING = Pattern.compile(
+            "(?im)(^|[.;][\\t ]*|\\r?\\n[\\t ]*)(may[\\t ]+contain|contains(?![\\t ]+(?:less[\\t ]+than[\\t ]+)?\\d)|allergens?|allergènes|alérgenos)\\s*:?[\\t ]*"
+    );
+
+    public static final class ParsedLabel {
+        public final List<String> ingredients;
+        public final List<String> containsAllergens;
+        public final List<String> mayContainAllergens;
+
+        private ParsedLabel(List<String> ingredients, List<String> containsAllergens, List<String> mayContainAllergens) {
+            this.ingredients = Collections.unmodifiableList(new ArrayList<>(ingredients));
+            this.containsAllergens = Collections.unmodifiableList(new ArrayList<>(containsAllergens));
+            this.mayContainAllergens = Collections.unmodifiableList(new ArrayList<>(mayContainAllergens));
+        }
+    }
+
+    private static final class AllergenSection {
+        final int start;
+        final int contentStart;
+        final boolean advisory;
+
+        AllergenSection(int start, int contentStart, boolean advisory) {
+            this.start = start;
+            this.contentStart = contentStart;
+            this.advisory = advisory;
+        }
+    }
 
     private IngredientTextParser() {
     }
 
-    public static List<String> parseIngredientCandidates(String text) {
-        List<String> parsed = new ArrayList<>();
-        if (text == null) return parsed;
-
-        String source = cutAtStopMarker(stripPromptMetadata(text));
-        source = trimToLikelyIngredientList(source);
-        source = cutAtStopMarker(source);
-
-        String[] parts = source.split("[,;\\n\\u2022]+");
-        Set<String> seen = new LinkedHashSet<>();
-        for (String part : parts) {
-            String cleaned = cleanIngredientText(part);
-            if (!cleaned.isEmpty()) {
-                String key = normalizeKey(cleaned);
-                if (seen.add(key)) {
-                    parsed.add(cleaned);
-                }
-            }
-            if (parsed.size() >= MAX_INGREDIENTS) break;
+    public static ParsedLabel parseLabel(String text) {
+        if (text == null) {
+            return new ParsedLabel(Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
         }
 
-        return parsed;
+        String source = stripPromptMetadata(text);
+        List<AllergenSection> sections = findAllergenSections(source);
+        List<String> containsAllergens = new ArrayList<>();
+        List<String> mayContainAllergens = new ArrayList<>();
+        for (int i = 0; i < sections.size(); i++) {
+            AllergenSection section = sections.get(i);
+            int sectionEnd = i + 1 < sections.size() ? sections.get(i + 1).start : source.length();
+            String content = source.substring(section.contentStart, sectionEnd);
+            content = cutAtStopMarker(content);
+            int sentenceEnd = content.indexOf('.');
+            if (sentenceEnd >= 0) content = content.substring(0, sentenceEnd);
+            addUniqueAllergens(section.advisory ? mayContainAllergens : containsAllergens, content);
+        }
+
+        String ingredientSection = extractIngredientSection(source, sections);
+        return new ParsedLabel(
+                parseIngredientsFromSection(ingredientSection),
+                containsAllergens,
+                mayContainAllergens
+        );
+    }
+
+    public static List<String> parseIngredientCandidates(String text) {
+        return parseLabel(text).ingredients;
     }
 
     public static String stripPromptMetadata(String text) {
@@ -52,32 +91,8 @@ public final class IngredientTextParser {
 
     public static String trimToLikelyIngredientList(String text) {
         if (text == null) return "";
-        String cleaned = stripPromptMetadata(text);
-        String lower = cleaned.toLowerCase(Locale.US);
-        String[] markers = {
-                "ingredients:",
-                "ingredient list:",
-                "ingrédients :",
-                "ingrédients:",
-                "ingrédients",
-                "ingredientes:",
-                "ingredientes",
-                "ingredients",
-                "contains:",
-                "contains",
-                "contient :",
-                "contient:",
-                "contiene:",
-                "contiene"
-        };
-        int start = -1;
-        for (String marker : markers) {
-            int index = lower.indexOf(marker);
-            if (index >= 0 && (start == -1 || index < start)) {
-                start = index + marker.length();
-            }
-        }
-        return start >= 0 ? cleaned.substring(start) : cleaned;
+        String source = stripPromptMetadata(text);
+        return extractIngredientSection(source, findAllergenSections(source));
     }
 
     public static String cleanIngredientText(String text) {
@@ -92,10 +107,86 @@ public final class IngredientTextParser {
         if (cleaned.length() < 2) return "";
 
         String lower = cleaned.toLowerCase(Locale.US);
-        if (isNonIngredientLine(lower, cleaned)) {
-            return "";
-        }
+        if (isNonIngredientLine(lower, cleaned)) return "";
         return cleaned;
+    }
+
+    private static String extractIngredientSection(String source, List<AllergenSection> sections) {
+        Matcher ingredientMatcher = INGREDIENT_HEADING.matcher(source);
+        int ingredientStart = ingredientMatcher.find() ? ingredientMatcher.end() : 0;
+        int ingredientEnd = source.length();
+        for (AllergenSection section : sections) {
+            if (section.start >= ingredientStart) {
+                ingredientEnd = Math.min(ingredientEnd, section.start);
+                break;
+            }
+        }
+
+        String ingredientSection = source.substring(Math.min(ingredientStart, ingredientEnd), ingredientEnd);
+        return cutAtStopMarker(ingredientSection).trim();
+    }
+
+    private static List<String> parseIngredientsFromSection(String source) {
+        List<String> parsed = new ArrayList<>();
+        for (String part : splitAtTopLevel(source)) {
+            String cleaned = cleanIngredientText(part);
+            if (!cleaned.isEmpty()) parsed.add(cleaned);
+        }
+        List<String> normalized = IngredientNormalizer.normalizeAndDeduplicate(parsed);
+        if (normalized.size() <= MAX_INGREDIENTS) return normalized;
+        return new ArrayList<>(normalized.subList(0, MAX_INGREDIENTS));
+    }
+
+    private static List<String> splitAtTopLevel(String source) {
+        List<String> parts = new ArrayList<>();
+        if (source == null || source.isEmpty()) return parts;
+
+        int depth = 0;
+        int start = 0;
+        for (int i = 0; i < source.length(); i++) {
+            char current = source.charAt(i);
+            if (current == '(' || current == '[' || current == '{') {
+                depth++;
+            } else if (current == ')' || current == ']' || current == '}') {
+                if (depth > 0) depth--;
+            } else if (depth == 0 && (current == ',' || current == ';' || current == '\n' || current == '\r' || current == '\u2022')) {
+                if (i > start) parts.add(source.substring(start, i));
+                start = i + 1;
+            }
+        }
+        if (start < source.length()) parts.add(source.substring(start));
+        return parts;
+    }
+
+    private static List<AllergenSection> findAllergenSections(String source) {
+        List<AllergenSection> sections = new ArrayList<>();
+        Matcher matcher = ALLERGEN_HEADING.matcher(source);
+        while (matcher.find()) {
+            String heading = matcher.group(2).toLowerCase(Locale.US);
+            sections.add(new AllergenSection(matcher.start(), matcher.end(), heading.startsWith("may")));
+        }
+        return sections;
+    }
+
+    private static void addUniqueAllergens(List<String> target, String content) {
+        if (content == null) return;
+        String normalizedContent = content
+                .replaceFirst("(?i)^traces[\\t ]+of[\\t ]+", "")
+                .replaceFirst("(?i)^the[\\t ]+following[\\t ]+", "");
+        Set<String> seen = new LinkedHashSet<>();
+        for (String existing : target) seen.add(normalizeKey(existing));
+
+        for (String grouped : splitAtTopLevel(normalizedContent)) {
+            String[] joined = grouped.split("(?i)\\s+and\\s+");
+            for (String candidate : joined) {
+                String cleaned = candidate
+                        .replaceFirst("(?i)^[a-z]{2}:", "")
+                        .replaceAll("^[\\s\\-*:]+|[\\s.!]+$", "")
+                        .replaceAll("\\s+", " ")
+                        .trim();
+                if (cleaned.length() >= 2 && seen.add(normalizeKey(cleaned))) target.add(cleaned);
+            }
+        }
     }
 
     private static String cutAtStopMarker(String text) {
@@ -107,12 +198,6 @@ public final class IngredientTextParser {
                 "phenylketonurics",
                 "directions",
                 "warnings",
-                "allergens:",
-                "allergens",
-                "allergènes :",
-                "allergènes:",
-                "alérgenos:",
-                "alergenos:",
                 "distributed by",
                 "manufactured by",
                 "where can i buy",
@@ -124,9 +209,7 @@ public final class IngredientTextParser {
         int stop = -1;
         for (String marker : stopMarkers) {
             int index = lower.indexOf(marker);
-            if (index >= 0 && (stop == -1 || index < stop)) {
-                stop = index;
-            }
+            if (index >= 0 && (stop == -1 || index < stop)) stop = index;
         }
         return stop >= 0 ? text.substring(0, stop) : text;
     }
@@ -167,9 +250,7 @@ public final class IngredientTextParser {
             return true;
         }
 
-        if (MEASUREMENT.matcher(lower).matches() && !lower.contains("vitamin")) {
-            return true;
-        }
+        if (MEASUREMENT.matcher(lower).matches() && !lower.contains("vitamin")) return true;
 
         int letters = 0;
         for (int i = 0; i < original.length(); i++) {

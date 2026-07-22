@@ -16,11 +16,11 @@ public class IngredientTextParserTest {
 
         List<String> ingredients = IngredientTextParser.parseIngredientCandidates(text);
 
-        assertTrue(ingredients.contains("ROSE WATER"));
-        assertFalse(ingredients.contains("English"));
-        assertFalse(ingredients.contains("TRADER JOE'S"));
-        assertFalse(ingredients.contains("FACIAL"));
-        assertFalse(ingredients.contains("TONER"));
+        assertTrue(ingredients.contains("rose water"));
+        assertFalse(ingredients.contains("english"));
+        assertFalse(ingredients.contains("trader joe's"));
+        assertFalse(ingredients.contains("facial"));
+        assertFalse(ingredients.contains("toner"));
     }
 
     @Test
@@ -30,9 +30,9 @@ public class IngredientTextParserTest {
         List<String> ingredients = IngredientTextParser.parseIngredientCandidates(text);
 
         assertEquals(3, ingredients.size());
-        assertEquals("Water", ingredients.get(0));
-        assertEquals("Cane Sugar", ingredients.get(1));
-        assertEquals("Citric Acid", ingredients.get(2));
+        assertEquals("water", ingredients.get(0));
+        assertEquals("cane sugar", ingredients.get(1));
+        assertEquals("citric acid", ingredients.get(2));
     }
 
     @Test
@@ -44,7 +44,7 @@ public class IngredientTextParserTest {
         assertEquals(3, ingredients.size());
         assertEquals("whole grain wheat", ingredients.get(0));
         assertEquals("canola oil", ingredients.get(1));
-        assertEquals("sea salt.", ingredients.get(2));
+        assertEquals("sea salt", ingredients.get(2));
     }
 
     @Test
@@ -54,7 +54,7 @@ public class IngredientTextParserTest {
         List<String> ingredients = IngredientTextParser.parseIngredientCandidates(text);
 
         assertEquals(1, ingredients.size());
-        assertEquals("PHENYLALANINE", ingredients.get(0));
+        assertEquals("phenylalanine", ingredients.get(0));
     }
 
     @Test
@@ -64,11 +64,59 @@ public class IngredientTextParserTest {
         List<String> ingredients = IngredientTextParser.parseIngredientCandidates(text);
 
         assertEquals(8, ingredients.size());
-        assertEquals("CARBONATED WATER", ingredients.get(0));
-        assertEquals("CARAMEL COLOR", ingredients.get(1));
-        assertEquals("ASPARTAME", ingredients.get(2));
-        assertEquals("CAFFEINE.", ingredients.get(7));
-        assertFalse(ingredients.contains("NO CALORIES"));
-        assertFalse(ingredients.contains("NO SUGAR"));
+        assertEquals("carbonated water", ingredients.get(0));
+        assertEquals("caramel color", ingredients.get(1));
+        assertEquals("aspartame", ingredients.get(2));
+        assertEquals("caffeine", ingredients.get(7));
+        assertFalse(ingredients.contains("no calories"));
+        assertFalse(ingredients.contains("no sugar"));
+    }
+
+    @Test
+    public void parseLabel_detectsContainsStatementWithoutAddingAllergensAsIngredients() {
+        IngredientTextParser.ParsedLabel label = IngredientTextParser.parseLabel(
+                "Ingredients: oats, cocoa, salt. Contains: milk, wheat."
+        );
+
+        assertEquals(3, label.ingredients.size());
+        assertEquals("salt", label.ingredients.get(2));
+        assertEquals(java.util.Arrays.asList("milk", "wheat"), label.containsAllergens);
+        assertTrue(label.mayContainAllergens.isEmpty());
+        assertFalse(label.ingredients.contains("milk"));
+        assertFalse(label.ingredients.contains("wheat"));
+    }
+
+    @Test
+    public void parseLabel_detectsMayContainSeparatelyFromContains() {
+        IngredientTextParser.ParsedLabel label = IngredientTextParser.parseLabel(
+                "Ingredients: oats, cocoa. Contains milk and soy. May contain: peanuts; tree nuts."
+        );
+
+        assertEquals(java.util.Arrays.asList("milk", "soy"), label.containsAllergens);
+        assertEquals(java.util.Arrays.asList("peanuts", "tree nuts"), label.mayContainAllergens);
+        assertEquals(java.util.Arrays.asList("oats", "cocoa"), label.ingredients);
+    }
+
+    @Test
+    public void parseLabel_preservesNestedIngredientGroupsAndTheirInternalDelimiters() {
+        IngredientTextParser.ParsedLabel label = IngredientTextParser.parseLabel(
+                "Ingredients: chocolate (sugar, cocoa butter, milk powder), wafer (wheat flour; palm oil), salt; Contains: milk, wheat"
+        );
+
+        assertEquals(3, label.ingredients.size());
+        assertEquals("chocolate (sugar, cocoa butter, milk powder)", label.ingredients.get(0));
+        assertEquals("wafer (wheat flour; palm oil)", label.ingredients.get(1));
+        assertEquals("salt", label.ingredients.get(2));
+        assertEquals(java.util.Arrays.asList("milk", "wheat"), label.containsAllergens);
+    }
+
+    @Test
+    public void parseLabel_doesNotTreatContainsTwoPercentAsAnAllergenStatement() {
+        IngredientTextParser.ParsedLabel label = IngredientTextParser.parseLabel(
+                "Ingredients: flour; contains 2% or less of: salt, yeast. Contains: wheat."
+        );
+
+        assertEquals(java.util.Arrays.asList("flour", "contains 2% or less of: salt", "yeast"), label.ingredients);
+        assertEquals(java.util.Collections.singletonList("wheat"), label.containsAllergens);
     }
 }

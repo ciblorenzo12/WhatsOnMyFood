@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class IngredientScoringInputTest {
 
@@ -15,7 +16,7 @@ public class IngredientScoringInputTest {
         List<String> modelGuess = Arrays.asList("rice flour", "canola oil", "artificial flavor");
 
         assertEquals(
-                Arrays.asList("whole grain oats", "sugar", "corn starch", "salt."),
+                Arrays.asList("whole grain oats", "sugar", "corn starch", "salt"),
                 IngredientScoringInput.select(ocr, modelGuess)
         );
     }
@@ -39,5 +40,19 @@ public class IngredientScoringInputTest {
                         Arrays.asList("purified water", "magnesium sulfate", "potassium bicarbonate")
                 )
         );
+    }
+
+    @Test
+    public void allergensReachAnalysisInputWithoutJoiningIngredients() {
+        IngredientScoringInput.Selection selection = IngredientScoringInput.selectWithAllergens(
+                "Ingredients: oats, cocoa. Contains: milk, soy. May contain: peanuts.",
+                Arrays.asList("invented ingredient")
+        );
+
+        assertEquals(Arrays.asList("oats", "cocoa"), selection.ingredients);
+        assertEquals(Arrays.asList("milk", "soy"), selection.containsAllergens);
+        assertEquals(Arrays.asList("peanuts"), selection.mayContainAllergens);
+        assertFalse(selection.ingredients.contains("milk"));
+        assertFalse(selection.ingredients.contains("peanuts"));
     }
 }

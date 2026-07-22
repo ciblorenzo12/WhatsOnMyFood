@@ -9,8 +9,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -265,10 +267,11 @@ public class ProductRepository implements ProductLookupGateway {
         List<String> sugarKeywords = Arrays.asList("sugar", "syrup", "juice", "sweetener", "fructose", "dextrose", "cane");
 
         String ingredientsSource = localizedIngredients(productData, languageCode);
+        IngredientTextParser.ParsedLabel parsedLabel = IngredientTextParser.parseLabel(ingredientsSource);
 
         if (ingredientsSource != null && !ingredientsSource.isEmpty()) {
             int rank = 0;
-            for (String ingredientText : IngredientTextParser.parseIngredientCandidates(ingredientsSource)) {
+            for (String ingredientText : parsedLabel.ingredients) {
                 String formattedText = formatIngredientText(ingredientText, sugarKeywords, hasAddedSugars);
                 if (!formattedText.isEmpty()) {
                     ingredients.add(new Ingredient(barcode, formattedText, rank++));
@@ -289,8 +292,43 @@ public class ProductRepository implements ProductLookupGateway {
         productWithDetails.product = product;
         productWithDetails.nutriments = nutriments;
         productWithDetails.ingredients = ingredients;
+        productWithDetails.containsAllergens = mergeAllergens(
+                parsedLabel.containsAllergens,
+                parseApiAllergens(productData.allergens, productData.allergensTags)
+        );
+        productWithDetails.mayContainAllergens = new ArrayList<>(parsedLabel.mayContainAllergens);
 
         return productWithDetails;
+    }
+
+    private List<String> parseApiAllergens(String allergens, String[] allergenTags) {
+        StringBuilder source = new StringBuilder();
+        if (!isBlank(allergens)) source.append(allergens.trim());
+        if (allergenTags != null) {
+            for (String tag : allergenTags) {
+                if (isBlank(tag)) continue;
+                if (source.length() > 0) source.append(", ");
+                source.append(tag.trim());
+            }
+        }
+        if (source.length() == 0) return new ArrayList<>();
+        return new ArrayList<>(IngredientTextParser.parseLabel("Contains: " + source).containsAllergens);
+    }
+
+    private List<String> mergeAllergens(List<String> first, List<String> second) {
+        List<String> merged = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
+        if (first != null) {
+            for (String value : first) {
+                if (!isBlank(value) && seen.add(value.toLowerCase(Locale.US))) merged.add(value);
+            }
+        }
+        if (second != null) {
+            for (String value : second) {
+                if (!isBlank(value) && seen.add(value.toLowerCase(Locale.US))) merged.add(value);
+            }
+        }
+        return merged;
     }
 
     private boolean isValidResponse(ProductResponse response) {
