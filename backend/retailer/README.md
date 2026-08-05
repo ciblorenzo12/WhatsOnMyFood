@@ -32,11 +32,13 @@ Create an API key in Google AI Studio, then set these server environment variabl
 
 ```text
 GEMINI_API_KEY=your-google-ai-studio-api-key
-GEMINI_MODEL=gemini-3.1-pro-preview
+GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 
-`gemini-3.1-pro-preview` is the default when `GEMINI_MODEL` is omitted. If no Gemini key is
-configured, Bitwise returns its deterministic local analysis so label scans still work.
+`gemini-3.5-flash-lite` is the default when `GEMINI_MODEL` is omitted. It is used with
+minimal thinking and structured output so shopper explanations return quickly while URL
+Context still verifies the selected scientific sources. If no Gemini key is configured,
+Bitwise returns its deterministic local analysis so label scans still work.
 `BITWISE_APP_TOKEN` is optional; if you rotate it, update the matching mobile client
 configuration before deploying the backend.
 

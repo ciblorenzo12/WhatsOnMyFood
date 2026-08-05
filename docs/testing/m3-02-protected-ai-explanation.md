@@ -29,7 +29,7 @@ npm test
 **Steps**
 
 1. Start the backend and launch the Android app with network access.
-2. Scan or open the product and wait for Bitwise analysis. A cold protected backend with source verification may take up to about one minute.
+2. Scan or open the product and wait for Bitwise analysis. On a warm backend, the grounded explanation should normally appear within 20 seconds; a cold backend may take longer.
 3. Confirm the explanation, verdict, deterministic findings, and at least one clickable source are displayed with the product.
 4. Close and reopen the product without requesting another analysis.
 

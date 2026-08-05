@@ -121,7 +121,7 @@ From `backend/retailer/`:
 
 ```powershell
 $env:GEMINI_API_KEY="your-google-ai-studio-api-key"
-$env:GEMINI_MODEL="gemini-2.5-flash"
+$env:GEMINI_MODEL="gemini-3.5-flash-lite"
 npm start
 ```
 

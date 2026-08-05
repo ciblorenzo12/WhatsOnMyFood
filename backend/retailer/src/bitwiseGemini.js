@@ -1,6 +1,9 @@
 const { analyzePrompt } = require("./bitwiseFallback");
 
-const DEFAULT_MODEL = "gemini-3.1-pro-preview";
+// Product explanations are a bounded structured-output task. Flash-Lite keeps the
+// protected, source-grounded flow responsive without spending Pro-model latency
+// on agentic reasoning that this endpoint does not need.
+const DEFAULT_MODEL = "gemini-3.5-flash-lite";
 const DEFAULT_APP_TOKEN = "R7qK2mZ9vP4xT0aLN6cY1sD8wF3hJ5bG";
 const MAX_BODY_BYTES = 8 * 1024 * 1024;
 const HEALTH_EDUCATOR_INSTRUCTION = [
@@ -280,13 +283,17 @@ function attachVerifiedSources(content, sources) {
   return JSON.stringify(parsed);
 }
 
-function analysisGenerationConfig(usesGemini3Defaults) {
+function analysisGenerationConfig(model) {
+  const usesGemini3Defaults = /^gemini-3(?:\.|-)/i.test(model);
+  const thinkingLevel = /flash-lite/i.test(model) ? "minimal" : "low";
   const config = {
     ...(usesGemini3Defaults ? {} : { temperature: 0.3, topP: 0.9 }),
-    maxOutputTokens: 8192,
+    // The schema is normally well below 2K tokens. Keep headroom for label scans
+    // while avoiding an unnecessarily large generation budget.
+    maxOutputTokens: 4096,
   };
   if (usesGemini3Defaults) {
-    config.thinkingConfig = { thinkingLevel: "low" };
+    config.thinkingConfig = { thinkingLevel };
     config.responseFormat = {
       text: {
         mimeType: "APPLICATION_JSON",
@@ -334,7 +341,6 @@ function structuredContextError(body) {
 async function requestGemini(prompt, image) {
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   const model = process.env.GEMINI_MODEL || DEFAULT_MODEL;
-  const usesGemini3Defaults = /^gemini-3(?:\.|-)/i.test(model);
   const requestedSources = factCheckSourcesForPrompt(prompt);
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   const response = await fetch(endpoint, {
@@ -349,7 +355,7 @@ async function requestGemini(prompt, image) {
       },
       contents: [{ role: "user", parts: geminiParts(groundedResponsePrompt(prompt, requestedSources), image) }],
       tools: [{ url_context: {} }],
-      generationConfig: analysisGenerationConfig(usesGemini3Defaults),
+      generationConfig: analysisGenerationConfig(model),
     }),
   });
 
