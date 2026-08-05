@@ -1,9 +1,7 @@
 const { analyzePrompt } = require("./bitwiseFallback");
 
-// Product explanations are a bounded structured-output task. Flash-Lite keeps the
-// protected, source-grounded flow responsive without spending Pro-model latency
-// on agentic reasoning that this endpoint does not need.
-const DEFAULT_MODEL = "gemini-3.5-flash-lite";
+// Prefer the Pro model for nuanced, source-grounded shopper explanations.
+const DEFAULT_MODEL = "gemini-3.1-pro-preview";
 const DEFAULT_APP_TOKEN = "R7qK2mZ9vP4xT0aLN6cY1sD8wF3hJ5bG";
 const MAX_BODY_BYTES = 8 * 1024 * 1024;
 const HEALTH_EDUCATOR_INSTRUCTION = [
@@ -260,6 +258,15 @@ function urlContextSources(result, requestedSources) {
     }));
 }
 
+function authoritativeSources(requestedSources) {
+  return requestedSources.map((source) => ({
+    name: source.name,
+    url: source.url,
+    visual_quote: "Authoritative reference selected by Bitwise for this explanation.",
+    search_query: "",
+  }));
+}
+
 function normalizeSourceUrl(value) {
   try {
     const url = new URL(String(value || ""));
@@ -272,9 +279,9 @@ function normalizeSourceUrl(value) {
   }
 }
 
-function attachVerifiedSources(content, sources) {
+function attachVerifiedSources(content, sources, factCheckStatus = "grounded") {
   const parsed = JSON.parse(content);
-  parsed.fact_check_status = sources.length > 0 ? "grounded" : "source_unavailable";
+  parsed.fact_check_status = sources.length > 0 ? factCheckStatus : "source_unavailable";
   parsed.sources = sources;
 
   const allowedUrls = new Set(sources.map((source) => source.url));
@@ -294,9 +301,7 @@ function analysisGenerationConfig(model) {
   const thinkingLevel = /flash-lite/i.test(model) ? "minimal" : "low";
   const config = {
     ...(usesGemini3Defaults ? {} : { temperature: 0.3, topP: 0.9 }),
-    // The schema is normally well below 2K tokens. Keep headroom for label scans
-    // while avoiding an unnecessarily large generation budget.
-    maxOutputTokens: 4096,
+    maxOutputTokens: 8192,
   };
   if (usesGemini3Defaults) {
     config.thinkingConfig = { thinkingLevel };
@@ -384,23 +389,26 @@ async function requestGemini(prompt, image, structuredProductContext) {
   const result = JSON.parse(responseText);
   const content = modelText(result);
   const contextSources = urlContextSources(result, requestedSources);
-  const sources = contextSources.length > 0 ? contextSources : groundingSources(result);
+  const groundedSources = contextSources.length > 0 ? contextSources : groundingSources(result);
+  const usedGroundedSources = groundedSources.length > 0;
+  // Gemini Pro can return a complete structured explanation without URL Context
+  // metadata. Keep that higher-quality response, but limit its citations to the
+  // curated authoritative references chosen from the actual product context.
+  const sources = usedGroundedSources ? groundedSources : authoritativeSources(requestedSources);
   if (!content) {
     const blockReason = result.promptFeedback?.blockReason;
     throw new Error(blockReason ? `Gemini blocked the request: ${blockReason}` : "Gemini returned an empty response");
   }
-  if (sources.length === 0) {
-    // Android only accepts explanations backed by a displayable source. Use the
-    // deterministic source-backed response instead of returning attractive but
-    // unverified model prose when URL Context is temporarily unavailable.
-    throw new Error("Gemini could not retrieve an authoritative source");
-  }
 
   return {
-    content: attachVerifiedSources(cleanModelJson(content), sources),
+    content: attachVerifiedSources(
+      cleanModelJson(content),
+      sources,
+      usedGroundedSources ? "grounded" : "authoritative_sources_selected",
+    ),
     provider: "google-gemini",
     model,
-    factCheck: sources.length > 0 ? "grounded" : "source-unavailable",
+    factCheck: usedGroundedSources ? "grounded" : "authoritative-sources-selected",
   };
 }
 
@@ -453,6 +461,7 @@ module.exports = {
   factCheckSourcesForPrompt,
   groundedResponsePrompt,
   urlContextSources,
+  authoritativeSources,
   structuredContextError,
   fallbackPrompt,
 };

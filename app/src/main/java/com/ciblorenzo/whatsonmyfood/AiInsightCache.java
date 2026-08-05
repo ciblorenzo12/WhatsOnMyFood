@@ -8,8 +8,7 @@ import com.google.gson.JsonParser;
 /** Stable local representation for an accepted Bitwise explanation and its sources. */
 public final class AiInsightCache {
 
-    public static final String PREFIX = "BITWISE_AI_CACHE_V11:";
-    private static final String FAMILY_PREFIX = "BITWISE_AI_CACHE_";
+    public static final String PREFIX = "BITWISE_AI_CACHE_V12:";
 
     public static final class Decoded {
         public final boolean usable;
@@ -38,7 +37,7 @@ public final class AiInsightCache {
     }
 
     public static Decoded decode(String stored) {
-        if (stored == null || !stored.startsWith(FAMILY_PREFIX)) return empty();
+        if (stored == null || !stored.startsWith(PREFIX)) return empty();
         int separator = stored.indexOf(':');
         if (separator < 0 || separator + 1 >= stored.length()) return empty();
 

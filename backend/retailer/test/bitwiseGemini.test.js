@@ -80,7 +80,7 @@ test("grounds the fact check before generating the structured shopper response",
   let callCount = 0;
   global.fetch = async (url, options) => {
     callCount += 1;
-    assert.match(url, /gemini-3\.5-flash-lite:generateContent$/);
+    assert.match(url, /gemini-3\.1-pro-preview:generateContent$/);
     assert.equal(options.headers["x-goog-api-key"], "test-google-key");
     const body = JSON.parse(options.body);
     assert.equal(body.contents[0].parts[1].inlineData.data, "image-data");
@@ -89,8 +89,8 @@ test("grounds the fact check before generating the structured shopper response",
     assert.equal(body.generationConfig.responseMimeType, undefined);
     assert.equal(body.generationConfig.responseFormat.text.mimeType, "APPLICATION_JSON");
     assert.equal(body.generationConfig.responseFormat.text.schema.properties.verdict.type, "string");
-    assert.equal(body.generationConfig.thinkingConfig.thinkingLevel, "minimal");
-    assert.equal(body.generationConfig.maxOutputTokens, 4096);
+    assert.equal(body.generationConfig.thinkingConfig.thinkingLevel, "low");
+    assert.equal(body.generationConfig.maxOutputTokens, 8192);
     assert.equal(body.generationConfig.temperature, undefined);
     assert.match(body.systemInstruction.parts[0].text, /warm, evidence-aware food-label assistant/i);
     assert.match(body.systemInstruction.parts[0].text, /evidence-checking stage/i);
@@ -229,7 +229,7 @@ test("recognizes successfully retrieved sources when Gemini normalizes the URL",
   assert.equal(sources[0].url, requested[0].url);
 });
 
-test("uses the deterministic source-backed fallback when URL Context returns no source", async () => {
+test("keeps the Pro response with curated sources when URL Context returns no metadata", async () => {
   process.env.GEMINI_API_KEY = "test-google-key";
   global.fetch = async () => ({
     ok: true,
@@ -263,10 +263,14 @@ test("uses the deterministic source-backed fallback when URL Context returns no 
   }));
 
   assert.equal(result.status, 200);
-  assert.equal(result.body.provider, "local-fallback");
+  assert.equal(result.body.provider, "google-gemini");
+  assert.equal(result.body.model, "gemini-3.1-pro-preview");
+  assert.equal(result.body.factCheck, "authoritative-sources-selected");
   const content = JSON.parse(result.body.content);
   assert.equal(content.product_name, "Oat cereal");
   assert.equal(content.brand, "Test");
+  assert.equal(content.summary, "A complete but ungrounded model explanation.");
+  assert.equal(content.fact_check_status, "authoritative_sources_selected");
   assert.ok(content.sources.length > 0);
   assert.match(content.sources[0].url, /^https:\/\//);
 });

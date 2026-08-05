@@ -23,7 +23,14 @@ public class AiInsightCacheTest {
     @Test
     public void emptyOrMalformedInsightIsNotSavedAsUsable() {
         assertTrue(AiInsightCache.encode("", "[]").isEmpty());
-        assertFalse(AiInsightCache.decode("BITWISE_AI_CACHE_V11:not-json").usable);
+        assertFalse(AiInsightCache.decode("BITWISE_AI_CACHE_V12:not-json").usable);
         assertFalse(AiInsightCache.decode("plain legacy text").usable);
+    }
+
+    @Test
+    public void olderModelInsightIsRefreshed() {
+        assertFalse(AiInsightCache.decode(
+                "BITWISE_AI_CACHE_V11:{\"summary\":\"Old explanation.\",\"sources\":[{\"url\":\"https://example.com\"}]}"
+        ).usable);
     }
 }
