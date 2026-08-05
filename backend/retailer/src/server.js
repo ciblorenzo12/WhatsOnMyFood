@@ -7,6 +7,8 @@ const { handleBitwiseAnalysis } = require("./bitwiseGemini");
 const { handleGooglePlayVerification } = require("./googlePlayBilling");
 const { createRateLimiter } = require("./rateLimiter");
 
+const DEFAULT_APP_TOKEN = "R7qK2mZ9vP4xT0aLN6cY1sD8wF3hJ5bG";
+
 const service = new RetailerService(createProviderRegistry());
 const port = Number(process.env.PORT || 8787);
 const configuredProtectedLimit = Number(process.env.PROTECTED_RATE_LIMIT_PER_MINUTE || 20);
@@ -35,7 +37,13 @@ function clientAddress(req) {
 function isProtectedEndpoint(pathname) {
   return pathname === "/v1/bitwise/analyze"
     || pathname === "/v1/billing/google-play/verify"
-    || pathname === "/v1/chat/completions";
+    || pathname === "/v1/chat/completions"
+    || /^\/api\/retail\/products\/[^/]+\/ingredients\/rag$/.test(pathname);
+}
+
+function hasValidAppToken(req) {
+  const expectedToken = process.env.BITWISE_APP_TOKEN || DEFAULT_APP_TOKEN;
+  return !expectedToken || req.headers["x-app-token"] === expectedToken;
 }
 
 function playBillingConfigured() {
@@ -127,6 +135,10 @@ async function handleRequest(req, res) {
     }
 
     if (ingredientRagMatch) {
+      if (!hasValidAppToken(req)) {
+        writeJson(res, 401, { error: "Unauthorized" });
+        return;
+      }
       const query = buildQuery(url, decodeURIComponent(ingredientRagMatch[1]));
       writeJson(res, 200, await service.getIngredientRag(query));
       return;

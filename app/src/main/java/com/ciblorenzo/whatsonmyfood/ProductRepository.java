@@ -456,11 +456,14 @@ public class ProductRepository implements ProductLookupGateway {
             return false;
         }
 
-        if (!isBlank(retrievedIngredients)) {
-            productWithDetails.ingredients = parseIngredients(barcode, retrievedIngredients, productWithDetails.nutriments);
-            if (hasParsedIngredients(productWithDetails)) {
-                return true;
-            }
+        RagIngredientRecovery.Result supportingRecovery = RagIngredientRecovery.fromText(
+                barcode,
+                retrievedIngredients,
+                productWithDetails.nutriments
+        );
+        if (supportingRecovery.recovered()) {
+            productWithDetails.ingredients = supportingRecovery.ingredients;
+            return true;
         }
 
         try {
@@ -469,18 +472,16 @@ public class ProductRepository implements ProductLookupGateway {
                     productWithDetails.product.productName,
                     productWithDetails.product.brands
             );
-            if (ragResponse == null || ragResponse.status != 1 || ragResponse.product == null) {
-                return false;
-            }
-
-            String ingredientsText = localizedIngredients(ragResponse.product, LanguageManager.getLanguageCode(application));
-            if (isBlank(ingredientsText)) {
-                return false;
-            }
-
-            productWithDetails.ingredients = parseIngredients(barcode, ingredientsText, productWithDetails.nutriments);
-            return hasParsedIngredients(productWithDetails);
-        } catch (IOException e) {
+            RagIngredientRecovery.Result ragRecovery = RagIngredientRecovery.fromResponse(
+                    barcode,
+                    ragResponse,
+                    productWithDetails.nutriments,
+                    LanguageManager.getLanguageCode(application)
+            );
+            if (!ragRecovery.recovered()) return false;
+            productWithDetails.ingredients = ragRecovery.ingredients;
+            return true;
+        } catch (IOException | RuntimeException e) {
             e.printStackTrace();
             return false;
         }
@@ -512,21 +513,6 @@ public class ProductRepository implements ProductLookupGateway {
                 || normalized.equals("no sugar")
                 || normalized.equals("zero calories")
                 || normalized.equals("zero sugar");
-    }
-
-    private List<Ingredient> parseIngredients(String barcode, String ingredientsSource, Nutriments nutriments) {
-        List<Ingredient> ingredients = new ArrayList<>();
-        boolean hasAddedSugars = nutriments != null && nutriments.addedSugars != null && nutriments.addedSugars > 0;
-        List<String> sugarKeywords = Arrays.asList("sugar", "syrup", "juice", "sweetener", "fructose", "dextrose", "cane");
-
-        int rank = 0;
-        for (String ingredientText : IngredientTextParser.parseIngredientCandidates(ingredientsSource)) {
-            String formattedText = formatIngredientText(ingredientText, sugarKeywords, hasAddedSugars);
-            if (!formattedText.isEmpty()) {
-                ingredients.add(new Ingredient(barcode, formattedText, rank++));
-            }
-        }
-        return ingredients;
     }
 
     private String mergeLabelText(String existingLabels, String newLabels) {

@@ -23,7 +23,6 @@ import okhttp3.Response;
 
 public class BitwiseBackendClient {
     private static final String TAG = "BitwiseBackendClient";
-    private static final String APP_TOKEN = "R7qK2mZ9vP4xT0aLN6cY1sD8wF3hJ5bG";
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     // Avoid making users wait through several long, invisible server retries.
     static final int MAX_TRANSIENT_RETRIES = 0;
@@ -59,7 +58,7 @@ public class BitwiseBackendClient {
 
         Request request = new Request.Builder()
                 .url(baseUrl() + "v1/bitwise/analyze")
-                .header("X-APP-TOKEN", APP_TOKEN)
+                .header("X-APP-TOKEN", BuildConfig.BITWISE_APP_TOKEN)
                 .post(RequestBody.create(bodyJson.toString(), JSON))
                 .build();
 

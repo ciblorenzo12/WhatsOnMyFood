@@ -7,6 +7,7 @@ The Android app should call backend endpoints like these instead of calling reta
 - `GET /api/retail/products/:barcode`
 - `GET /api/retail/products/:barcode/availability`
 - `GET /api/retail/products/:barcode/alternatives`
+- `GET /api/retail/products/:barcode/ingredients/rag`
 - `POST /v1/bitwise/analyze`
 - `POST /v1/billing/google-play/verify`
 
@@ -19,6 +20,8 @@ The first provider is mock data so the app flow can ship before retailer approva
 5. Google Places for nearby store discovery only
 
 Retailer API keys belong in backend environment variables, never in the Android app.
+The ingredient RAG endpoint is protected by the same `X-APP-TOKEN` header and
+rate limit used by the other protected application services.
 
 ## Bitwise AI with Google Gemini
 

@@ -30,6 +30,8 @@ val releaseStoreFile = apiKey("YHP_UPLOAD_STORE_FILE")
 val releaseStorePassword = apiKey("YHP_UPLOAD_STORE_PASSWORD")
 val releaseKeyAlias = apiKey("YHP_UPLOAD_KEY_ALIAS")
 val releaseKeyPassword = apiKey("YHP_UPLOAD_KEY_PASSWORD")
+val defaultBitwiseAppToken = "R7qK2mZ9vP4xT0aLN6cY1sD8wF3hJ5bG"
+val bitwiseAppToken = apiKey("BITWISE_APP_TOKEN").ifBlank { defaultBitwiseAppToken }
 val releaseSigningConfigured = listOf(
     releaseStoreFile,
     releaseStorePassword,
@@ -59,6 +61,7 @@ android {
         buildConfigField("String", "UPCITEMDB_USER_KEY", buildConfigString(apiKey("UPCITEMDB_USER_KEY")))
         buildConfigField("String", "RETAILER_BACKEND_BASE_URL", buildConfigString(apiKey("RETAILER_BACKEND_BASE_URL")))
         buildConfigField("String", "BITWISE_LLM_BASE_URL", buildConfigString(apiKey("BITWISE_LLM_BASE_URL")))
+        buildConfigField("String", "BITWISE_APP_TOKEN", buildConfigString(bitwiseAppToken))
         buildConfigField("String", "GOOGLE_MAPS_API_KEY", buildConfigString(apiKey("GOOGLE_MAPS_API_KEY")))
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
