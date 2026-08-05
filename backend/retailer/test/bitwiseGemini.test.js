@@ -35,6 +35,20 @@ test("uses the local analysis when Gemini is not configured", async () => {
   assert.equal(JSON.parse(result.body.content).ingredients[0], "water");
 });
 
+test("does not classify a solid food as a drink just because water is an ingredient", async () => {
+  delete process.env.GEMINI_API_KEY;
+  const result = await handleBitwiseAnalysis(request({
+    prompt: "Product: Tofu. Brand: Mori-Nu. Ingredients: water, soybeans, calcium sulfate.",
+    productContext: { raw: "Name: Tofu\nBrand: Mori-Nu\nIngredients: water, soybeans, calcium sulfate" },
+    rules: [],
+  }));
+
+  const content = JSON.parse(result.body.content);
+  assert.equal(content.product_name, "Tofu");
+  assert.equal(content.product_type, "food");
+  assert.doesNotMatch(content.summary, /\bdrink\b/i);
+});
+
 test("accepts protected structured product and deterministic rule context", async () => {
   delete process.env.GEMINI_API_KEY;
   const result = await handleBitwiseAnalysis(request({
@@ -213,6 +227,48 @@ test("recognizes successfully retrieved sources when Gemini normalizes the URL",
   }, requested);
   assert.equal(sources.length, 1);
   assert.equal(sources[0].url, requested[0].url);
+});
+
+test("uses the deterministic source-backed fallback when URL Context returns no source", async () => {
+  process.env.GEMINI_API_KEY = "test-google-key";
+  global.fetch = async () => ({
+    ok: true,
+    text: async () => JSON.stringify({
+      candidates: [{
+        content: {
+          parts: [{
+            text: JSON.stringify({
+              product_name: "Oat cereal",
+              brand: "Test",
+              product_type: "food",
+              verdict: "HEALTHY",
+              verdict_reason: "Simple ingredient list.",
+              ingredients: ["oats"],
+              ingredients_source: "label",
+              ingredient_confidence: "high",
+              summary: "A complete but ungrounded model explanation.",
+              findings: [],
+              sources: [],
+            }),
+          }],
+        },
+      }],
+    }),
+  });
+
+  const result = await handleBitwiseAnalysis(request({
+    prompt: "Product: Oat cereal. Ingredients: oats.",
+    productContext: { raw: "Name: Oat cereal\nBrand: Test\nIngredients: oats" },
+    rules: [],
+  }));
+
+  assert.equal(result.status, 200);
+  assert.equal(result.body.provider, "local-fallback");
+  const content = JSON.parse(result.body.content);
+  assert.equal(content.product_name, "Oat cereal");
+  assert.equal(content.brand, "Test");
+  assert.ok(content.sources.length > 0);
+  assert.match(content.sources[0].url, /^https:\/\//);
 });
 
 test("rejects a request with the wrong app token", async () => {

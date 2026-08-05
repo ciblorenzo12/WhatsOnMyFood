@@ -11,9 +11,9 @@ import okhttp3.Call;
 
 public class BitwiseAnalysisService {
 
-    // Source verification can exceed 25 seconds during a protected-backend cold start.
-    // Keep the UI guard slightly longer than OkHttp's bounded 60-second call window.
-    static final long ANALYSIS_TIMEOUT_MS = 65_000L;
+    // The client allows at most two 20-second read attempts plus a short delay.
+    // Keep the UI guard just beyond the bounded 45-second OkHttp call window.
+    static final long ANALYSIS_TIMEOUT_MS = 50_000L;
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private Call activeCall;

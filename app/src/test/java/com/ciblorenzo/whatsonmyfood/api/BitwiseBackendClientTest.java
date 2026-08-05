@@ -5,6 +5,7 @@ import org.junit.Test;
 import com.google.gson.JsonObject;
 
 import java.util.Arrays;
+import java.net.SocketTimeoutException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -13,9 +14,12 @@ import static org.junit.Assert.assertTrue;
 public class BitwiseBackendClientTest {
 
     @Test
-    public void interactiveAnalysisDoesNotUseLongSilentRetries() {
-        assertEquals(0, BitwiseBackendClient.MAX_TRANSIENT_RETRIES);
-        assertEquals(60, BitwiseBackendClient.ANALYSIS_CALL_TIMEOUT_SECONDS);
+    public void interactiveAnalysisUsesOneBoundedRetryWindow() {
+        assertEquals(1, BitwiseBackendClient.MAX_TRANSIENT_RETRIES);
+        assertEquals(10, BitwiseBackendClient.ANALYSIS_CONNECT_TIMEOUT_SECONDS);
+        assertEquals(20, BitwiseBackendClient.ANALYSIS_READ_TIMEOUT_SECONDS);
+        assertEquals(15, BitwiseBackendClient.ANALYSIS_WRITE_TIMEOUT_SECONDS);
+        assertEquals(45, BitwiseBackendClient.ANALYSIS_CALL_TIMEOUT_SECONDS);
     }
 
     @Test
@@ -33,6 +37,23 @@ public class BitwiseBackendClientTest {
         assertEquals(
                 "Bitwise is starting up. Please try again in a moment.",
                 BitwiseBackendClient.friendlyErrorMessage(502, body)
+        );
+    }
+
+    @Test
+    public void handlesRateLimitWithoutRetryLoopWording() {
+        assertEquals(
+                "Bitwise has reached its request limit. Please try again in 30 seconds.",
+                BitwiseBackendClient.friendlyErrorMessage(429, "raw server detail", "30")
+        );
+        assertFalse(ResilientRequestPolicy.shouldRetryStatus(429, 0));
+    }
+
+    @Test
+    public void reportsTimeoutWithoutExposingNetworkDetails() {
+        assertEquals(
+                "Bitwise took too long to respond. Please try again.",
+                BitwiseBackendClient.friendlyFailureMessage(new SocketTimeoutException("socket detail"))
         );
     }
 

@@ -8,6 +8,6 @@ public class BitwiseAnalysisServiceTest {
 
     @Test
     public void allowsProtectedSourceVerificationToFinish() {
-        assertEquals(65_000L, BitwiseAnalysisService.ANALYSIS_TIMEOUT_MS);
+        assertEquals(50_000L, BitwiseAnalysisService.ANALYSIS_TIMEOUT_MS);
     }
 }

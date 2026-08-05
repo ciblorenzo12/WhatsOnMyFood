@@ -12,12 +12,14 @@ import com.google.gson.JsonObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -27,9 +29,12 @@ import okhttp3.Response;
 public class BitwiseBackendClient {
     private static final String TAG = "BitwiseBackendClient";
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-    // Avoid making users wait through several long, invisible server retries.
-    static final int MAX_TRANSIENT_RETRIES = 0;
-    static final int ANALYSIS_CALL_TIMEOUT_SECONDS = 60;
+    // One retry fits within the total call window and avoids long retry loops.
+    static final int MAX_TRANSIENT_RETRIES = ResilientRequestPolicy.MAX_TRANSIENT_RETRIES;
+    static final int ANALYSIS_CONNECT_TIMEOUT_SECONDS = 10;
+    static final int ANALYSIS_READ_TIMEOUT_SECONDS = 20;
+    static final int ANALYSIS_WRITE_TIMEOUT_SECONDS = 15;
+    static final int ANALYSIS_CALL_TIMEOUT_SECONDS = 45;
 
     private final OkHttpClient client;
     private final Gson gson = new Gson();
@@ -42,11 +47,12 @@ public class BitwiseBackendClient {
 
     public BitwiseBackendClient() {
         client = new OkHttpClient.Builder()
-                .connectTimeout(15, TimeUnit.SECONDS)
-                .readTimeout(ANALYSIS_CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                .writeTimeout(20, TimeUnit.SECONDS)
+                .connectTimeout(ANALYSIS_CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .readTimeout(ANALYSIS_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .writeTimeout(ANALYSIS_WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .callTimeout(ANALYSIS_CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                .retryOnConnectionFailure(true)
+                .retryOnConnectionFailure(false)
+                .addInterceptor(new ControlledRetryInterceptor())
                 .build();
     }
 
@@ -84,7 +90,7 @@ public class BitwiseBackendClient {
                 .post(RequestBody.create(bodyJson.toString(), JSON))
                 .build();
 
-        return enqueueRequest(request, callback, 0);
+        return enqueueRequest(request, callback);
     }
 
     static JsonObject buildRequestBody(String prompt, String productContext, List<String> rules) {
@@ -113,35 +119,28 @@ public class BitwiseBackendClient {
         return configured.endsWith("/") ? configured : configured + "/";
     }
 
-    private Call enqueueRequest(Request request, LlmCallback callback, int attempt) {
+    private Call enqueueRequest(Request request, LlmCallback callback) {
         Call call = client.newCall(request);
         call.enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException error) {
-                postError(callback, "Bitwise could not reach the analysis service. Check your connection and try again.");
+                postError(callback, friendlyFailureMessage(error));
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 String responseBody = response.body() != null ? response.body().string() : "";
                 if (!response.isSuccessful()) {
-                    if (isTransientStatus(response.code()) && attempt < MAX_TRANSIENT_RETRIES) {
-                        long delayMs = 3000L * (attempt + 1);
-                        Log.w(TAG, "Bitwise service returned " + response.code() + "; retrying in " + delayMs + " ms");
-                        mainHandler.postDelayed(() -> enqueueRequest(request, callback, attempt + 1), delayMs);
-                        return;
-                    }
-                    postError(callback, friendlyErrorMessage(response.code(), responseBody));
+                    postError(callback, friendlyErrorMessage(
+                            response.code(),
+                            responseBody,
+                            response.header("Retry-After")
+                    ));
                     return;
                 }
 
                 if (looksLikeHtml(responseBody)) {
-                    if (attempt < MAX_TRANSIENT_RETRIES) {
-                        long delayMs = 3000L * (attempt + 1);
-                        mainHandler.postDelayed(() -> enqueueRequest(request, callback, attempt + 1), delayMs);
-                    } else {
-                        postError(callback, "Bitwise is starting up. Please try again in a moment.");
-                    }
+                    postError(callback, "Bitwise is starting up. Please try again in a moment.");
                     return;
                 }
 
@@ -161,14 +160,14 @@ public class BitwiseBackendClient {
     }
 
     static boolean looksLikeHtml(String body) {
-        if (body == null) return false;
-        String normalized = body.trim().toLowerCase();
-        return normalized.startsWith("<!doctype html")
-                || normalized.startsWith("<html")
-                || normalized.contains("<title>waiting for service to respond");
+        return ResilientRequestPolicy.looksLikeStartupHtml(body);
     }
 
     static String friendlyErrorMessage(int statusCode, String responseBody) {
+        return friendlyErrorMessage(statusCode, responseBody, "");
+    }
+
+    static String friendlyErrorMessage(int statusCode, String responseBody, String retryAfter) {
         if (statusCode == 401 || statusCode == 403) {
             return "Bitwise authentication failed. Please update the app and try again.";
         }
@@ -176,16 +175,53 @@ public class BitwiseBackendClient {
             return "Bitwise is not available at the configured server address.";
         }
         if (statusCode == 429) {
-            return "Bitwise is busy right now. Please try again shortly.";
+            String wait = retryAfter == null ? "" : retryAfter.trim();
+            return wait.matches("\\d+")
+                    ? "Bitwise has reached its request limit. Please try again in " + wait + " seconds."
+                    : "Bitwise has reached its request limit. Please try again shortly.";
         }
-        if (isTransientStatus(statusCode) || looksLikeHtml(responseBody)) {
+        if (ResilientRequestPolicy.isTransientStatus(statusCode) || looksLikeHtml(responseBody)) {
             return "Bitwise is starting up. Please try again in a moment.";
         }
         return "Bitwise is temporarily unavailable. Please try again.";
     }
 
-    private static boolean isTransientStatus(int statusCode) {
-        return statusCode == 502 || statusCode == 503 || statusCode == 504;
+    static String friendlyFailureMessage(IOException error) {
+        if (error instanceof InterruptedIOException) {
+            return "Bitwise took too long to respond. Please try again.";
+        }
+        return "Bitwise could not reach the analysis service. Check your connection and try again.";
+    }
+
+    private static final class ControlledRetryInterceptor implements Interceptor {
+        private static final long STARTUP_PEEK_BYTES = 16 * 1024L;
+
+        @Override
+        public Response intercept(Chain chain) throws IOException {
+            IOException lastFailure = null;
+            for (int attempt = 0; attempt <= MAX_TRANSIENT_RETRIES; attempt++) {
+                try {
+                    Response response = chain.proceed(chain.request());
+                    String preview = response.peekBody(STARTUP_PEEK_BYTES).string();
+                    boolean retry = ResilientRequestPolicy.shouldRetryResponse(
+                            response.code(),
+                            preview,
+                            attempt
+                    );
+                    if (!retry) return response;
+
+                    Log.w(TAG, "Protected analysis returned " + response.code() + "; retrying once");
+                    response.close();
+                    ResilientRequestPolicy.waitBeforeRetry();
+                } catch (IOException error) {
+                    lastFailure = error;
+                    if (!ResilientRequestPolicy.shouldRetryFailure(error, attempt)) throw error;
+                    Log.w(TAG, "Protected analysis had a transient network failure; retrying once");
+                    ResilientRequestPolicy.waitBeforeRetry();
+                }
+            }
+            throw lastFailure != null ? lastFailure : new IOException("Protected analysis retry failed");
+        }
     }
 
     private void postResult(LlmCallback callback, String text) {

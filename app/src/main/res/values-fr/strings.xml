@@ -168,7 +168,7 @@
     <string name="health_score_rule_based">Verdict : %1$s (par regles)</string>
     <string name="bitwise_reasoning">Bitwise AI raisonne...</string>
     <string name="bitwise_reasoning_background">Le score et les résultats sur les ingrédients sont prêts. Bitwise ajoute l’explication complète…</string>
-    <string name="bitwise_retry_explanation">Bitwise n’a pas pu terminer cette explication. Touchez ici pour réessayer.</string>
+    <string name="bitwise_retry_explanation">L’explication détaillée de Bitwise est temporairement indisponible. L’évaluation et les résultats des règles restent visibles. Touchez ici pour réessayer.</string>
     <string name="analyzing">Analyse...</string>
     <string name="identifying_ingredients">Identification des ingredients...</string>
     <string name="home_title">Votre garde-manger sain commence ici</string>

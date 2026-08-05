@@ -323,6 +323,14 @@ function fallbackResponse(prompt, reason) {
   };
 }
 
+function fallbackPrompt(body, fullPrompt) {
+  const structured = body?.productContext?.raw;
+  if (typeof structured === "string" && structured.trim()) {
+    return structured.trim();
+  }
+  return fullPrompt;
+}
+
 function structuredContextError(body) {
   if (body.requestVersion !== undefined && body.requestVersion !== 1) {
     return "Unsupported Bitwise request version";
@@ -381,6 +389,12 @@ async function requestGemini(prompt, image, structuredProductContext) {
     const blockReason = result.promptFeedback?.blockReason;
     throw new Error(blockReason ? `Gemini blocked the request: ${blockReason}` : "Gemini returned an empty response");
   }
+  if (sources.length === 0) {
+    // Android only accepts explanations backed by a displayable source. Use the
+    // deterministic source-backed response instead of returning attractive but
+    // unverified model prose when URL Context is temporarily unavailable.
+    throw new Error("Gemini could not retrieve an authoritative source");
+  }
 
   return {
     content: attachVerifiedSources(cleanModelJson(content), sources),
@@ -407,7 +421,10 @@ async function handleBitwiseAnalysis(req) {
   }
 
   if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
-    return fallbackResponse(prompt, "GEMINI_API_KEY is not configured on the server");
+    return fallbackResponse(
+      fallbackPrompt(body, prompt),
+      "GEMINI_API_KEY is not configured on the server",
+    );
   }
 
   try {
@@ -417,7 +434,10 @@ async function handleBitwiseAnalysis(req) {
     };
   } catch (error) {
     console.error("Gemini request failed:", error.message);
-    return fallbackResponse(prompt, "The Gemini service was unavailable");
+    return fallbackResponse(
+      fallbackPrompt(body, prompt),
+      "The Gemini service was unavailable",
+    );
   }
 }
 
@@ -434,4 +454,5 @@ module.exports = {
   groundedResponsePrompt,
   urlContextSources,
   structuredContextError,
+  fallbackPrompt,
 };

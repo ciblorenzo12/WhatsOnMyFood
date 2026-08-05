@@ -62,11 +62,15 @@ function ingredientDefinition(prompt) {
 
 function productAnalysis(prompt) {
   const evidence = productEvidence(prompt);
-  const extractedName = extractAfter(evidence, "Product") || extractAfter(evidence, "product_name") || "";
+  const extractedName = extractAfter(evidence, "Product")
+    || extractAfter(evidence, "product_name")
+    || extractAfter(evidence, "Name")
+    || "";
   const productName = isPlaceholderProductName(extractedName) ? "" : extractedName;
   const brand = extractAfter(evidence, "Brand") || extractAfter(evidence, "brands") || "";
   const ingredients = extractIngredients(evidence);
   const searchable = ingredients.length > 0 ? ingredients.join(" ") : evidence;
+  const productIdentity = [productName, brand].filter(Boolean).join(" ");
   const lower = searchable.toLowerCase();
   const warningTerms = [
     "red 40",
@@ -103,7 +107,9 @@ function productAnalysis(prompt) {
   return {
     product_name: productName,
     brand,
-    product_type: lower.indexOf("water") !== -1 ? "beverage" : "food",
+    product_type: /\b(water|hydration|electrolyte|drink|beverage)\b/i.test(productIdentity)
+      ? "beverage"
+      : "food",
     verdict: warnings.length > 0 ? "NOT_HEALTHY" : "REVIEW",
     verdict_reason: reason,
     ingredients,
@@ -149,7 +155,8 @@ function naturalProductSummary(productName, brand, searchableText, ingredients, 
     .filter((value) => value && !isPlaceholderProductName(value))
     .join(" ")
     .trim() || "This product";
-  const isWaterLike = /\b(water|hydration|electrolyte)\b/i.test(searchableText);
+  const productIdentity = [productName, brand].filter(Boolean).join(" ");
+  const isWaterLike = /\b(water|hydration|electrolyte|drink|beverage)\b/i.test(productIdentity);
   const isCulturedDairy = /\b(yogurt|yoghurt|kefir|cultured|milk|lactobacillus|bifidus|streptococcus thermophilus)\b/i.test(searchableText);
   const hasIngredients = ingredients.length > 0;
 

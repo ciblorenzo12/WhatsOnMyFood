@@ -10,6 +10,7 @@ import android.text.style.BackgroundColorSpan;
 import android.text.style.StyleSpan;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MenuItem;
 import android.view.View;
@@ -60,6 +61,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ProductDetailsActivity extends BaseActivity {
+    private static final String TAG = "ProductDetailsActivity";
 
     public static final String EXTRA_BARCODE = "com.ciblorenzo.whatsonmyfood.BARCODE";
     public static final String EXTRA_AI_ENABLED = "com.ciblorenzo.whatsonmyfood.AI_ENABLED";
@@ -380,7 +382,6 @@ public class ProductDetailsActivity extends BaseActivity {
         GlassMotion.enter(aiSummaryContainer, 120L);
         aiSummaryTextView.setText(R.string.bitwise_reasoning);
         AiGlowManager.startGlow(this);
-        bitwiseEntitlementManager.recordBitwiseUse();
 
         StringBuilder productData = new StringBuilder();
         productData.append("response_language: ").append(LanguageManager.getLanguageName(this)).append("\n");
@@ -398,6 +399,7 @@ public class ProductDetailsActivity extends BaseActivity {
             @Override
             public void onResult(String result) {
                 runOnUiThread(() -> {
+                    bitwiseEntitlementManager.recordBitwiseUse();
                     try {
                         org.json.JSONObject obj = new org.json.JSONObject(result);
 
@@ -509,8 +511,10 @@ public class ProductDetailsActivity extends BaseActivity {
 
             @Override
             public void onError(Throwable t) {
+                Log.e(TAG, "Protected Bitwise explanation failed", t);
                 runOnUiThread(() -> {
-                    aiSummaryTextView.setText(t.getMessage());
+                    aiSummaryTextView.setText(R.string.bitwise_retry_explanation);
+                    aiSummaryContainer.setOnClickListener(v -> performAiReasoning(product));
                 });
             }
         });
