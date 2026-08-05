@@ -15,6 +15,7 @@ public class BitwiseBackendClientTest {
     @Test
     public void interactiveAnalysisDoesNotUseLongSilentRetries() {
         assertEquals(0, BitwiseBackendClient.MAX_TRANSIENT_RETRIES);
+        assertEquals(60, BitwiseBackendClient.ANALYSIS_CALL_TIMEOUT_SECONDS);
     }
 
     @Test

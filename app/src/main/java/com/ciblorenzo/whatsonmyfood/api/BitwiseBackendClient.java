@@ -29,6 +29,7 @@ public class BitwiseBackendClient {
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     // Avoid making users wait through several long, invisible server retries.
     static final int MAX_TRANSIENT_RETRIES = 0;
+    static final int ANALYSIS_CALL_TIMEOUT_SECONDS = 60;
 
     private final OkHttpClient client;
     private final Gson gson = new Gson();
@@ -41,10 +42,10 @@ public class BitwiseBackendClient {
 
     public BitwiseBackendClient() {
         client = new OkHttpClient.Builder()
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(25, TimeUnit.SECONDS)
-                .writeTimeout(15, TimeUnit.SECONDS)
-                .callTimeout(25, TimeUnit.SECONDS)
+                .connectTimeout(15, TimeUnit.SECONDS)
+                .readTimeout(ANALYSIS_CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .writeTimeout(20, TimeUnit.SECONDS)
+                .callTimeout(ANALYSIS_CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .retryOnConnectionFailure(true)
                 .build();
     }
