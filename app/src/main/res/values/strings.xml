@@ -213,7 +213,7 @@
     <string name="health_score_rule_based">Verdict: %1$s (Rule-Based)</string>
     <string name="bitwise_reasoning">Bitwise AI is reasoning...</string>
     <string name="bitwise_reasoning_background">Score and ingredient findings are ready. Bitwise is adding the full explanation…</string>
-    <string name="bitwise_retry_explanation">Bitwise is taking longer than expected. Tap here to try the explanation again.</string>
+    <string name="bitwise_retry_explanation">Bitwise could not complete this explanation. Tap here to try again.</string>
     <string name="analyzing">Analyzing...</string>
     <string name="identifying_ingredients">Identifying ingredients...</string>
     <string name="home_title">Your healthy pantry starts here</string>

@@ -64,6 +64,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ProductDetailsFragment extends BottomSheetDialogFragment {
+    private static final String TAG = "ProductDetailsFragment";
     public static final String SCAN_RECOVERY_RESULT = "product_scan_recovery_result";
     public static final String SCAN_RECOVERY_ACTION = "product_scan_recovery_action";
     public static final String SCAN_RECOVERY_RETRY = "retry_barcode";
@@ -384,6 +385,9 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     }
 
     private void displayProductDetails(ProductWithDetails productDetails, boolean allowAiInsight) {
+        // Repository refreshes can finish after the bottom sheet has been dismissed.
+        // Avoid touching views or requireContext() once the fragment is detached.
+        if (!isAdded() || getContext() == null || getView() == null) return;
         IngredientListSanitizer.sanitize(productDetails);
         currentProductDetails = productDetails;
         if (productDetails.product.imageUrl != null && !productDetails.product.imageUrl.isEmpty()) {
@@ -591,6 +595,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
             @Override
             public void onError(Throwable t) {
+                Log.e(TAG, "Protected Bitwise explanation failed", t);
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
                         AiGlowManager.stopGlow(getActivity());

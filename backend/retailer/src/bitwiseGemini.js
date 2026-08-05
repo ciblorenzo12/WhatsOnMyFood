@@ -176,7 +176,13 @@ function productContextForFactCheck(prompt) {
   const detectedMarker = "DETECTED INGREDIENT LABEL:";
   const detectedIndex = text.indexOf(detectedMarker);
   if (detectedIndex >= 0) {
-    const outputIndex = text.indexOf("Return valid JSON only", detectedIndex);
+    // Deterministic rule descriptions mention sugar, sodium, oils, colors, and
+    // additives even when the scanned product does not. Never use those generic
+    // rule names to decide which source pages Gemini needs to retrieve.
+    const rulesIndex = text.indexOf("DETERMINISTIC RULE CONTEXT:", detectedIndex);
+    const outputIndex = rulesIndex >= 0
+      ? rulesIndex
+      : text.indexOf("Return valid JSON only", detectedIndex);
     return text.slice(detectedIndex, outputIndex >= 0 ? outputIndex : undefined).trim().slice(0, 12000);
   }
 
@@ -338,10 +344,13 @@ function structuredContextError(body) {
   return "";
 }
 
-async function requestGemini(prompt, image) {
+async function requestGemini(prompt, image, structuredProductContext) {
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   const model = process.env.GEMINI_MODEL || DEFAULT_MODEL;
-  const requestedSources = factCheckSourcesForPrompt(prompt);
+  const factCheckContext = typeof structuredProductContext === "string" && structuredProductContext.trim()
+    ? structuredProductContext
+    : prompt;
+  const requestedSources = factCheckSourcesForPrompt(factCheckContext);
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   const response = await fetch(endpoint, {
     method: "POST",
@@ -402,7 +411,10 @@ async function handleBitwiseAnalysis(req) {
   }
 
   try {
-    return { status: 200, body: await requestGemini(prompt, body.image) };
+    return {
+      status: 200,
+      body: await requestGemini(prompt, body.image, body.productContext?.raw),
+    };
   } catch (error) {
     console.error("Gemini request failed:", error.message);
     return fallbackResponse(prompt, "The Gemini service was unavailable");

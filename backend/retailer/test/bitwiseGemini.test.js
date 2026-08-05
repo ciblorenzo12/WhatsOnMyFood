@@ -83,6 +83,8 @@ test("grounds the fact check before generating the structured shopper response",
     assert.match(body.systemInstruction.parts[0].text, /Do not claim to be a doctor/i);
     assert.match(body.contents[0].parts[0].text, /Use URL Context now/i);
     assert.match(body.contents[0].parts[0].text, /FDA.*Nutrition Facts Label/i);
+    assert.doesNotMatch(body.contents[0].parts[0].text, /Added Sugars on the Nutrition Facts Label/i);
+    assert.doesNotMatch(body.contents[0].parts[0].text, /Sodium in Your Diet/i);
     return {
       ok: true,
       text: async () => JSON.stringify({
@@ -100,7 +102,8 @@ test("grounds the fact check before generating the structured shopper response",
   };
 
   const result = await handleBitwiseAnalysis(request({
-    prompt: "Analyze this label",
+    prompt: "Analyze this label. Generic rules mention sugar and sodium.",
+    productContext: { raw: "Product: Collagen Peptides. Ingredients: bovine collagen peptides." },
     image: { mimeType: "image/jpeg", data: "image-data" },
   }));
   assert.equal(result.status, 200);
@@ -147,6 +150,19 @@ test("keeps JSON formatting instructions out of the fact-check query", () => {
   );
   assert.match(context, /^Product: Plain almond butter/);
   assert.doesNotMatch(context, /JSON shape/i);
+});
+
+test("keeps deterministic rule descriptions out of source selection", () => {
+  const context = productContextForFactCheck(
+    "DETECTED INGREDIENT LABEL:\n\nOCR TEXT:\nProduct: Collagen Peptides. "
+      + "Ingredients: bovine collagen peptides.\n\nDETERMINISTIC RULE CONTEXT:\n"
+      + "Added sugar rule. High sodium rule. Artificial color rule. Return valid JSON only."
+  );
+  assert.match(context, /bovine collagen peptides/i);
+  assert.doesNotMatch(context, /Added sugar rule/i);
+
+  const keys = factCheckSourcesForPrompt(context).map((source) => source.key);
+  assert.deepEqual(keys, ["nutrition_label", "healthy_diet"]);
 });
 
 test("does not duplicate product label context in the grounded request", () => {
