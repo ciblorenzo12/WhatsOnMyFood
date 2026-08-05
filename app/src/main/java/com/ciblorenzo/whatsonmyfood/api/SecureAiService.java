@@ -1,6 +1,9 @@
 package com.ciblorenzo.whatsonmyfood.api;
 
 import android.graphics.Bitmap;
+
+import java.util.List;
+
 import okhttp3.Call;
 
 public class SecureAiService {
@@ -13,7 +16,17 @@ public class SecureAiService {
     }
 
     public static Call analyzeProduct(String prompt, Bitmap bitmap, AiCallback callback) {
-        return llmClient.askBitwise(prompt, bitmap, new BitwiseBackendClient.LlmCallback() {
+        return analyzeProduct(prompt, "", java.util.Collections.emptyList(), bitmap, callback);
+    }
+
+    public static Call analyzeProduct(
+            String prompt,
+            String productContext,
+            List<String> rules,
+            Bitmap bitmap,
+            AiCallback callback
+    ) {
+        return llmClient.askBitwise(prompt, productContext, rules, bitmap, new BitwiseBackendClient.LlmCallback() {
             @Override
             public void onResult(String text) {
                 callback.onResult(text);

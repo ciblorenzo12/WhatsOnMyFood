@@ -194,4 +194,47 @@ public class IngredientTextParserTest {
                 label.ingredients
         );
     }
+
+    @Test
+    public void parseLabel_joinsVisualLineWrapsInVitaminAndMineralNames() {
+        IngredientTextParser.ParsedLabel label = IngredientTextParser.parseLabel(
+                "Ingredients: Whole Grain Oats,\n"
+                        + "Corn Starch, Sugar, Salt,\n"
+                        + "Tripotassium Phosphate.\n"
+                        + "Vitamin E (mixed tocopherols)\n"
+                        + "Added to Preserve Freshness.\n\n"
+                        + "Vitamins and Minerals: Calcium\n"
+                        + "Carbonate, Iron and Zinc\n"
+                        + "(mineral nutrients), Vitamin C\n"
+                        + "(sodium ascorbate), A B Vitamin\n"
+                        + "(niacinamide), Vitamin B6\n"
+                        + "(pyridoxine hydrochloride),\n"
+                        + "Vitamin A (palmitate), Vitamin B1\n"
+                        + "(thiamin mononitrate), A B\n"
+                        + "Vitamin (folic acid), Vitamin B12,\n"
+                        + "Vitamin D3."
+        );
+
+        assertEquals(
+                java.util.Arrays.asList(
+                        "whole grain oats",
+                        "corn starch",
+                        "sugar",
+                        "salt",
+                        "tripotassium phosphate",
+                        "vitamin e (mixed tocopherols) added to preserve freshness",
+                        "calcium carbonate",
+                        "iron and zinc (mineral nutrients)",
+                        "vitamin c (sodium ascorbate)",
+                        "a b vitamin (niacinamide)",
+                        "vitamin b6 (pyridoxine hydrochloride)",
+                        "vitamin a (palmitate)",
+                        "vitamin b1 (thiamin mononitrate)",
+                        "a b vitamin (folic acid)",
+                        "vitamin b12",
+                        "vitamin d3"
+                ),
+                label.ingredients
+        );
+    }
 }

@@ -101,4 +101,28 @@ public class IngredientLabelValidatorTest {
         assertEquals(Arrays.asList("wheat"), result.containsAllergens);
         assertEquals(Arrays.asList("sesame", "soy"), result.mayContainAllergens);
     }
+
+    @Test
+    public void cleansCapturedLabelAndStopsBeforeTrailingFileNoise() {
+        IngredientLabelValidator.Result result = IngredientLabelValidator.validate(
+                "Ingredients: enriched wheat flour, cane sugar, high fructose corn syrup, "
+                        + "partia1ly hydrogenated soybean oil, red 40, yellow 5, sodium benzoate, "
+                        + "artificial flavors, natural flavors, o version, defense kevin wall .txt h1 v"
+        );
+
+        assertTrue(result.readable);
+        assertEquals(9, result.ingredients.size());
+        assertEquals("partially hydrogenated soybean oil", result.ingredients.get(3));
+        assertEquals("natural flavors", result.ingredients.get(8));
+    }
+
+    @Test
+    public void removesCurrentUiNoiseWithoutRemovingBlackCurrant() {
+        IngredientLabelValidator.Result result = IngredientLabelValidator.validate(
+                "Ingredients: oats, black currant, natural flavor, current"
+        );
+
+        assertTrue(result.readable);
+        assertEquals(Arrays.asList("oats", "black currant", "natural flavor"), result.ingredients);
+    }
 }

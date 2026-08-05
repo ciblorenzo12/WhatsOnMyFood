@@ -7,10 +7,13 @@ import android.util.Log;
 
 import com.ciblorenzo.whatsonmyfood.BuildConfig;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
@@ -47,8 +50,26 @@ public class BitwiseBackendClient {
     }
 
     public Call askBitwise(String prompt, Bitmap bitmap, LlmCallback callback) {
-        JsonObject bodyJson = new JsonObject();
-        bodyJson.addProperty("prompt", prompt);
+        return askBitwise(prompt, "", Collections.emptyList(), bitmap, callback);
+    }
+
+    public Call askBitwise(
+            String prompt,
+            String productContext,
+            List<String> rules,
+            Bitmap bitmap,
+            LlmCallback callback
+    ) {
+        String configuredBaseUrl = configuredBaseUrl(
+                BuildConfig.BITWISE_LLM_BASE_URL,
+                BuildConfig.RETAILER_BACKEND_BASE_URL
+        );
+        if (configuredBaseUrl.isEmpty()) {
+            postError(callback, "Bitwise is not configured. Add the protected backend URL and rebuild the app.");
+            return null;
+        }
+
+        JsonObject bodyJson = buildRequestBody(prompt, productContext, rules);
         if (bitmap != null) {
             JsonObject image = new JsonObject();
             image.addProperty("mimeType", "image/jpeg");
@@ -57,12 +78,38 @@ public class BitwiseBackendClient {
         }
 
         Request request = new Request.Builder()
-                .url(baseUrl() + "v1/bitwise/analyze")
+                .url(configuredBaseUrl + "v1/bitwise/analyze")
                 .header("X-APP-TOKEN", BuildConfig.BITWISE_APP_TOKEN)
                 .post(RequestBody.create(bodyJson.toString(), JSON))
                 .build();
 
         return enqueueRequest(request, callback, 0);
+    }
+
+    static JsonObject buildRequestBody(String prompt, String productContext, List<String> rules) {
+        JsonObject body = new JsonObject();
+        body.addProperty("requestVersion", 1);
+        body.addProperty("prompt", prompt == null ? "" : prompt.trim());
+
+        JsonObject structuredProduct = new JsonObject();
+        structuredProduct.addProperty("raw", productContext == null ? "" : productContext.trim());
+        body.add("productContext", structuredProduct);
+
+        JsonArray structuredRules = new JsonArray();
+        if (rules != null) {
+            for (String rule : rules) {
+                if (rule != null && !rule.trim().isEmpty()) structuredRules.add(rule.trim());
+            }
+        }
+        body.add("rules", structuredRules);
+        return body;
+    }
+
+    static String configuredBaseUrl(String bitwiseUrl, String retailerUrl) {
+        String configured = bitwiseUrl == null ? "" : bitwiseUrl.trim();
+        if (configured.isEmpty()) configured = retailerUrl == null ? "" : retailerUrl.trim();
+        if (configured.isEmpty()) return "";
+        return configured.endsWith("/") ? configured : configured + "/";
     }
 
     private Call enqueueRequest(Request request, LlmCallback callback, int attempt) {
@@ -147,15 +194,6 @@ public class BitwiseBackendClient {
     private void postError(LlmCallback callback, String message) {
         Log.e(TAG, message);
         mainHandler.post(() -> callback.onError(message));
-    }
-
-    private String baseUrl() {
-        String configured = BuildConfig.BITWISE_LLM_BASE_URL;
-        if (configured == null || configured.trim().isEmpty()) {
-            configured = "https://x7amycb9govesb-8787.proxy.runpod.net/";
-        }
-        configured = configured.trim();
-        return configured.endsWith("/") ? configured : configured + "/";
     }
 
     private String encodeImage(Bitmap bitmap) {

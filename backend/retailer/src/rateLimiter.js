@@ -31,4 +31,16 @@ function createRateLimiter({ windowMs = 60_000, maxRequests = 20, now = Date.now
   };
 }
 
-module.exports = { createRateLimiter };
+function rateLimitBucketKey(clientKey, pathname) {
+  const client = String(clientKey || "unknown");
+  const path = String(pathname || "");
+  if (/^\/api\/retail\/products\/[^/]+\/ingredients\/rag$/.test(path)) {
+    return `${client}|ingredient-rag`;
+  }
+  if (path === "/v1/billing/google-play/verify") {
+    return `${client}|billing`;
+  }
+  return `${client}|bitwise-analysis`;
+}
+
+module.exports = { createRateLimiter, rateLimitBucketKey };

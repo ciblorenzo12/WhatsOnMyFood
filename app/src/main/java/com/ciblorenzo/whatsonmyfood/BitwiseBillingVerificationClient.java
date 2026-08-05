@@ -17,7 +17,6 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public final class BitwiseBillingVerificationClient {
-    private static final String APP_TOKEN = "R7qK2mZ9vP4xT0aLN6cY1sD8wF3hJ5bG";
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
     private final OkHttpClient client = new OkHttpClient.Builder()
@@ -34,12 +33,17 @@ public final class BitwiseBillingVerificationClient {
     }
 
     public void verify(String purchaseToken, String accountIdHash, Callback callback) {
+        String configuredBaseUrl = baseUrl();
+        if (configuredBaseUrl.isEmpty()) {
+            postError(callback, "Bitwise is not configured. Add the protected backend URL and rebuild the app.");
+            return;
+        }
         JsonObject body = new JsonObject();
         body.addProperty("purchaseToken", purchaseToken);
         body.addProperty("accountIdHash", accountIdHash);
         Request request = new Request.Builder()
-                .url(baseUrl() + "v1/billing/google-play/verify")
-                .header("X-APP-TOKEN", APP_TOKEN)
+                .url(configuredBaseUrl + "v1/billing/google-play/verify")
+                .header("X-APP-TOKEN", BuildConfig.BITWISE_APP_TOKEN)
                 .post(RequestBody.create(body.toString(), JSON))
                 .build();
 
@@ -79,9 +83,8 @@ public final class BitwiseBillingVerificationClient {
 
     private String baseUrl() {
         String configured = BuildConfig.BITWISE_LLM_BASE_URL;
-        if (configured == null || configured.trim().isEmpty()) {
-            configured = "https://x7amycb9govesb-8787.proxy.runpod.net/";
-        }
+        if (configured == null || configured.trim().isEmpty()) configured = BuildConfig.RETAILER_BACKEND_BASE_URL;
+        if (configured == null || configured.trim().isEmpty()) return "";
         configured = configured.trim();
         return configured.endsWith("/") ? configured : configured + "/";
     }

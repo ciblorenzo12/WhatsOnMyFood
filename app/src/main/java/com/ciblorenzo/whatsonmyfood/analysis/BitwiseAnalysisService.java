@@ -33,7 +33,7 @@ public class BitwiseAnalysisService {
         timeoutRunnable = () -> finishWithTimeout(callback);
         mainHandler.postDelayed(timeoutRunnable, ANALYSIS_TIMEOUT_MS);
 
-        activeCall = BitwiseAiCore.startAnalysis(null, productData, bitmap, new BitwiseAiCore.AiCallback() {
+        activeCall = BitwiseAiCore.startAnalysis(null, productData, rules, bitmap, new BitwiseAiCore.AiCallback() {
             @Override
             public void onResult(String jsonResult) {
                 if (markCompleted()) callback.onResult(jsonResult);

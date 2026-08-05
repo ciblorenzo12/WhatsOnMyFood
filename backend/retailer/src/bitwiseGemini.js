@@ -70,7 +70,7 @@ const BITWISE_RESPONSE_SCHEMA = {
     },
     verdict_reason: { type: "string" },
     ingredients: { type: "array", items: { type: "string" } },
-    ingredients_source: { type: "string", enum: ["label", "product_identity", "unknown"] },
+    ingredients_source: { type: "string", enum: ["label", "unknown"] },
     ingredient_confidence: { type: "string", enum: ["high", "medium", "low"] },
     summary: {
       type: "string",
@@ -310,6 +310,27 @@ function fallbackResponse(prompt, reason) {
   };
 }
 
+function structuredContextError(body) {
+  if (body.requestVersion !== undefined && body.requestVersion !== 1) {
+    return "Unsupported Bitwise request version";
+  }
+  if (body.productContext !== undefined) {
+    if (!body.productContext || typeof body.productContext !== "object" || Array.isArray(body.productContext)) {
+      return "productContext must be an object";
+    }
+    if (body.productContext.raw !== undefined && typeof body.productContext.raw !== "string") {
+      return "productContext.raw must be a string";
+    }
+  }
+  if (body.rules !== undefined) {
+    if (!Array.isArray(body.rules) || body.rules.some((rule) => typeof rule !== "string")) {
+      return "rules must be an array of strings";
+    }
+    if (body.rules.length > 100) return "Too many deterministic rules supplied";
+  }
+  return "";
+}
+
 async function requestGemini(prompt, image) {
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   const model = process.env.GEMINI_MODEL || DEFAULT_MODEL;
@@ -361,6 +382,10 @@ async function handleBitwiseAnalysis(req) {
   }
 
   const body = await readJsonBody(req);
+  const contextError = structuredContextError(body);
+  if (contextError) {
+    return { status: 400, body: { error: contextError } };
+  }
   const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
   if (!prompt) {
     return { status: 400, body: { error: "A prompt is required" } };
@@ -390,4 +415,5 @@ module.exports = {
   factCheckSourcesForPrompt,
   groundedResponsePrompt,
   urlContextSources,
+  structuredContextError,
 };

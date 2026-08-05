@@ -674,10 +674,12 @@ public class ScanBarcodeActivity extends BaseActivity {
                     int bestTextConfidence = 0;
                     int bestIndex = -1;
                     List<Rect> textBoxes = new ArrayList<>();
+                    List<String> recognizedTextBlocks = new ArrayList<>();
                     boolean productNameScan = supplementalTarget == SupplementalTarget.PRODUCT_NAME;
                     
                     for (com.google.mlkit.vision.text.Text.TextBlock block : text.getTextBlocks()) {
                         String blockText = block.getText();
+                        recognizedTextBlocks.add(blockText);
                         int textConfidence = productNameScan
                                 ? ProductNameOcrValidator.validate(blockText).confidence
                                 : IngredientOcrHeuristics.confidence(blockText);
@@ -703,9 +705,13 @@ public class ScanBarcodeActivity extends BaseActivity {
                     });
 
                     String fullContextText = IngredientOcrHeuristics.prepareRecognizedText(text.getText());
+                    String ingredientRegionText = IngredientOcrHeuristics.selectIngredientRegion(
+                            recognizedTextBlocks,
+                            fullContextText
+                    );
                     boolean readyToCapture = productNameScan
                             ? ProductNameOcrValidator.validate(fullContextText).readable
-                            : bestTextConfidence > 25;
+                            : IngredientLabelValidator.validate(ingredientRegionText).readable;
                     if (readyToCapture) {
                         if (!isScanLocked) {
                             isScanLocked = true;
@@ -713,7 +719,12 @@ public class ScanBarcodeActivity extends BaseActivity {
                             final Bitmap bitmap = rawBitmap;
                             launchRunnable = productNameScan
                                     ? () -> handleSupplementalProductName(fullContextText, bitmap, supplementalBarcode)
-                                    : () -> handleIngredientsWithBarcode(fullContextText, bitmap, supplementalBarcode);
+                                    : () -> handleIngredientsWithBarcode(
+                                            ingredientRegionText,
+                                            fullContextText,
+                                            bitmap,
+                                            supplementalBarcode
+                                    );
                             launchHandler.postDelayed(launchRunnable, 700);
                         }
                     }
@@ -748,8 +759,17 @@ public class ScanBarcodeActivity extends BaseActivity {
     }
 
     private void handleIngredientsWithBarcode(String text, Bitmap bitmap, String barcode) {
+        handleIngredientsWithBarcode(text, text, bitmap, barcode);
+    }
+
+    private void handleIngredientsWithBarcode(
+            String ingredientText,
+            String fullContextText,
+            Bitmap bitmap,
+            String barcode
+    ) {
         cancelScanTimeouts();
-        String processedText = IngredientOcrHeuristics.trimUiNoise(text);
+        String processedText = IngredientOcrHeuristics.trimUiNoise(ingredientText);
 
         IngredientLabelValidator.Result validation = IngredientLabelValidator.validate(processedText);
         if (!validation.readable) {
@@ -764,9 +784,10 @@ public class ScanBarcodeActivity extends BaseActivity {
         }
         processedText = validation.cleanedText;
 
-        String analysisText = supplementalTarget == SupplementalTarget.INGREDIENTS
-                ? SupplementalOcrMerger.merge(existingProductText, processedText)
-                : processedText;
+        String identityText = supplementalTarget == SupplementalTarget.INGREDIENTS
+                ? existingProductText
+                : fullContextText;
+        String analysisText = SupplementalOcrMerger.merge(identityText, processedText);
         launchIngredientAnalysis(analysisText, bitmap, barcode);
     }
 

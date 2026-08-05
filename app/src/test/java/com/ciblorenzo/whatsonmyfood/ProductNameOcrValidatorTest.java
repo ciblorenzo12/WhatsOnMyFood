@@ -36,4 +36,17 @@ public class ProductNameOcrValidatorTest {
         assertEquals(1, merged.split("Ingredients:", -1).length - 1);
         assertTrue(merged.contains("Sugar, palm oil, hazelnuts"));
     }
+
+    @Test
+    public void mergerDiscardsNoisyIngredientPanelFromIdentityContext() {
+        String merged = SupplementalOcrMerger.merge(
+                "CHEERIOS\nOriginal\nIngredients List\nold noisy scan, current, search, zoom",
+                "Ingredients: Whole grain oats, corn starch, sugar, salt"
+        );
+
+        assertTrue(merged.startsWith("CHEERIOS\nOriginal"));
+        assertEquals(1, merged.split("Ingredients:", -1).length - 1);
+        assertFalse(merged, merged.contains("old noisy scan"));
+        assertTrue(merged.endsWith("Whole grain oats, corn starch, sugar, salt"));
+    }
 }

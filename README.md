@@ -60,6 +60,7 @@ BARCODE_LOOKUP_API_KEY=your-barcode-lookup-key
 UPCITEMDB_USER_KEY=your-upcitemdb-key
 RETAILER_BACKEND_BASE_URL=http://10.0.2.2:8787
 BITWISE_LLM_BASE_URL=http://10.0.2.2:8787
+BITWISE_APP_TOKEN=the-same-app-token-configured-on-the-backend
 GOOGLE_MAPS_API_KEY=your-google-maps-key
 ```
 
@@ -128,7 +129,11 @@ Then point the Android app at that backend with:
 
 ```properties
 BITWISE_LLM_BASE_URL=http://10.0.2.2:8787
+BITWISE_APP_TOKEN=the-same-app-token-configured-on-the-backend
 ```
+
+There is no compiled fallback URL for the protected Bitwise service. Configure the URL in
+`app/local.properties`, a Gradle property, or the build environment before building the app.
 
 ## Data and Privacy Notes
 

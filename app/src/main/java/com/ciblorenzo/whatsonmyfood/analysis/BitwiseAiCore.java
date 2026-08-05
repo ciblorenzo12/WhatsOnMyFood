@@ -6,6 +6,9 @@ import android.graphics.Bitmap;
 import com.ciblorenzo.whatsonmyfood.AiGlowManager;
 import com.ciblorenzo.whatsonmyfood.api.SecureAiService;
 
+import java.util.Collections;
+import java.util.List;
+
 import okhttp3.Call;
 
 /**
@@ -20,13 +23,34 @@ public class BitwiseAiCore {
     }
 
     public static Call startAnalysis(Activity activity, String productData, Bitmap bitmap, AiCallback callback) {
+        return startAnalysis(activity, productData, Collections.emptyList(), bitmap, callback);
+    }
+
+    public static Call startAnalysis(
+            Activity activity,
+            String productData,
+            List<String> rules,
+            Bitmap bitmap,
+            AiCallback callback
+    ) {
         if (activity != null) AiGlowManager.startGlow(activity);
 
-        return SecureAiService.analyzeProduct(buildProductPrompt(productData), bitmap, new SecureAiService.AiCallback() {
+        return SecureAiService.analyzeProduct(
+                buildProductPrompt(productData, rules),
+                productData,
+                rules,
+                bitmap,
+                new SecureAiService.AiCallback() {
             @Override
             public void onResult(String result) {
                 if (activity != null) AiGlowManager.stopGlow(activity);
-                callback.onResult(cleanJson(result));
+                String cleaned = cleanJson(result);
+                AiExplanationResponseValidator.Result validation = AiExplanationResponseValidator.validate(cleaned);
+                if (validation.usable) {
+                    callback.onResult(validation.json);
+                } else {
+                    callback.onError(new Exception(validation.error));
+                }
             }
 
             @Override
@@ -72,7 +96,7 @@ public class BitwiseAiCore {
         });
     }
 
-    private static String buildProductPrompt(String productData) {
+    private static String buildProductPrompt(String productData, List<String> rules) {
         PromptContext context = parsePromptContext(productData);
         return "You are Bitwise AI, a careful ingredient-label assistant for a consumer Android app.\n"
                 + "You can analyze packaged foods, drinks, supplements, oral-care products, and personal-care products.\n"
@@ -89,11 +113,10 @@ public class BitwiseAiCore {
                 + "If DETECTED INGREDIENT LABEL is empty, first try ingredient-panel text, INCI text, supplement facts, or a clearly labeled ingredients section from OCR TEXT or the image.\n"
                 + "Front-label text is for product identity only; put ONLY true label ingredients in the ingredients array.\n"
                 + "Never include metadata, language fields, brand names, product names, net weight, marketing claims, UI text, directions, warnings, or store-card text as ingredients.\n"
-                + "If the product_name and brand are known but the ingredient panel is missing, use the exact product identity, barcode, category, quantity, and nutrition facts to infer the likely ingredients for that exact variant.\n"
-                + "For inferred ingredients, include only ingredients reasonably associated with that exact product variant. Do not invent percentages or label claims. Clearly state in the summary and verdict_reason that the list is inferred and should be verified on the package.\n"
-                + "Return each ingredient as its own item in the ingredients array. Never return the entire comma-separated ingredient list as one array item. Product-identity inference cannot have high confidence because no package ingredient panel was verified.\n"
-                + "For single-ingredient products such as plain coconut water, bottled water, plain milk, plain oats, or plain rice, infer the simple ingredient from the product name when the identity is clear.\n"
-                + "Only use REVIEW when neither a readable ingredient panel nor a confident product identity is available.\n"
+                + "Recognize product_name, brand, and product_type from the barcode and visible front-package text even when the ingredient panel is missing.\n"
+                + "Never infer ingredients from product_name, brand, barcode, category, nutrition facts, marketing text, or prior knowledge.\n"
+                + "Return each visible label ingredient as its own item in the ingredients array. Never return the entire comma-separated ingredient list as one array item.\n"
+                + "If no readable ingredient panel is available, return an empty ingredients array, ingredients_source unknown, ingredient_confidence low, and a REVIEW verdict. The product_name and brand may still be returned when recognized.\n"
                 + "For foods, decide whether this is HEALTHY or NOT_HEALTHY for everyday use by looking for disqualifying ingredients and nutrition signals, not by assigning a score.\n"
                 + "For personal-care and oral-care products, decide whether it is APPROVED or NOT_APPROVED based on ingredient concerns and intended use; still explain good and bad ingredients clearly.\n"
                 + "Treat ordinary base ingredients such as water, rose water, glycerin, aloe, citric acid, salt used in small amounts, and mineral salts as neutral or positive unless the label shows a specific concern.\n"
@@ -103,6 +126,8 @@ public class BitwiseAiCore {
                 + context.detectedIngredientLabel + "\n\n"
                 + "OCR TEXT:\n"
                 + context.productText + "\n\n"
+                + "DETERMINISTIC RULE CONTEXT:\n"
+                + formatRules(rules) + "\n\n"
                 + "Return valid JSON only. No Markdown fences, no headings outside JSON, no commentary.\n"
                 + "The summary must be 100-160 words, specific, calm, and written like a nutrition-savvy human talking to a shopper. Use only <b> and <br> tags.\n"
                 + "Organize the summary with exactly three helpful sections: <b>Why this rating</b>, <b>Portion guidance</b>, and <b>Fact check</b>. Keep the writing natural rather than sounding like a form.\n"
@@ -125,7 +150,7 @@ public class BitwiseAiCore {
                 + "  \"verdict\": \"HEALTHY | NOT_HEALTHY | APPROVED | NOT_APPROVED | REVIEW\",\n"
                 + "  \"verdict_reason\": \"One short reason for the verdict.\",\n"
                 + "  \"ingredients\": [\"ingredient one\", \"ingredient two\"],\n"
-                + "  \"ingredients_source\": \"label | product_identity | unknown\",\n"
+                + "  \"ingredients_source\": \"label | unknown\",\n"
                 + "  \"ingredient_confidence\": \"high | medium | low\",\n"
                 + "  \"summary\": \"<b>Why this rating</b><br>A label-specific explanation.<br><br><b>Portion guidance</b><br>A practical amount or serving-size-based suggestion.<br><br><b>Fact check</b><br>What Gemini verified and any uncertainty.\",\n"
                 + "  \"findings\": [\n"
@@ -134,6 +159,19 @@ public class BitwiseAiCore {
                 + "  \"sources\": [{\"name\": \"FDA Food Additives\", \"url\": \"https://www.fda.gov/food/food-ingredients-packaging/food-additives-and-gras-ingredients-information-consumers\", \"visual_quote\": \"\", \"search_query\": \"food additive safety\"}]\n"
                 + "}\n"
                 + "If there are no meaningful warnings, return positive or neutral findings only. Do not penalize water-like products for having no protein, fiber, fat, or carbs.";
+    }
+
+    private static String formatRules(List<String> rules) {
+        if (rules == null || rules.isEmpty()) return "No additional deterministic rule context supplied.";
+        StringBuilder builder = new StringBuilder();
+        for (String rule : rules) {
+            if (rule == null || rule.trim().isEmpty()) continue;
+            if (builder.length() > 0) builder.append('\n');
+            builder.append("- ").append(rule.trim());
+        }
+        return builder.length() == 0
+                ? "No additional deterministic rule context supplied."
+                : builder.toString();
     }
 
     private static PromptContext parsePromptContext(String productData) {

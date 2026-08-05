@@ -45,7 +45,7 @@ public final class IngredientNormalizer {
                 .replaceAll("\\s*\\(\\s*", " (")
                 .replaceAll("\\s*,\\s*", ", ")
                 .replaceAll("\\s*;\\s*", "; ")
-                .replaceAll("\\s*\\)\\s*", ")")
+                .replaceAll("\\s*\\)", ")")
                 .replaceAll("\\s+", " ")
                 .trim();
 

@@ -5,7 +5,7 @@ const { RetailerService } = require("./retailerService");
 const { handleBitwiseCompletion } = require("./bitwiseFallback");
 const { handleBitwiseAnalysis } = require("./bitwiseGemini");
 const { handleGooglePlayVerification } = require("./googlePlayBilling");
-const { createRateLimiter } = require("./rateLimiter");
+const { createRateLimiter, rateLimitBucketKey } = require("./rateLimiter");
 
 const DEFAULT_APP_TOKEN = "R7qK2mZ9vP4xT0aLN6cY1sD8wF3hJ5bG";
 
@@ -75,7 +75,9 @@ async function handleRequest(req, res) {
 
   try {
     if (isProtectedEndpoint(url.pathname)) {
-      const rateLimit = protectedRateLimiter.check(clientAddress(req));
+      const rateLimit = protectedRateLimiter.check(
+        rateLimitBucketKey(clientAddress(req), url.pathname),
+      );
       if (!rateLimit.allowed) {
         writeJson(
           res,

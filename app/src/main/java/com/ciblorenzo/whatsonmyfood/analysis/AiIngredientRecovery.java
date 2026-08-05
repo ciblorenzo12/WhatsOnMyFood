@@ -23,31 +23,32 @@ public final class AiIngredientRecovery {
             JsonObject root = JsonParser.parseString(json).getAsJsonObject();
             String source = stringValue(root, "ingredients_source").toLowerCase(Locale.US);
             String confidence = stringValue(root, "ingredient_confidence").toLowerCase(Locale.US);
-            if (!source.equals("label") && !source.equals("product_identity")) {
+            if (!source.equals("label")) {
                 return Recovery.empty();
             }
 
             JsonArray array = root.getAsJsonArray("ingredients");
             if (array == null) return Recovery.empty();
 
-            Set<String> seen = new LinkedHashSet<>();
-            List<String> ingredients = new ArrayList<>();
+            StringBuilder recoveredText = new StringBuilder();
             for (JsonElement element : array) {
                 if (element == null || !element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) continue;
-                for (String part : splitTopLevelIngredients(element.getAsString())) {
-                    String ingredient = cleanIngredient(part);
-                    String key = ingredient.toLowerCase(Locale.US);
-                    if (!ingredient.isEmpty() && seen.add(key)) {
-                        ingredients.add(ingredient);
-                        if (ingredients.size() == MAX_INGREDIENTS) break;
-                    }
+                String value = element.getAsString();
+                if (value == null || value.trim().isEmpty()) continue;
+                if (recoveredText.length() > 0) recoveredText.append(", ");
+                recoveredText.append(value.trim());
+            }
+
+            Set<String> seen = new LinkedHashSet<>();
+            List<String> ingredients = new ArrayList<>();
+            for (String parsed : IngredientTextParser.parseIngredientCandidates(recoveredText.toString())) {
+                String normalized = IngredientNormalizer.normalize(cleanIngredient(parsed));
+                if (!normalized.isEmpty() && seen.add(normalized)) {
+                    ingredients.add(formatForDisplay(normalized));
+                    if (ingredients.size() == MAX_INGREDIENTS) break;
                 }
-                if (ingredients.size() == MAX_INGREDIENTS) break;
             }
             String normalizedConfidence = normalizeConfidence(confidence);
-            if (source.equals("product_identity") && normalizedConfidence.equals("high")) {
-                normalizedConfidence = "medium";
-            }
             return ingredients.isEmpty() ? Recovery.empty() : new Recovery(source, normalizedConfidence, ingredients);
         } catch (Exception ignored) {
             return Recovery.empty();
@@ -82,22 +83,9 @@ public final class AiIngredientRecovery {
         return cleaned;
     }
 
-    private static List<String> splitTopLevelIngredients(String value) {
-        List<String> parts = new ArrayList<>();
-        if (value == null) return parts;
-        int depth = 0;
-        int start = 0;
-        for (int i = 0; i < value.length(); i++) {
-            char character = value.charAt(i);
-            if (character == '(' || character == '[') depth++;
-            else if ((character == ')' || character == ']') && depth > 0) depth--;
-            else if ((character == ',' || character == ';') && depth == 0) {
-                parts.add(value.substring(start, i));
-                start = i + 1;
-            }
-        }
-        parts.add(value.substring(start));
-        return parts;
+    private static String formatForDisplay(String value) {
+        if (value == null || value.isEmpty()) return "";
+        return value.substring(0, 1).toUpperCase(Locale.US) + value.substring(1);
     }
 
     private static String normalizeConfidence(String value) {
@@ -122,13 +110,7 @@ public final class AiIngredientRecovery {
 
         public String toDisplayText() {
             StringBuilder builder = new StringBuilder();
-            if (source.equals("product_identity")) {
-                builder.append("Ingredients recovered from a supporting service (")
-                        .append(confidence)
-                        .append(" confidence; verify on package)");
-            } else {
-                builder.append("Ingredients recovered from the label (verify on package)");
-            }
+            builder.append("Ingredients recovered from the label (verify on package)");
             for (String ingredient : ingredients) {
                 builder.append("\n- ").append(ingredient);
             }

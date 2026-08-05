@@ -1,6 +1,7 @@
 package com.ciblorenzo.whatsonmyfood;
 
 import java.text.Normalizer;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -56,12 +57,49 @@ public final class IngredientOcrHeuristics {
         return original;
     }
 
+    /**
+     * Keeps OCR focused on the ingredient-label block instead of returning text from the
+     * surrounding screen or package. The full OCR text remains a fallback when ML Kit did
+     * not separate the label into a reliable block.
+     */
+    public static String selectIngredientRegion(List<String> textBlocks, String fullText) {
+        String preparedFullText = prepareRecognizedText(fullText);
+        if (textBlocks == null || textBlocks.isEmpty()) return preparedFullText;
+
+        String bestBlock = "";
+        int bestScore = Integer.MIN_VALUE;
+        boolean bestHasHeading = false;
+        for (String block : textBlocks) {
+            String prepared = prepareRecognizedText(block);
+            if (prepared.isEmpty()) continue;
+
+            String lower = prepared.toLowerCase(Locale.ROOT);
+            boolean hasHeading = lower.contains("ingredients")
+                    || lower.contains("ingredient list")
+                    || lower.contains("ingrÃ©dients")
+                    || lower.contains("ingredientes");
+            int score = confidence(prepared);
+            if (hasHeading) score += 100;
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestBlock = prepared;
+                bestHasHeading = hasHeading;
+            }
+        }
+
+        return bestHasHeading ? bestBlock : preparedFullText;
+    }
+
     public static String prepareRecognizedText(String text) {
         if (text == null) return "";
         String normalized = Normalizer.normalize(text, Normalizer.Form.NFKC)
                 .replace("\r\n", "\n")
                 .replace('\r', '\n');
         normalized = normalized.replaceAll("(?i)\\bingred[1l|]ents\\b", "ingredients");
+        // OCR commonly confuses a lowercase L with 1 or | inside ordinary words.
+        normalized = normalized.replaceAll("(?i)(?<=[a-z])[1|](?=[a-z])", "l");
+        normalized = normalized.replaceAll("(?i)(?<=[a-z])\\|(?=\\s|[,.;:]|$)", "l");
         normalized = normalized.replaceAll("(?i)([a-z])[-‐‑]\\s*\\n\\s*([a-z])", "$1$2");
         normalized = normalized.replaceAll("[ \\t]+", " ");
         normalized = normalized.replaceAll(" *\\n *", "\n");

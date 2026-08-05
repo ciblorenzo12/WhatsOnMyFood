@@ -53,8 +53,6 @@ public class IngredientAnalysisActivity extends BaseActivity {
     public static final String EXTRA_IMAGE_BYTES = "extra_image_bytes";
     public static final String EXTRA_BARCODE = "extra_barcode";
     public static final String EXTRA_SUPPLEMENTAL_ATTEMPT = "extra_supplemental_attempt";
-    private static final String AI_CACHE_PREFIX = "BITWISE_AI_CACHE_V2:";
-
     private ProductWithDetails detectedProduct;
     private Button savePantryButton;
     private ProductRepository productRepository;
@@ -677,14 +675,10 @@ public class IngredientAnalysisActivity extends BaseActivity {
     }
 
     private String buildAiInsightCache(String summary, JSONArray sources) {
-        try {
-            JSONObject cache = new JSONObject();
-            cache.put("summary", summary != null ? summary : "");
-            cache.put("sources", sources != null ? sources : new JSONArray());
-            return AI_CACHE_PREFIX + cache.toString();
-        } catch (Exception e) {
-            return summary != null ? summary : "";
-        }
+        return AiInsightCache.encode(
+                summary,
+                sources != null ? sources.toString() : "[]"
+        );
     }
 
     private String formatAiSummary(String raw) {

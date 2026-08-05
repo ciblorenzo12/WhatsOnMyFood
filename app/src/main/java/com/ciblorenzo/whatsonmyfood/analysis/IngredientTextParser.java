@@ -175,6 +175,14 @@ public final class IngredientTextParser {
         List<String> parts = new ArrayList<>();
         if (source == null || source.isEmpty()) return parts;
 
+        source = source.replaceFirst(
+                "(?i)\\r?\\n\\s*\\d+(?:\\.\\d+)?\\s*(?:fl\\s*oz|oz|ml|l|g|kg|lb|ct|count)\\s*$",
+                ""
+        );
+        // OCR preserves visual line wrapping, but a wrapped line does not necessarily end an
+        // ingredient (for example, "Calcium" followed by "Carbonate" on the next line).
+        source = source.replaceAll("[\\t ]*\\r?\\n[\\t ]*", " ").trim();
+
         int depth = 0;
         int start = 0;
         for (int i = 0; i < source.length(); i++) {
@@ -183,13 +191,25 @@ public final class IngredientTextParser {
                 depth++;
             } else if (current == ')' || current == ']' || current == '}') {
                 if (depth > 0) depth--;
-            } else if (depth == 0 && (current == ',' || current == ';' || current == '\n' || current == '\r' || current == '\u2022')) {
+            } else if (depth == 0 && (current == ','
+                    || current == ';'
+                    || current == '\u2022'
+                    || isSentenceDelimiter(source, i))) {
                 if (i > start) parts.add(source.substring(start, i));
                 start = i + 1;
             }
         }
         if (start < source.length()) parts.add(source.substring(start));
         return parts;
+    }
+
+    private static boolean isSentenceDelimiter(String source, int index) {
+        if (source.charAt(index) != '.') return false;
+        boolean decimalPoint = index > 0
+                && index + 1 < source.length()
+                && Character.isDigit(source.charAt(index - 1))
+                && Character.isDigit(source.charAt(index + 1));
+        return !decimalPoint;
     }
 
     private static List<AllergenSection> findAllergenSections(String source) {
@@ -233,6 +253,8 @@ public final class IngredientTextParser {
                 "serving size",
                 "servings per container",
                 "amount per serving",
+                "net wt",
+                "net weight",
                 "phenylketonurics:",
                 "phenylketonurics",
                 "directions",
@@ -250,6 +272,9 @@ public final class IngredientTextParser {
                 "plain text",
                 "characters",
                 "windows (crlf",
+                ".txt",
+                "file name",
+                "version",
                 "distributed by",
                 "manufactured by",
                 "where can i buy",
@@ -299,6 +324,7 @@ public final class IngredientTextParser {
 
         if (lower.contains("trader joe")
                 || lower.equals("english")
+                || lower.equals("current")
                 || lower.equals("facial")
                 || lower.equals("toner")
                 || lower.equals("hydrate")

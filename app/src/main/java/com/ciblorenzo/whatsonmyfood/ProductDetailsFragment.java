@@ -71,9 +71,6 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
     private static final String ARG_BARCODE = "barcode";
     private static final String ARG_AI_ENABLED = "ai_enabled";
-    private static final String AI_CACHE_PREFIX = "BITWISE_AI_CACHE_V10:";
-    private static final String AI_CACHE_LEGACY_PREFIX = "BITWISE_AI_CACHE_";
-
     private ProductRepository productRepository;
     private ScanFailureLogger scanFailureLogger;
     private RetailerRepository retailerRepository;
@@ -387,6 +384,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     }
 
     private void displayProductDetails(ProductWithDetails productDetails, boolean allowAiInsight) {
+        IngredientListSanitizer.sanitize(productDetails);
         currentProductDetails = productDetails;
         if (productDetails.product.imageUrl != null && !productDetails.product.imageUrl.isEmpty()) {
             Picasso.get().load(productDetails.product.imageUrl).into(productImageView);
@@ -479,7 +477,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
         if (bitwiseAnalysisService != null) bitwiseAnalysisService.cancelActiveCall();
         bitwiseAnalysisService = new BitwiseAnalysisService();
-        bitwiseAnalysisService.analyzeWithRules(productData.toString(), null, new BitwiseAnalysisService.AnalysisCallback() {
+        bitwiseAnalysisService.analyzeWithRules(productData.toString(), ruleEngine.getRuleDescriptions(), new BitwiseAnalysisService.AnalysisCallback() {
             @Override
             public void onResult(String result) {
                 if (getActivity() == null || !isAdded()) return;
@@ -698,28 +696,20 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     }
 
     private String buildAiInsightCache(String summary, org.json.JSONArray sources) {
-        try {
-            org.json.JSONObject cache = new org.json.JSONObject();
-            cache.put("summary", summary != null ? summary : "");
-            cache.put("sources", sources != null ? sources : new org.json.JSONArray());
-            return AI_CACHE_PREFIX + cache.toString();
-        } catch (Exception e) {
-            return summary != null ? summary : "";
-        }
+        return AiInsightCache.encode(
+                summary,
+                sources != null ? sources.toString() : "[]"
+        );
     }
 
     private CachedAiInsight parseCachedAiInsight(String storedInsight) {
-        if (storedInsight != null && storedInsight.startsWith(AI_CACHE_PREFIX)) {
-            try {
-                org.json.JSONObject cache = new org.json.JSONObject(storedInsight.substring(AI_CACHE_PREFIX.length()));
-                return new CachedAiInsight(cache.optString("summary", ""), cache.optJSONArray("sources"));
-            } catch (Exception ignored) {
-            }
-        }
-        if (storedInsight != null && storedInsight.startsWith(AI_CACHE_LEGACY_PREFIX)) {
+        AiInsightCache.Decoded decoded = AiInsightCache.decode(storedInsight);
+        if (!decoded.usable) return new CachedAiInsight("", null);
+        try {
+            return new CachedAiInsight(decoded.summary, new org.json.JSONArray(decoded.sourcesJson));
+        } catch (Exception ignored) {
             return new CachedAiInsight("", null);
         }
-        return new CachedAiInsight(storedInsight != null ? storedInsight : "", null);
     }
 
     private boolean isProbablyIncomplete(String html) {

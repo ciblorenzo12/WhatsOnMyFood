@@ -35,6 +35,32 @@ test("uses the local analysis when Gemini is not configured", async () => {
   assert.equal(JSON.parse(result.body.content).ingredients[0], "water");
 });
 
+test("accepts protected structured product and deterministic rule context", async () => {
+  delete process.env.GEMINI_API_KEY;
+  const result = await handleBitwiseAnalysis(request({
+    requestVersion: 1,
+    prompt: "Product: Oat cereal. Ingredients: oats, sugar, salt.",
+    productContext: { raw: "Name: Oat cereal\nIngredients: oats, sugar, salt" },
+    rules: ["Flag added sugar", "Keep deterministic findings visible"],
+  }));
+
+  assert.equal(result.status, 200);
+  assert.equal(result.body.provider, "local-fallback");
+});
+
+test("rejects invalid tokens and malformed structured context", async () => {
+  const unauthorized = await handleBitwiseAnalysis(request({ prompt: "Ingredients: oats" }, "wrong-token"));
+  assert.equal(unauthorized.status, 401);
+
+  const malformed = await handleBitwiseAnalysis(request({
+    requestVersion: 1,
+    prompt: "Ingredients: oats",
+    productContext: "not-an-object",
+    rules: ["valid", 42],
+  }));
+  assert.equal(malformed.status, 400);
+});
+
 test("grounds the fact check before generating the structured shopper response", async () => {
   process.env.GEMINI_API_KEY = "test-google-key";
   let callCount = 0;

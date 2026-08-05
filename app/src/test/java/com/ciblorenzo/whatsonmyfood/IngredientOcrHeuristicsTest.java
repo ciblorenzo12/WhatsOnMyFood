@@ -2,10 +2,28 @@ package com.ciblorenzo.whatsonmyfood;
 
 import org.junit.Test;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class IngredientOcrHeuristicsTest {
+
+    @Test
+    public void selectsIngredientBlockAndIgnoresSurroundingScreenText() {
+        String label = "Ingredients: Whole grain oats, corn starch, sugar, salt, "
+                + "tripotassium phosphate, vitamin E (mixed tocopherols). Vitamins and minerals: "
+                + "calcium carbonate, iron and zinc, vitamin C, vitamin B6, vitamin D3.";
+        String surroundingScreen = "Habitos realistas\nZoom\nAlteracion do logo\nSearch";
+
+        assertEquals(
+                label,
+                IngredientOcrHeuristics.selectIngredientRegion(
+                        Arrays.asList(surroundingScreen, label, "View marketplace comparison"),
+                        surroundingScreen + "\n" + label + "\nView marketplace comparison"
+                )
+        );
+    }
 
     @Test
     public void scoresClearIngredientTextAboveNutritionPanelText() {
@@ -58,6 +76,16 @@ public class IngredientOcrHeuristicsTest {
         assertEquals(
                 IngredientOcrHeuristics.prepareRecognizedText(text),
                 IngredientOcrHeuristics.trimUiNoise(text)
+        );
+    }
+
+    @Test
+    public void repairsDigitAndPipeSubstitutionsInsideIngredientWords() {
+        assertEquals(
+                "partially hydrogenated oil, artificial flavor",
+                IngredientOcrHeuristics.prepareRecognizedText(
+                        "partia1ly hydrogenated oil, artificia| flavor"
+                )
         );
     }
 }
