@@ -1,67 +1,143 @@
-# M3-06 Privacy-safe AI and RAG observability
+# M3-06 - Privacy-safe AI and RAG observability test guide
 
-## Diagnostic contract
+## What this test proves
 
-Every protected AI and RAG request receives an `X-Correlation-ID`. The Android client creates it, the backend preserves and returns it, and both sides write a single completion diagnostic that can be matched during testing.
+This test confirms that AI and RAG requests can be traced during development without exposing private request information. Android and the backend use the same correlation ID and record only an approved set of diagnostic fields.
 
-Only these fields are allowed:
+## Information allowed in diagnostic output
 
-| Field | Purpose |
+| Field | Meaning |
 | --- | --- |
-| `event` | Stable event name (`protected_request`) on the backend |
-| `correlationId` / `correlation_id` | Random request trace identifier |
-| `route` | Allowlisted route template, never a product-specific URL |
+| `event` | Stable backend event name: `protected_request` |
+| `correlationId` or `correlation_id` | Random identifier shared by Android and backend |
+| `route` | Safe route template, never a product-specific URL |
 | `outcome` | `success`, `empty_result`, `fallback_success`, `failure`, or `rate_limited` |
 | `status` | HTTP status, or `0` when no response was received |
-| `latencyMs` / `latency_ms` | Total elapsed request time |
-| `errorCategory` / `error_category` | Safe classification such as `timeout`, `rate_limit`, or `provider_unavailable` |
+| `latencyMs` or `latency_ms` | Total request duration |
+| `errorCategory` or `error_category` | Safe category such as `timeout`, `rate_limit`, or `provider_unavailable` |
 
-Credentials, authorization headers, full prompts, response bodies, images, barcodes, product names, brands, ingredient text, raw exception messages, IP addresses, and query strings are excluded by construction.
+The output must not contain credentials, authorization headers, full prompts, response bodies, images, barcodes, product names, brands, ingredient text, raw exception messages, IP addresses, or query strings.
 
-## Manual diagnostic test
+## Which console to use
 
-1. Start the retailer backend and keep its console visible.
-2. In a second terminal, show only Android diagnostic events:
+Use the Android Studio terminal or Windows PowerShell. Start from the repository root, `YourHealtyPantry`. If the terminal starts inside `app`, run `cd ..` first.
+
+## Test 1 - Console-only demonstration
+
+Use this test when a phone, emulator, or manual service failure is unavailable.
+
+1. Open a terminal at the repository root.
+2. Run:
+
+   ```powershell
+   cd backend\retailer
+   npm run demo:observability
+   ```
+
+3. Confirm the console displays four examples:
+
+   - successful AI request;
+   - AI timeout;
+   - RAG rate limit; and
+   - RAG provider unavailable.
+
+4. Confirm the final line is:
+
+   ```text
+   PASS: only allowlisted diagnostic fields were printed; sensitive request data was excluded.
+   ```
+
+If the script reports `FAIL`, do not use the output as evidence. Review the diagnostic formatter before continuing.
+
+## Test 2 - Backend automated tests
+
+From the same `backend\retailer` console, run:
+
+```powershell
+npm test
+```
+
+Expected result: the summary reports zero failed tests. The M3-06 tests verify route normalization, correlation ID preservation, allowed fields, and timeout/rate-limit/provider classifications.
+
+## Test 3 - Android automated tests
+
+1. Return to the repository root:
+
+   ```powershell
+   cd ..\..
+   ```
+
+2. Run the focused Android test:
+
+   ```powershell
+   cd app
+   .\gradlew.bat testDebugUnitTest --tests "com.ciblorenzo.whatsonmyfood.api.PrivacySafeRequestDiagnosticsTest"
+   ```
+
+3. Confirm the console ends with:
+
+   ```text
+   BUILD SUCCESSFUL
+   ```
+
+## Test 4 - Manual Android and backend correlation
+
+This test uses two consoles and a connected Android phone or emulator.
+
+### Console 1 - Start the backend
+
+From the repository root:
+
+```powershell
+cd backend\retailer
+npm start
+```
+
+Leave this console running so backend diagnostic events remain visible.
+
+### Console 2 - Show Android diagnostics
+
+1. Open another Android Studio terminal or PowerShell window.
+2. Confirm the device is connected:
+
+   ```powershell
+   adb devices
+   ```
+
+3. Display only the privacy-safe Android events:
 
    ```powershell
    adb logcat -s PrivacySafeRequest
    ```
 
-3. From the app, scan a product that uses the normal product path, then use ingredient mode or a missing-ingredient product to exercise RAG.
-4. Confirm the app and backend show the same correlation ID for the request.
-5. Confirm each line includes the route template, outcome, status, latency, and safe error category.
-6. Confirm no line contains label text, a barcode, product name, image data, prompt content, or credentials.
-7. To exercise failure categories in a controlled environment, temporarily use a nonresponsive provider URL for `timeout`, exceed the protected request limit for `rate_limit`, or stop the provider while leaving the backend running for `provider_unavailable`. Restore the normal configuration after the test.
+4. Leave this console running.
 
-## Console-only substitute
+### Steps in the app
 
-When a device or manual service failure cannot be reproduced, run:
+1. Scan a normal product to exercise the protected AI route.
+2. Use Ingredient Mode or a product with missing ingredients to exercise the RAG route.
+3. Compare the Android and backend consoles.
 
-```powershell
-Set-Location backend/retailer
-npm run demo:observability
-```
+### Expected result
 
-The script prints representative AI success, timeout, RAG rate-limit, and provider-unavailable events. It exits with failure if its console output contains any forbidden fixture representing a credential, prompt, image, barcode, or product identifier. A valid run ends with:
+- Android and backend show the same correlation ID for each request.
+- Every completed request shows route, outcome, status, latency, and safe error category.
+- The RAG route appears as `/api/retail/products/:barcode/ingredients/rag` rather than containing the real barcode.
+- No console line contains product details, ingredient text, prompt text, images, credentials, or raw server errors.
 
-```text
-PASS: only allowlisted diagnostic fields were printed; sensitive request data was excluded.
-```
+## Optional controlled failure test
 
-## Automated verification
+Only perform this in a test environment:
 
-Backend:
+- use a nonresponsive provider to produce `timeout`;
+- exceed the protected test rate limit to produce `rate_limit`; or
+- stop the provider while leaving the backend running to produce `provider_unavailable`.
 
-```powershell
-Set-Location backend/retailer
-npm test
-```
+Restore the normal provider configuration after testing. If these failures cannot be reproduced safely, use `npm run demo:observability` as the approved substitute.
 
-Android:
+## Evidence to capture for Trello
 
-```powershell
-Set-Location app
-.\gradlew.bat testDebugUnitTest --tests "com.ciblorenzo.whatsonmyfood.api.PrivacySafeRequestDiagnosticsTest"
-```
-
-The automated coverage verifies correlation ID preservation, route normalization, the timeout/rate-limit/provider categories, exact allowlisted fields, and rejection of unexpected sensitive values.
+- The console-only demonstration ending in `PASS`.
+- Backend test summary with zero failures.
+- Android `BUILD SUCCESSFUL` output.
+- Matching correlation IDs from Android and backend, with sensitive information excluded.

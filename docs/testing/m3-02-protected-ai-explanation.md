@@ -1,60 +1,119 @@
-# M3-02 - Protected AI explanation endpoint test plan
+# M3-02 - Protected AI explanation test guide
+
+## What this test proves
+
+This test confirms that Android sends structured product and rule information to the protected backend, receives a usable Bitwise explanation, validates it, saves it, and displays it without storing the model provider credential on the device.
+
+## Which console to use
+
+Use the Android Studio terminal or Windows PowerShell. Start from the repository root, `YourHealtyPantry`. If the Android Studio terminal starts inside `app`, run `cd ..` first.
 
 ## Automated tests
 
-Run the Android tests from the `app` directory:
+### Test A - Android client and response validation
+
+1. Open a terminal at the repository root.
+2. Run:
+
+   ```powershell
+   cd app
+   .\gradlew.bat testDebugUnitTest --tests "com.ciblorenzo.whatsonmyfood.api.BitwiseBackendClientTest" --tests "com.ciblorenzo.whatsonmyfood.analysis.AiExplanationResponseValidatorTest" --tests "com.ciblorenzo.whatsonmyfood.AiInsightCacheTest"
+   ```
+
+3. Confirm the console ends with:
+
+   ```text
+   BUILD SUCCESSFUL
+   ```
+
+These tests verify the structured request, response validation, URL configuration, and local insight cache.
+
+### Test B - Protected backend
+
+1. Return to the repository root:
+
+   ```powershell
+   cd ..
+   ```
+
+2. Run the backend tests:
+
+   ```powershell
+   cd backend\retailer
+   npm test
+   ```
+
+3. Confirm the final summary reports zero failed tests.
+
+These tests verify valid explanations, HTTP 401 for an invalid token, HTTP 400 for malformed structured context, safe sources, and controlled fallback behavior.
+
+## Manual test 1 - Successful explanation and cache
+
+### Before starting
+
+Confirm that:
+
+- `BITWISE_LLM_BASE_URL` is configured in `app/local.properties`;
+- Android and the backend use the same `BITWISE_APP_TOKEN`;
+- `GEMINI_API_KEY` exists only in the backend environment; and
+- the test product has a readable ingredient list and at least one deterministic finding.
+
+### Console 1 - Start the backend
+
+From the repository root:
 
 ```powershell
-.\gradlew.bat testDebugUnitTest --tests com.ciblorenzo.whatsonmyfood.api.BitwiseBackendClientTest --tests com.ciblorenzo.whatsonmyfood.analysis.AiExplanationResponseValidatorTest --tests com.ciblorenzo.whatsonmyfood.AiInsightCacheTest
+cd backend\retailer
+npm start
 ```
 
-Run the protected-backend tests from `backend/retailer`:
+Leave this console running.
 
-```powershell
-npm test
-```
+### Steps in the app
 
-1. **Valid protected explanation:** verifies that Android builds a versioned request containing separate product and deterministic-rule context, accepts a complete source-backed response, and round-trips the accepted explanation through the local cache format.
-2. **Invalid or unauthorized explanation:** verifies that missing configuration has no hardcoded URL fallback, malformed or incomplete responses are rejected, unsafe sources are not accepted, invalid app tokens return HTTP 401, and malformed structured context returns HTTP 400.
+1. Launch the Android app with network access.
+2. Scan or open the test product.
+3. Wait for the Bitwise explanation. A warm backend should normally respond within about 20 seconds; a cold hosted backend may take longer.
+4. Confirm the explanation, verdict, deterministic findings, and at least one scientific source are visible.
+5. Open the source and confirm it uses HTTP or HTTPS.
+6. Close the product and open it again without requesting another analysis.
 
-## Manual test 1 - successful protected explanation and persistence
+### Expected result
 
-**Setup**
+- Bitwise displays a complete explanation with usable sources.
+- Deterministic findings remain visible.
+- The accepted explanation reappears from the local Room cache.
+- The Android request contains product and rule context, but no Gemini credential.
 
-- Configure `BITWISE_LLM_BASE_URL` in `app/local.properties` with the protected backend URL.
-- Configure matching `BITWISE_APP_TOKEN` values for the Android build and backend.
-- Configure `GEMINI_API_KEY` only in the backend environment. Do not place it in Android properties or source code.
-- Use a product with a readable ingredient list and at least one deterministic finding.
+## Manual test 2 - Invalid response or configuration
 
-**Steps**
+Use a controlled test environment and test these conditions separately:
 
-1. Start the backend and launch the Android app with network access.
-2. Scan or open the product and wait for Bitwise analysis. On a warm backend, the grounded explanation should normally appear within 20 seconds; a cold backend may take longer.
-3. Confirm the explanation, verdict, deterministic findings, and at least one clickable source are displayed with the product.
-4. Close and reopen the product without requesting another analysis.
+- mismatched `BITWISE_APP_TOKEN`;
+- empty `BITWISE_LLM_BASE_URL`;
+- malformed JSON;
+- incomplete explanation; and
+- response without a usable source.
 
-**Expected result**
+For each condition:
 
-- The backend receives `requestVersion`, `productContext`, and `rules` in addition to the generated prompt.
-- The explanation displayed is complete and includes a usable HTTP or HTTPS source.
-- The accepted explanation reappears from the Room-backed product cache.
-- No Gemini or model credential is present in the APK request or Android configuration.
+1. Open the same product.
+2. Observe the Bitwise explanation area.
+3. Retry once if the interface offers a retry action.
+4. Close and reopen the product.
 
-## Manual test 2 - invalid response, authentication, and configuration failure
+### Expected result
 
-**Setup**
+- Authentication and configuration failures use friendly wording.
+- Raw server responses are not shown to the shopper.
+- Invalid content is not displayed or saved.
+- The product and deterministic analysis remain available.
 
-- Repeat the test with: a mismatched `BITWISE_APP_TOKEN`, an empty `BITWISE_LLM_BASE_URL`, malformed JSON content, an incomplete summary, and a response without a usable source.
+If these failures cannot be created manually, use the automated Android and backend tests as evidence.
 
-**Steps**
+## Evidence to capture for Trello
 
-1. Open the same product for each failure condition.
-2. Observe the Bitwise explanation area and retry behavior.
-3. Close and reopen the product after each rejected response.
-
-**Expected result**
-
-- Authentication failure is reported without exposing the raw server body.
-- Missing URL configuration fails clearly and never uses a source-code fallback endpoint.
-- Malformed, incomplete, or unverified content is not displayed as an accepted explanation and is not saved to the product cache.
-- The product and deterministic analysis remain available when the protected explanation fails.
+- `BUILD SUCCESSFUL` from Android.
+- The backend test summary with zero failures.
+- The product screen showing the Bitwise explanation and scientific source.
+- The product screen remaining usable during a controlled failure.

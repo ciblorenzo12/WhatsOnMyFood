@@ -1,60 +1,110 @@
-# M3-05 source-aware AI prompts and response validation
+# M3-05 - Source-aware AI prompt and validation test guide
 
-## Automated verification
+## What this test proves
 
-Run the backend suite:
+This test confirms that the backend grounds Bitwise explanations in the supplied product data, normalized ingredients, deterministic findings, source status, and uncertainty. It also confirms that blank, malformed, unsafe, or unsupported provider responses are rejected.
 
-```powershell
-cd backend\retailer
-npm test
-```
+## Which console to use
 
-The tests verify that the protected backend:
+Use the Android Studio terminal or Windows PowerShell. Start from the repository root, `YourHealtyPantry`. If the terminal starts inside `app`, run `cd ..` first.
 
-- builds the model prompt from normalized ingredients, product data, source status,
-  uncertainty, and deterministic findings;
-- requests a concise grounded explanation without allowing the model to override the
-  deterministic result;
-- accepts a complete response with verified HTTPS sources; and
-- rejects blank, HTML, malformed, incomplete, uncited, and unsafe medical output.
+## Automated test 1 - Backend prompt and response validation
 
-Run the Android suite:
+1. Open a terminal at the repository root.
+2. Run:
 
-```powershell
-cd app
-.\gradlew.bat testDebugUnitTest
-```
+   ```powershell
+   cd backend\retailer
+   npm test
+   ```
 
-The Android tests verify the structured request fields and the final defensive response
-validation before an explanation can be displayed or cached.
+3. Confirm the final test summary reports zero failed tests.
 
-## Manual test 1: grounded product explanation
+The backend tests verify that:
 
-1. Start the protected backend with the Gemini credential configured.
-2. Install the hosted debug build on a physical Android device.
-3. Scan a product with a readable ingredient list and at least one deterministic finding,
-   such as a cereal whose label lists oats, sugar, and salt.
-4. Open the Bitwise explanation.
+- product data and normalized ingredients are included;
+- deterministic findings, source status, and uncertainty are preserved;
+- the explanation uses concise, plain language;
+- the model cannot override deterministic findings;
+- complete responses with verified HTTPS sources are accepted; and
+- blank, HTML, malformed, incomplete, uncited, or unsafe medical responses are rejected.
 
-Expected result:
+## Automated test 2 - Android structured request
 
-- the product and normalized ingredient names match the supplied label;
-- the explanation uses the `Why this rating`, `Portion guidance`, and `Fact check`
-  sections;
-- deterministic findings remain visible and are not contradicted;
-- any limitation in the source status is stated without overstating certainty; and
-- at least one verified HTTPS source is displayed and opens successfully.
+1. Return to the repository root:
 
-## Manual test 2: unsafe or invalid provider response
+   ```powershell
+   cd ..\..
+   ```
 
-1. In a local test environment, replace the provider response with each of the following:
-   an HTML startup page, malformed JSON, a blank summary, and a claim such as
-   `This product can cure diabetes.`
-2. Request the same product explanation after each response change.
+2. Run the Android suite:
 
-Expected result:
+   ```powershell
+   cd app
+   .\gradlew.bat testDebugUnitTest
+   ```
 
-- none of the invalid provider text is displayed or cached;
-- the backend rejects the provider output and uses the controlled local fallback;
-- the product data and deterministic findings remain available; and
-- the app shows safe fallback wording if a usable explanation cannot be produced.
+3. Confirm the console ends with:
+
+   ```text
+   BUILD SUCCESSFUL
+   ```
+
+The Android tests verify the structured request fields and the final defensive validation before an explanation is displayed or cached.
+
+## Manual test 1 - Grounded product explanation
+
+### Before starting
+
+- Configure the protected backend with its Gemini credential.
+- Install the hosted debug build on a physical Android device.
+- Use a product with a readable ingredient list and at least one deterministic finding, such as cereal containing oats, sugar, and salt.
+
+### Steps
+
+1. Scan the product.
+2. Confirm the product name and ingredient list are recognized correctly.
+3. Open the Bitwise explanation.
+4. Read the verdict and compare it with the deterministic findings.
+5. Open at least one scientific source.
+
+### Expected result
+
+- Product and normalized ingredient names match the supplied label.
+- The explanation contains `Why this rating`, `Portion guidance`, and `Fact check` sections.
+- Deterministic findings remain visible and are not contradicted.
+- Source limitations or uncertainty are explained without overstating confidence.
+- At least one verified HTTPS source is displayed and opens successfully.
+- If the product has no ingredients, the app asks the user to type them or use Ingredient Mode instead of returning a `Needs Review` score.
+
+## Manual test 2 - Invalid or unsafe provider response
+
+This test requires a controlled local provider response. Test these values separately:
+
+- HTML startup page;
+- malformed JSON;
+- blank summary;
+- missing source information; and
+- an unsafe claim such as `This product can cure diabetes.`
+
+For each response:
+
+1. Request the same product explanation.
+2. Observe the Bitwise explanation area.
+3. Close and reopen the product to check the cache.
+
+### Expected result
+
+- Invalid provider text is not displayed or cached.
+- The backend rejects unsafe output and uses the controlled fallback when possible.
+- Product data and deterministic findings remain available.
+- The app uses safe fallback wording if no usable explanation can be produced.
+
+If provider output cannot be modified manually, use the backend automated tests as evidence for these rejection paths.
+
+## Evidence to capture for Trello
+
+- Backend test summary with zero failures.
+- Android `BUILD SUCCESSFUL` output.
+- Product screen showing all three explanation sections and a scientific source.
+- Product screen showing the ingredient-entry or Ingredient Mode instruction when ingredients are missing.
