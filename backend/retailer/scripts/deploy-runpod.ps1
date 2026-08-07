@@ -122,6 +122,8 @@ if ([string]::IsNullOrWhiteSpace($geminiApiKey)) {
 $geminiModel = if ([string]::IsNullOrWhiteSpace([string]$config.GEMINI_MODEL)) { "gemini-3.1-pro-preview" } else { [string]$config.GEMINI_MODEL }
 $runtimeValues = [ordered]@{
     PORT = "$port"
+    NODE_ENV = "production"
+    PUBLIC_BASE_URL = $publicUrl
     GEMINI_API_KEY = $geminiApiKey
     GEMINI_MODEL = $geminiModel
 }
@@ -251,6 +253,8 @@ fi
 
 curl -fsS "http://127.0.0.1:${PORT}/health"
 echo
+curl -fsS "http://127.0.0.1:${PORT}/ready"
+echo
 '@
 
     Write-Host "Starting the Gemini backend on port $port..."
@@ -279,7 +283,18 @@ echo
         throw "The public health check did not confirm the Gemini provider."
     }
 
-    Write-Host "Deployment complete. Gemini is active at $publicUrl"
+    $readiness = Invoke-RestMethod -Uri "$publicUrl/ready" -TimeoutSec 15
+    $requiredReadinessChecks = @(
+        $readiness.checks.publicHttpsConfigured,
+        $readiness.checks.aiProviderCredentialConfigured,
+        $readiness.checks.appAuthenticationConfigured,
+        $readiness.checks.ragProviderConfigured
+    )
+    if (-not $readiness.ok -or $requiredReadinessChecks -contains $false) {
+        throw "The public readiness check did not confirm the hosted AI and RAG configuration."
+    }
+
+    Write-Host "Deployment complete. Hosted AI and RAG services are ready at $publicUrl"
 }
 finally {
     Remove-Item -LiteralPath $archivePath, $runtimePath -Force -ErrorAction SilentlyContinue

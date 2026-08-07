@@ -2,6 +2,7 @@ const { MockRetailerProvider } = require("./providers/mockRetailerProvider");
 const { AmazonSpApiProvider, hasAmazonCredentials } = require("./providers/amazonSpApiProvider");
 const { WalmartAffiliatesProvider } = require("./providers/walmartAffiliatesProvider");
 const { hasWalmartCredentials } = require("./walmartSignature");
+const { OpenFoodFactsProvider } = require("./providers/openFoodFactsProvider");
 
 function createProviderRegistry() {
   const providers = [];
@@ -14,6 +15,7 @@ function createProviderRegistry() {
     providers.push(new AmazonSpApiProvider());
   }
 
+  providers.push(new OpenFoodFactsProvider());
   providers.push(new MockRetailerProvider());
   return providers;
 }

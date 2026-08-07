@@ -9,6 +9,8 @@ The Android app should call backend endpoints like these instead of calling reta
 - `GET /api/retail/products/:barcode/alternatives`
 - `GET /api/retail/products/:barcode/ingredients/rag`
 - `POST /v1/bitwise/analyze`
+- `GET /health`
+- `GET /ready`
 - `POST /v1/billing/google-play/verify`
 
 The first provider is mock data so the app flow can ship before retailer approvals. Real providers should be added behind this backend in this order:
@@ -41,6 +43,10 @@ Context verifies the selected scientific sources. If no Gemini key is configured
 returns its deterministic local analysis so label scans still work.
 `BITWISE_APP_TOKEN` is optional; if you rotate it, update the matching mobile client
 configuration before deploying the backend.
+
+`/health` is a liveness check. `/ready` additionally verifies the hosted HTTPS URL,
+server-side AI credential, application authentication, and RAG provider without exposing
+credential values.
 
 Run the mock server:
 

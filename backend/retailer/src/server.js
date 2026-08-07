@@ -6,6 +6,7 @@ const { handleBitwiseCompletion } = require("./bitwiseFallback");
 const { handleBitwiseAnalysis } = require("./bitwiseGemini");
 const { handleGooglePlayVerification } = require("./googlePlayBilling");
 const { createRateLimiter, rateLimitBucketKey } = require("./rateLimiter");
+const { healthPayload, readinessResult } = require("./environmentStatus");
 
 const DEFAULT_APP_TOKEN = "R7qK2mZ9vP4xT0aLN6cY1sD8wF3hJ5bG";
 
@@ -91,11 +92,23 @@ async function handleRequest(req, res) {
 
     if (req.method === "GET" && url.pathname === "/health") {
       writeJson(res, 200, {
-        ok: true,
-        service: "retailer-backend",
-        bitwiseProvider: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY ? "google-gemini" : "local-fallback",
+        ...healthPayload(),
         playBillingConfigured: playBillingConfigured(),
       });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/ready") {
+      const readiness = readinessResult({
+        ragProviderCount: service.providers.filter((provider) =>
+          provider
+            && provider.name !== "MockRetailerProvider"
+            && typeof provider.getProduct === "function"
+        ).length,
+        appTokenConfigured: Boolean(process.env.BITWISE_APP_TOKEN || DEFAULT_APP_TOKEN),
+        playBillingConfigured: playBillingConfigured(),
+      });
+      writeJson(res, readiness.status, readiness.body);
       return;
     }
 
@@ -155,6 +168,8 @@ async function handleRequest(req, res) {
         "/api/retail/products/:barcode/ingredients/rag",
         "/v1/bitwise/analyze",
         "/v1/billing/google-play/verify",
+        "/health",
+        "/ready",
       ],
     });
   } catch (error) {
