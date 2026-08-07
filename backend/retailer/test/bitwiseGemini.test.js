@@ -64,6 +64,17 @@ test("uses the local analysis when Gemini is not configured", async () => {
   assert.equal(content.verdict, "HEALTHY");
 });
 
+test("local fallback does not mark natural flavors healthy", async () => {
+  delete process.env.GEMINI_API_KEY;
+  const result = await handleBitwiseAnalysis(request({
+    prompt: "Product: Organic Yogurt. Ingredients: organic yogurt, natural flavors",
+  }));
+
+  const content = JSON.parse(result.body.content);
+  assert.equal(content.verdict, "NOT_HEALTHY");
+  assert.deepEqual(content.ingredients, ["organic yogurt", "natural flavors"]);
+});
+
 test("does not classify a solid food as a drink just because water is an ingredient", async () => {
   delete process.env.GEMINI_API_KEY;
   const result = await handleBitwiseAnalysis(request({

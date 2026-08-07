@@ -1,3 +1,5 @@
+const { classifyErrorCategory } = require("./privacySafeObservability");
+
 class RetailerService {
   constructor(providers) {
     this.providers = providers;
@@ -53,9 +55,16 @@ class RetailerService {
 
   async getIngredientRag(query) {
     const retrievals = [];
+    const failureCategories = [];
     for (const provider of this.providers) {
       if (typeof provider.getProduct !== "function") continue;
-      const productResponse = await this.safeProviderCall(provider, "getProduct", query);
+      let productResponse;
+      try {
+        productResponse = await provider.getProduct(query);
+      } catch (error) {
+        failureCategories.push(classifyErrorCategory({ error }));
+        continue;
+      }
       const product = productResponse && productResponse.product;
       const ingredientsText = extractIngredientsText(product);
       if (!ingredientsText) continue;
@@ -69,6 +78,9 @@ class RetailerService {
     }
 
     const best = retrievals.find((item) => item.ingredientsText) || null;
+    const errorCategory = failureCategories.includes("timeout")
+      ? "timeout"
+      : (failureCategories[0] || "none");
     return {
       status: best ? 1 : 0,
       barcode: query.barcode,
@@ -82,6 +94,10 @@ class RetailerService {
         ingredients_text: best.ingredientsText,
         ingredients_text_en: best.ingredientsText,
       } : null,
+      _diagnostic: {
+        outcome: best ? "success" : (failureCategories.length > 0 ? "failure" : "empty_result"),
+        errorCategory: best ? "none" : errorCategory,
+      },
     };
   }
 

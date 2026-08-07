@@ -28,10 +28,12 @@ public final class HealthVerdict {
         int severeCount = 0;
         int warningCount = 0;
         int positiveCount = 0;
+        boolean naturalFlavorWarning = false;
 
         if (results != null) {
             for (AnalysisResult result : results) {
                 if (result == null || result.getLevel() == null) continue;
+                if (isNaturalFlavorWarning(result)) naturalFlavorWarning = true;
                 switch (result.getLevel()) {
                     case SEVERE:
                         severeCount++;
@@ -52,11 +54,28 @@ public final class HealthVerdict {
             return new HealthVerdict(Status.NOT_HEALTHY, "Not Healthy", "Contains a high-concern ingredient or nutrition signal.");
         }
 
+        if (naturalFlavorWarning) {
+            return new HealthVerdict(
+                    Status.NOT_HEALTHY,
+                    "Not Healthy",
+                    "Contains natural flavors, a broad label term that does not meet this app's transparency criteria."
+            );
+        }
+
         if (warningCount >= 3 || (warningCount >= 2 && positiveCount == 0)) {
             return new HealthVerdict(Status.NOT_HEALTHY, "Not Healthy", "Multiple caution signals make this a poor everyday choice.");
         }
 
         return new HealthVerdict(Status.HEALTHY, "Healthy", "No high-concern ingredients were detected.");
+    }
+
+    private static boolean isNaturalFlavorWarning(AnalysisResult result) {
+        if (result.getLevel() != AnalysisResult.WarningLevel.WARNING) return false;
+        String rule = result.getMessage() == null ? "" : result.getMessage().toLowerCase();
+        String ingredient = result.getTriggeringIngredient() == null
+                ? ""
+                : result.getTriggeringIngredient().toLowerCase();
+        return rule.contains("natural flavor") || ingredient.contains("natural flavor");
     }
 
     public static HealthVerdict fromAiVerdict(String aiVerdict, String aiReason, List<AnalysisResult> fallbackResults, int ingredientCount) {

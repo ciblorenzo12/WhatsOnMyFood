@@ -90,6 +90,7 @@ function productAnalysis(prompt) {
     "aspartame",
     "sucralose",
     "sodium nitrite",
+    "natural flavor",
   ];
   const refinedOilTerms = [
     "canola oil",

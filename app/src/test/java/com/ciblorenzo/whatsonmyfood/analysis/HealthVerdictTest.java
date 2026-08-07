@@ -64,4 +64,20 @@ public class HealthVerdictTest {
         assertEquals(HealthVerdict.Status.NOT_HEALTHY, verdict.getStatus());
         assertEquals("Not Healthy", verdict.getLabel());
     }
+
+    @Test
+    public void fromAiVerdict_withNaturalFlavorWarning_rejectsHealthyOverride() {
+        HealthVerdict verdict = HealthVerdict.fromAiVerdict(
+                "HEALTHY",
+                "The base ingredient is organic yogurt.",
+                Arrays.asList(
+                        new AnalysisResult("Organic yogurt", AnalysisResult.WarningLevel.POSITIVE, 0, "organic yogurt", "Positive base"),
+                        new AnalysisResult("Contains Natural Flavors", AnalysisResult.WarningLevel.WARNING, 5, "natural flavors", "Broad label term")
+                ),
+                2
+        );
+
+        assertEquals(HealthVerdict.Status.NOT_HEALTHY, verdict.getStatus());
+        assertEquals("Not Healthy", verdict.getLabel());
+    }
 }

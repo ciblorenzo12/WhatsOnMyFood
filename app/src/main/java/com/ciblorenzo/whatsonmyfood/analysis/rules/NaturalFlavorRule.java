@@ -11,7 +11,7 @@ public class NaturalFlavorRule implements ProductAnalysisRule {
 
     private static final String NATURAL_FLAVOR_SINGULAR = "natural flavor";
     private static final String NATURAL_FLAVOR_PLURAL = "natural flavors";
-    private static final String EXPLANATION = "Contains natural flavors. This is a broad label term, so it is worth noting, but it is not automatically a high-concern ingredient by itself. Products with clearly listed flavors such as vanilla extract or lemon juice are more transparent.";
+    private static final String EXPLANATION = "Contains natural flavors. This is a broad label term, so it is worth noting, but it is not automatically toxic or unsafe by itself. Because the exact flavor components are not disclosed, it does not meet this app's Healthy transparency criteria. Products with clearly listed flavors such as vanilla extract or lemon juice are more transparent.";
 
     @Override
     public List<AnalysisResult> evaluate(ProductWithDetails productWithDetails) {

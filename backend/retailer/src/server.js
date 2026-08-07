@@ -7,6 +7,7 @@ const { handleBitwiseAnalysis } = require("./bitwiseGemini");
 const { handleGooglePlayVerification } = require("./googlePlayBilling");
 const { createRateLimiter, rateLimitBucketKey } = require("./rateLimiter");
 const { healthPayload, readinessResult } = require("./environmentStatus");
+const { createRequestObserver } = require("./privacySafeObservability");
 
 const DEFAULT_APP_TOKEN = "R7qK2mZ9vP4xT0aLN6cY1sD8wF3hJ5bG";
 
@@ -69,6 +70,7 @@ function buildQuery(url, barcode) {
 
 async function handleRequest(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
+  const diagnostic = createRequestObserver({ req, res, pathname: url.pathname });
   const availabilityMatch = url.pathname.match(/^\/api\/retail\/products\/([^/]+)\/availability$/);
   const alternativesMatch = url.pathname.match(/^\/api\/retail\/products\/([^/]+)\/alternatives$/);
   const ingredientRagMatch = url.pathname.match(/^\/api\/retail\/products\/([^/]+)\/ingredients\/rag$/);
@@ -80,6 +82,7 @@ async function handleRequest(req, res) {
         rateLimitBucketKey(clientAddress(req), url.pathname),
       );
       if (!rateLimit.allowed) {
+        diagnostic.setResult("rate_limited", "rate_limit");
         writeJson(
           res,
           429,
@@ -114,6 +117,9 @@ async function handleRequest(req, res) {
 
     if (req.method === "POST" && url.pathname === "/v1/bitwise/analyze") {
       const result = await handleBitwiseAnalysis(req);
+      if (result.diagnostic) {
+        diagnostic.setResult(result.diagnostic.outcome, result.diagnostic.errorCategory);
+      }
       writeJson(res, result.status, result.body);
       return;
     }
@@ -151,11 +157,17 @@ async function handleRequest(req, res) {
 
     if (ingredientRagMatch) {
       if (!hasValidAppToken(req)) {
+        diagnostic.setResult("failure", "authentication");
         writeJson(res, 401, { error: "Unauthorized" });
         return;
       }
       const query = buildQuery(url, decodeURIComponent(ingredientRagMatch[1]));
-      writeJson(res, 200, await service.getIngredientRag(query));
+      const result = await service.getIngredientRag(query);
+      const { _diagnostic, ...publicResult } = result;
+      if (_diagnostic) {
+        diagnostic.setResult(_diagnostic.outcome, _diagnostic.errorCategory);
+      }
+      writeJson(res, 200, publicResult);
       return;
     }
 
@@ -173,8 +185,9 @@ async function handleRequest(req, res) {
       ],
     });
   } catch (error) {
+    diagnostic.setError(error);
     writeJson(res, 500, {
-      error: error.message || "Retailer provider error",
+      error: "Retailer provider error",
     });
   }
 }

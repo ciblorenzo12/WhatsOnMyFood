@@ -1,4 +1,5 @@
 const { analyzePrompt } = require("./bitwiseFallback");
+const { classifyErrorCategory } = require("./privacySafeObservability");
 
 // Prefer the Pro model for nuanced, source-grounded shopper explanations.
 const DEFAULT_MODEL = "gemini-3.1-pro-preview";
@@ -20,6 +21,7 @@ const HEALTH_EDUCATOR_INSTRUCTION = [
   "Do not claim to be a doctor, dietitian, clinician, or medical professional, and do not diagnose, treat, or give personalized medical advice.",
   "Explain what the label suggests in everyday language, including useful context: one ingredient or one product does not determine a person's health.",
   "Be specific about what is present on the label, acknowledge uncertainty honestly, and avoid fear-based wording.",
+  "App policy: natural flavor or natural flavors prevents a HEALTHY verdict because it is a broad, undisclosed label term. Return NOT_HEALTHY and explain this as a transparency caution, not proof of toxicity or unsafe use.",
   "End with a practical, non-judgmental takeaway that helps the shopper decide what to do next.",
   "For allergies, pregnancy, medical conditions, or medication questions, advise the shopper to check with a qualified healthcare professional rather than guessing.",
 ].join(" ");
@@ -448,13 +450,17 @@ function analysisGenerationConfig(model) {
   return config;
 }
 
-function fallbackResponse(prompt, reason) {
+function fallbackResponse(prompt, reason, errorCategory = "provider_unavailable") {
   return {
     status: 200,
     body: {
       content: JSON.stringify(analyzePrompt(prompt)),
       provider: "local-fallback",
       fallbackReason: reason,
+    },
+    diagnostic: {
+      outcome: "fallback_success",
+      errorCategory,
     },
   };
 }
@@ -586,10 +592,10 @@ async function handleBitwiseAnalysis(req) {
       body: await requestGemini(prompt, body.image, body.productContext, body.rules),
     };
   } catch (error) {
-    console.error("Gemini request failed:", error.message);
     return fallbackResponse(
       fallbackPrompt(body, prompt),
       "The Gemini service was unavailable",
+      classifyErrorCategory({ error }),
     );
   }
 }

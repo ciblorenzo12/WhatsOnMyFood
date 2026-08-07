@@ -1,6 +1,7 @@
 package com.ciblorenzo.whatsonmyfood;
 
 import com.ciblorenzo.whatsonmyfood.api.ResilientRequestPolicy;
+import com.ciblorenzo.whatsonmyfood.api.PrivacySafeRequestDiagnostics;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 
@@ -26,13 +27,23 @@ public class RagIngredientLookupClient {
     private final Gson gson = new Gson();
 
     public ProductResponse getIngredients(String barcode, String productName, String brand) throws IOException {
+        String correlationId = PrivacySafeRequestDiagnostics.newCorrelationId();
+        long startedNanos = PrivacySafeRequestDiagnostics.startNanos();
         String baseUrl = BuildConfig.RETAILER_BACKEND_BASE_URL;
         if (baseUrl == null || baseUrl.trim().isEmpty()) {
+            PrivacySafeRequestDiagnostics.log(
+                    correlationId, PrivacySafeRequestDiagnostics.RAG_ROUTE, "failure", 0,
+                    startedNanos, "configuration"
+            );
             return null;
         }
 
         HttpUrl base = HttpUrl.parse(baseUrl.trim());
         if (base == null) {
+            PrivacySafeRequestDiagnostics.log(
+                    correlationId, PrivacySafeRequestDiagnostics.RAG_ROUTE, "failure", 0,
+                    startedNanos, "configuration"
+            );
             return null;
         }
 
@@ -55,12 +66,21 @@ public class RagIngredientLookupClient {
                 .url(urlBuilder.build())
                 .addHeader("Accept", "application/json")
                 .addHeader("X-APP-TOKEN", BuildConfig.BITWISE_APP_TOKEN)
+                .addHeader(PrivacySafeRequestDiagnostics.CORRELATION_HEADER, correlationId)
                 .build();
 
         IOException lastFailure = null;
+        int lastStatus = 0;
         for (int attempt = 0; attempt <= ResilientRequestPolicy.MAX_TRANSIENT_RETRIES; attempt++) {
             try (Response response = client.newCall(request).execute()) {
-                if (response.code() == 404) return null;
+                lastStatus = response.code();
+                if (response.code() == 404) {
+                    PrivacySafeRequestDiagnostics.log(
+                            correlationId, PrivacySafeRequestDiagnostics.RAG_ROUTE, "empty_result",
+                            response.code(), startedNanos, "not_found"
+                    );
+                    return null;
+                }
 
                 String responseBody = response.body() != null ? response.body().string() : "";
                 boolean retry = ResilientRequestPolicy.shouldRetryResponse(
@@ -85,16 +105,42 @@ public class RagIngredientLookupClient {
                     throw new IOException("RAG ingredient lookup returned an empty response");
                 }
                 try {
-                    return gson.fromJson(responseBody, ProductResponse.class);
+                    ProductResponse result = gson.fromJson(responseBody, ProductResponse.class);
+                    PrivacySafeRequestDiagnostics.log(
+                            correlationId, PrivacySafeRequestDiagnostics.RAG_ROUTE,
+                            result != null && result.status == 1 ? "success" : "empty_result",
+                            response.code(), startedNanos, "none"
+                    );
+                    return result;
                 } catch (JsonParseException error) {
                     throw new IOException("RAG ingredient lookup returned invalid JSON", error);
                 }
             } catch (IOException error) {
                 lastFailure = error;
-                if (!ResilientRequestPolicy.shouldRetryFailure(error, attempt)) throw error;
+                if (!ResilientRequestPolicy.shouldRetryFailure(error, attempt)) {
+                    String category = lastStatus > 0
+                            ? PrivacySafeRequestDiagnostics.classifyStatus(lastStatus)
+                            : PrivacySafeRequestDiagnostics.classifyFailure(error);
+                    if ("none".equals(category)) {
+                        category = PrivacySafeRequestDiagnostics.classifyFailure(error);
+                    }
+                    PrivacySafeRequestDiagnostics.log(
+                            correlationId, PrivacySafeRequestDiagnostics.RAG_ROUTE,
+                            lastStatus == 429 ? "rate_limited" : "failure",
+                            lastStatus, startedNanos, category
+                    );
+                    throw error;
+                }
                 ResilientRequestPolicy.waitBeforeRetry();
             }
         }
-        throw lastFailure != null ? lastFailure : new IOException("RAG ingredient lookup failed");
+        IOException finalFailure = lastFailure != null
+                ? lastFailure
+                : new IOException("RAG ingredient lookup failed");
+        PrivacySafeRequestDiagnostics.log(
+                correlationId, PrivacySafeRequestDiagnostics.RAG_ROUTE, "failure",
+                lastStatus, startedNanos, PrivacySafeRequestDiagnostics.classifyFailure(finalFailure)
+        );
+        throw finalFailure;
     }
 }

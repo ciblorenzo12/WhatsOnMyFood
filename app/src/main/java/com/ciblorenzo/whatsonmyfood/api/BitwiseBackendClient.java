@@ -3,7 +3,6 @@ package com.ciblorenzo.whatsonmyfood.api;
 import android.graphics.Bitmap;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 
 import com.ciblorenzo.whatsonmyfood.BuildConfig;
 import com.ciblorenzo.whatsonmyfood.analysis.IngredientTextParser;
@@ -30,7 +29,6 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class BitwiseBackendClient {
-    private static final String TAG = "BitwiseBackendClient";
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     // One retry fits within the total call window and avoids long retry loops.
     static final int MAX_TRANSIENT_RETRIES = ResilientRequestPolicy.MAX_TRANSIENT_RETRIES;
@@ -79,11 +77,21 @@ public class BitwiseBackendClient {
             Bitmap bitmap,
             LlmCallback callback
     ) {
+        String correlationId = PrivacySafeRequestDiagnostics.newCorrelationId();
+        long startedNanos = PrivacySafeRequestDiagnostics.startNanos();
         String configuredBaseUrl = configuredBaseUrl(
                 BuildConfig.BITWISE_LLM_BASE_URL,
                 BuildConfig.RETAILER_BACKEND_BASE_URL
         );
         if (configuredBaseUrl.isEmpty()) {
+            PrivacySafeRequestDiagnostics.log(
+                    correlationId,
+                    PrivacySafeRequestDiagnostics.AI_ROUTE,
+                    "failure",
+                    0,
+                    startedNanos,
+                    "configuration"
+            );
             postError(callback, "Bitwise is not configured. Add the protected backend URL and rebuild the app.");
             return null;
         }
@@ -99,10 +107,11 @@ public class BitwiseBackendClient {
         Request request = new Request.Builder()
                 .url(configuredBaseUrl + "v1/bitwise/analyze")
                 .header("X-APP-TOKEN", BuildConfig.BITWISE_APP_TOKEN)
+                .header(PrivacySafeRequestDiagnostics.CORRELATION_HEADER, correlationId)
                 .post(RequestBody.create(bodyJson.toString(), JSON))
                 .build();
 
-        return enqueueRequest(request, callback);
+        return enqueueRequest(request, callback, correlationId, startedNanos);
     }
 
     static JsonObject buildRequestBody(String prompt, String productContext, List<String> rules) {
@@ -173,11 +182,24 @@ public class BitwiseBackendClient {
         return configured.endsWith("/") ? configured : configured + "/";
     }
 
-    private Call enqueueRequest(Request request, LlmCallback callback) {
+    private Call enqueueRequest(
+            Request request,
+            LlmCallback callback,
+            String correlationId,
+            long startedNanos
+    ) {
         Call call = client.newCall(request);
         call.enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException error) {
+                PrivacySafeRequestDiagnostics.log(
+                        correlationId,
+                        PrivacySafeRequestDiagnostics.AI_ROUTE,
+                        "failure",
+                        0,
+                        startedNanos,
+                        PrivacySafeRequestDiagnostics.classifyFailure(error)
+                );
                 postError(callback, friendlyFailureMessage(error));
             }
 
@@ -185,6 +207,15 @@ public class BitwiseBackendClient {
             public void onResponse(Call call, Response response) throws IOException {
                 String responseBody = response.body() != null ? response.body().string() : "";
                 if (!response.isSuccessful()) {
+                    String category = PrivacySafeRequestDiagnostics.classifyStatus(response.code());
+                    PrivacySafeRequestDiagnostics.log(
+                            correlationId,
+                            PrivacySafeRequestDiagnostics.AI_ROUTE,
+                            response.code() == 429 ? "rate_limited" : "failure",
+                            response.code(),
+                            startedNanos,
+                            category
+                    );
                     postError(callback, friendlyErrorMessage(
                             response.code(),
                             responseBody,
@@ -194,6 +225,14 @@ public class BitwiseBackendClient {
                 }
 
                 if (looksLikeHtml(responseBody)) {
+                    PrivacySafeRequestDiagnostics.log(
+                            correlationId,
+                            PrivacySafeRequestDiagnostics.AI_ROUTE,
+                            "failure",
+                            response.code(),
+                            startedNanos,
+                            "invalid_response"
+                    );
                     postError(callback, "Bitwise is starting up. Please try again in a moment.");
                     return;
                 }
@@ -201,11 +240,37 @@ public class BitwiseBackendClient {
                 try {
                     JsonObject result = gson.fromJson(responseBody, JsonObject.class);
                     if (result != null && result.has("content")) {
+                        boolean fallback = result.has("provider")
+                                && "local-fallback".equals(result.get("provider").getAsString());
+                        PrivacySafeRequestDiagnostics.log(
+                                correlationId,
+                                PrivacySafeRequestDiagnostics.AI_ROUTE,
+                                fallback ? "fallback_success" : "success",
+                                response.code(),
+                                startedNanos,
+                                fallback ? "provider_unavailable" : "none"
+                        );
                         postResult(callback, result.get("content").getAsString());
                     } else {
+                        PrivacySafeRequestDiagnostics.log(
+                                correlationId,
+                                PrivacySafeRequestDiagnostics.AI_ROUTE,
+                                "failure",
+                                response.code(),
+                                startedNanos,
+                                "invalid_response"
+                        );
                         postError(callback, "Bitwise returned an empty response.");
                     }
                 } catch (Exception error) {
+                    PrivacySafeRequestDiagnostics.log(
+                            correlationId,
+                            PrivacySafeRequestDiagnostics.AI_ROUTE,
+                            "failure",
+                            response.code(),
+                            startedNanos,
+                            "invalid_response"
+                    );
                     postError(callback, "Bitwise received an invalid server response. Please try again.");
                 }
             }
@@ -264,13 +329,11 @@ public class BitwiseBackendClient {
                     );
                     if (!retry) return response;
 
-                    Log.w(TAG, "Protected analysis returned " + response.code() + "; retrying once");
                     response.close();
                     ResilientRequestPolicy.waitBeforeRetry();
                 } catch (IOException error) {
                     lastFailure = error;
                     if (!ResilientRequestPolicy.shouldRetryFailure(error, attempt)) throw error;
-                    Log.w(TAG, "Protected analysis had a transient network failure; retrying once");
                     ResilientRequestPolicy.waitBeforeRetry();
                 }
             }
@@ -283,7 +346,6 @@ public class BitwiseBackendClient {
     }
 
     private void postError(LlmCallback callback, String message) {
-        Log.e(TAG, message);
         mainHandler.post(() -> callback.onError(message));
     }
 

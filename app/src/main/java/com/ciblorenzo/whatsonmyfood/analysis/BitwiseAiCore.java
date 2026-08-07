@@ -121,6 +121,7 @@ public class BitwiseAiCore {
                 + "For personal-care and oral-care products, decide whether it is APPROVED or NOT_APPROVED based on ingredient concerns and intended use; still explain good and bad ingredients clearly.\n"
                 + "Treat ordinary base ingredients such as water, rose water, glycerin, aloe, citric acid, salt used in small amounts, and mineral salts as neutral or positive unless the label shows a specific concern.\n"
                 + "Reserve negative findings for clear issues: artificial colors, high added sugar, trans-fat sources, high-fructose corn syrup, multiple ultra-processed additives, high sodium/sugar, concerning preservatives, fragrance allergens, or ingredients with evidence-based cautions.\n"
+                + "App policy: if the supplied ingredient list contains the broad term natural flavor or natural flavors, return NOT_HEALTHY. Explain that this is a transparency-based caution, not proof that the flavor is toxic or unsafe.\n"
                 + "When giving a NOT_HEALTHY or NOT_APPROVED verdict, say which concerning ingredients or nutrition signals are present and why they matter. Do not justify the verdict by listing ingredients that are absent.\n\n"
                 + "DETECTED INGREDIENT LABEL:\n"
                 + context.detectedIngredientLabel + "\n\n"
