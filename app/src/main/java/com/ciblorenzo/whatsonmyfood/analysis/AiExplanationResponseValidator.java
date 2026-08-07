@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 public final class AiExplanationResponseValidator {
 
     private static final Set<String> VERDICTS = new HashSet<>(Arrays.asList(
-            "HEALTHY", "NOT_HEALTHY", "APPROVED", "NOT_APPROVED", "REVIEW"
+            "HEALTHY", "NOT_HEALTHY", "APPROVED", "NOT_APPROVED"
     ));
     private static final Set<String> IMPACTS = new HashSet<>(Arrays.asList(
             "positive", "neutral", "warning", "negative"
@@ -77,7 +77,7 @@ public final class AiExplanationResponseValidator {
             }
 
             JsonArray ingredients = arrayValue(root, "ingredients");
-            if (ingredients == null || ingredients.size() > 100) {
+            if (ingredients == null || ingredients.size() == 0 || ingredients.size() > 100) {
                 return invalid("Bitwise returned invalid ingredient details.");
             }
             for (JsonElement ingredient : ingredients) {

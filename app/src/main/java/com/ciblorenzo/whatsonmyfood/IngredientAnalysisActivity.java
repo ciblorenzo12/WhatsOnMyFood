@@ -183,6 +183,19 @@ public class IngredientAnalysisActivity extends BaseActivity {
                     if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
                     AiGlowManager.stopGlow(IngredientAnalysisActivity.this);
                     ProductIdentity identity = inferProductIdentityFromOcr(rawOcrText);
+                    if (displayDeterministicReview(
+                            identity,
+                            healthScoreView,
+                            rawIngredientsView,
+                            analysisRecyclerView
+                    )) {
+                        Toast.makeText(
+                                IngredientAnalysisActivity.this,
+                                R.string.bitwise_deterministic_fallback,
+                                Toast.LENGTH_LONG
+                        ).show();
+                        return;
+                    }
                     if (identity.productName == null) {
                         requestSupplementalOcr(false, "", "");
                         return;
@@ -476,45 +489,95 @@ public class IngredientAnalysisActivity extends BaseActivity {
         if (supplementalScanRequested || isFinishing()) return;
         supplementalScanRequested = true;
 
-        int titleRes = ingredientsMissing
-                ? R.string.missing_ingredients_scan_title
-                : R.string.missing_product_name_scan_title;
-        int messageRes = ingredientsMissing
-                ? R.string.missing_ingredients_scan_message
-                : R.string.missing_product_name_scan_message;
+        if (ingredientsMissing) {
+            MissingIngredientReviewDialog.show(this, new MissingIngredientReviewDialog.Listener() {
+                @Override
+                public void onIngredientsEntered(String ingredients) {
+                    supplementalScanRequested = false;
+                    analyzeManualIngredients(ingredients);
+                }
+
+                @Override
+                public void onIngredientScanRequested() {
+                    launchSupplementalScanner(true, productName, brand);
+                }
+            });
+            return;
+        }
 
         new AlertDialog.Builder(this)
-                .setTitle(titleRes)
-                .setMessage(messageRes)
+                .setTitle(R.string.missing_product_name_scan_title)
+                .setMessage(R.string.missing_product_name_scan_message)
                 .setCancelable(false)
-                .setPositiveButton(R.string.continue_to_camera, (dialog, which) -> {
-                    Intent scannerIntent = new Intent(this, ScanBarcodeActivity.class);
-                    scannerIntent.putExtra(
-                            ScanBarcodeActivity.EXTRA_SUPPLEMENTAL_TARGET,
-                            ingredientsMissing
-                                    ? ScanBarcodeActivity.TARGET_INGREDIENTS
-                                    : ScanBarcodeActivity.TARGET_PRODUCT_NAME
-                    );
-                    scannerIntent.putExtra(
-                            ScanBarcodeActivity.EXTRA_EXISTING_INGREDIENT_TEXT,
-                            ingredientsMissing ? "" : rawOcrText
-                    );
-                    scannerIntent.putExtra(
-                            ScanBarcodeActivity.EXTRA_EXISTING_PRODUCT_TEXT,
-                            ingredientsMissing ? buildProductIdentityContext(productName, brand) : ""
-                    );
-                    if (sourceBarcode != null) {
-                        scannerIntent.putExtra(ScanBarcodeActivity.EXTRA_SOURCE_BARCODE, sourceBarcode);
-                    }
-                    scannerIntent.putExtra(
-                            ScanBarcodeActivity.EXTRA_SUPPLEMENTAL_ATTEMPT,
-                            supplementalAttempt + 1
-                    );
-                    startActivity(scannerIntent);
-                    finish();
-                })
+                .setPositiveButton(R.string.continue_to_camera,
+                        (dialog, which) -> launchSupplementalScanner(false, productName, brand))
                 .setNegativeButton(android.R.string.cancel, (dialog, which) -> finish())
                 .show();
+    }
+
+    private void launchSupplementalScanner(boolean ingredientsMissing, String productName, String brand) {
+        Intent scannerIntent = new Intent(this, ScanBarcodeActivity.class);
+        scannerIntent.putExtra(
+                ScanBarcodeActivity.EXTRA_SUPPLEMENTAL_TARGET,
+                ingredientsMissing ? ScanBarcodeActivity.TARGET_INGREDIENTS : ScanBarcodeActivity.TARGET_PRODUCT_NAME
+        );
+        scannerIntent.putExtra(
+                ScanBarcodeActivity.EXTRA_EXISTING_INGREDIENT_TEXT,
+                ingredientsMissing ? "" : rawOcrText
+        );
+        scannerIntent.putExtra(
+                ScanBarcodeActivity.EXTRA_EXISTING_PRODUCT_TEXT,
+                ingredientsMissing ? buildProductIdentityContext(productName, brand) : ""
+        );
+        if (sourceBarcode != null) {
+            scannerIntent.putExtra(ScanBarcodeActivity.EXTRA_SOURCE_BARCODE, sourceBarcode);
+        }
+        scannerIntent.putExtra(ScanBarcodeActivity.EXTRA_SUPPLEMENTAL_ATTEMPT, supplementalAttempt + 1);
+        startActivity(scannerIntent);
+        finish();
+    }
+
+    private void analyzeManualIngredients(String ingredientText) {
+        List<String> parsed = IngredientTextParser.parseIngredientCandidates(ingredientText);
+        if (parsed.isEmpty()) {
+            requestSupplementalOcr(true, "", "");
+            return;
+        }
+
+        String detectedIngredientLabel = String.join(", ", parsed);
+        String identityContext = textBeforeIngredientMarker(rawOcrText).trim();
+        rawOcrText = (identityContext.isEmpty() ? "" : identityContext + "\n")
+                + "Ingredients: " + detectedIngredientLabel;
+        labelContainsAllergens = new ArrayList<>();
+        labelMayContainAllergens = new ArrayList<>();
+
+        String analysisPrompt = "response_language: " + LanguageManager.getLanguageName(this) + "\n"
+                + "scan_mode: ingredients\n"
+                + "image_attached: " + (capturedBitmap != null ? "true" : "false") + "\n"
+                + "available_barcode: " + (sourceBarcode != null ? sourceBarcode : "") + "\n"
+                + "source_status: user_entered_ingredients\n"
+                + "task: Review the product using the user-entered package ingredients. Use package text only for product identity and do not invent ingredients.\n"
+                + "detected_ingredient_label:\n"
+                + detectedIngredientLabel + "\n"
+                + "product_ocr_text:\n"
+                + rawOcrText;
+
+        TextView healthScoreView = findViewById(R.id.health_score_text_view);
+        TextView rawIngredientsView = findViewById(R.id.raw_ingredients_text_view);
+        RecyclerView analysisRecyclerView = findViewById(R.id.analysis_recycler_view);
+        ProgressBar progressBar = findViewById(R.id.analysis_progress_bar);
+        if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
+        healthScoreView.setText(R.string.analyzing);
+        rawIngredientsView.setText(R.string.identifying_ingredients);
+        analyzeWithAI(
+                analysisPrompt,
+                new RuleEngine().getRuleDescriptions(),
+                capturedBitmap,
+                healthScoreView,
+                rawIngredientsView,
+                analysisRecyclerView,
+                progressBar
+        );
     }
 
     private String buildProductIdentityContext(String productName, String brand) {
@@ -537,13 +600,73 @@ public class IngredientAnalysisActivity extends BaseActivity {
 
     private void showUnreadableLabelDialog() {
         if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.ingredients_not_read_title)
-                .setMessage(R.string.ingredients_not_read_message)
-                .setCancelable(false)
-                .setPositiveButton(R.string.try_again, (dialog, which) -> finish())
-                .setNegativeButton(android.R.string.cancel, (dialog, which) -> finish())
-                .show();
+        MissingIngredientReviewDialog.show(this, new MissingIngredientReviewDialog.Listener() {
+            @Override
+            public void onIngredientsEntered(String ingredients) {
+                analyzeManualIngredients(ingredients);
+            }
+
+            @Override
+            public void onIngredientScanRequested() {
+                launchSupplementalScanner(true, "", "");
+            }
+        });
+    }
+
+    private boolean displayDeterministicReview(
+            ProductIdentity identity,
+            TextView scoreView,
+            TextView rawIngredientsView,
+            RecyclerView recyclerView
+    ) {
+        String productKey = sourceBarcode != null
+                ? sourceBarcode
+                : "scan-" + Math.abs(rawOcrText.hashCode());
+        List<Ingredient> ingredients = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
+        for (String text : IngredientScoringInput.select(rawOcrText, new ArrayList<>())) {
+            addIngredientIfUseful(ingredients, seen, productKey, text);
+        }
+        if (ingredients.isEmpty()) return false;
+
+        String productName = identity.productName != null ? identity.productName : "Scanned Product";
+        String brand = identity.brand != null ? identity.brand : "";
+        detectedProduct = new ProductWithDetails();
+        detectedProduct.product = new Product(
+                productKey,
+                productName,
+                brand,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+        detectedProduct.ingredients = ingredients;
+        detectedProduct.containsAllergens = new ArrayList<>(labelContainsAllergens);
+        detectedProduct.mayContainAllergens = new ArrayList<>(labelMayContainAllergens);
+
+        ProductAnalysisReport report = new RuleEngine().analyze(detectedProduct);
+        detectedProduct.product.healthScore = report.getOverallScore();
+        HealthVerdict verdict = HealthVerdict.fromResults(report.getResults(), ingredients.size());
+        scoreView.setText(verdict.getLabel());
+        scoreView.setTextColor(getVerdictColor(verdict));
+        recyclerView.setAdapter(new AnalysisResultAdapter(report.getResults()));
+        displayHighlightedIngredients(detectedProduct, report, rawIngredientsView);
+
+        TextView nameView = findViewById(R.id.product_name_text_view);
+        TextView brandView = findViewById(R.id.product_brand_text_view);
+        if (nameView != null) nameView.setText(productName);
+        if (brandView != null) brandView.setText(brand);
+        if (retailerCommerceViewBinder != null) retailerCommerceViewBinder.bind(detectedProduct);
+        if (savePantryButton != null) savePantryButton.setVisibility(View.VISIBLE);
+        return true;
     }
 
     private boolean looksLikeVitaCoco(String lowerText) {

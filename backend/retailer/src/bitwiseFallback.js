@@ -110,7 +110,7 @@ function productAnalysis(prompt) {
     product_type: /\b(water|hydration|electrolyte|drink|beverage)\b/i.test(productIdentity)
       ? "beverage"
       : "food",
-    verdict: warnings.length > 0 ? "NOT_HEALTHY" : "REVIEW",
+    verdict: warnings.length > 0 ? "NOT_HEALTHY" : "HEALTHY",
     verdict_reason: reason,
     ingredients,
     summary: naturalProductSummary(productName, brand, lower, ingredients, warnings, refinedOils, hasEvidence),

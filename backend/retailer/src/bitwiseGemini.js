@@ -4,7 +4,7 @@ const { analyzePrompt } = require("./bitwiseFallback");
 const DEFAULT_MODEL = "gemini-3.1-pro-preview";
 const DEFAULT_APP_TOKEN = "R7qK2mZ9vP4xT0aLN6cY1sD8wF3hJ5bG";
 const MAX_BODY_BYTES = 8 * 1024 * 1024;
-const ALLOWED_VERDICTS = new Set(["HEALTHY", "NOT_HEALTHY", "APPROVED", "NOT_APPROVED", "REVIEW"]);
+const ALLOWED_VERDICTS = new Set(["HEALTHY", "NOT_HEALTHY", "APPROVED", "NOT_APPROVED"]);
 const ALLOWED_IMPACTS = new Set(["positive", "neutral", "warning", "negative"]);
 const ALLOWED_FACT_CHECK_STATUSES = new Set(["grounded", "authoritative_sources_selected"]);
 const UNSAFE_MEDICAL_CLAIM_PATTERNS = [
@@ -77,7 +77,7 @@ const BITWISE_RESPONSE_SCHEMA = {
     },
     verdict: {
       type: "string",
-      enum: ["HEALTHY", "NOT_HEALTHY", "APPROVED", "NOT_APPROVED", "REVIEW"],
+      enum: ["HEALTHY", "NOT_HEALTHY", "APPROVED", "NOT_APPROVED"],
     },
     verdict_reason: { type: "string" },
     ingredients: { type: "array", items: { type: "string" } },
@@ -388,6 +388,7 @@ function validateProviderOutput(content) {
   }
 
   if (!Array.isArray(parsed.ingredients)
+      || parsed.ingredients.length === 0
       || parsed.ingredients.length > 100
       || parsed.ingredients.some((item) => typeof item !== "string" || !item.trim())) {
     throw new Error("Gemini returned invalid ingredient data");

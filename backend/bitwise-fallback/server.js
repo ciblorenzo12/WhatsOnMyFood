@@ -115,7 +115,7 @@ function productAnalysis(prompt) {
     product_name: productName,
     brand,
     product_type: lower.indexOf("water") !== -1 ? "beverage" : "food",
-    verdict: warnings.length > 0 ? "NOT_HEALTHY" : "REVIEW",
+    verdict: warnings.length > 0 ? "NOT_HEALTHY" : "HEALTHY",
     verdict_reason: reason,
     ingredients,
     summary: naturalProductSummary(productName, brand, lower, ingredients, warnings, refinedOils, hasEvidence),

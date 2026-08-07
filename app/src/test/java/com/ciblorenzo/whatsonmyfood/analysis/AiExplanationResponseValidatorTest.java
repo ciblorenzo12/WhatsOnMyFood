@@ -62,4 +62,20 @@ public class AiExplanationResponseValidatorTest {
 
         assertFalse(AiExplanationResponseValidator.validate(unsafe).usable);
     }
+
+    @Test
+    public void rejectsReviewVerdictAndMissingIngredients() {
+        String completeSummary = "<b>Why this rating</b><br>Whole-grain oats are the supplied ingredient. "
+                + "<b>Portion guidance</b><br>Use the serving printed on the package. "
+                + "<b>Fact check</b><br>The explanation was checked against the cited nutrition source.";
+        String common = ",\"summary\":\"" + completeSummary + "\","
+                + "\"findings\":[],\"sources\":[{\"name\":\"FDA\",\"url\":\"https://www.fda.gov/food\"}]}";
+
+        assertFalse(AiExplanationResponseValidator.validate(
+                "{\"verdict\":\"REVIEW\",\"ingredients\":[\"oats\"]" + common
+        ).usable);
+        assertFalse(AiExplanationResponseValidator.validate(
+                "{\"verdict\":\"HEALTHY\",\"ingredients\":[]" + common
+        ).usable);
+    }
 }

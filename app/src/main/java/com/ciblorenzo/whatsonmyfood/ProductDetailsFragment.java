@@ -39,6 +39,7 @@ import com.ciblorenzo.whatsonmyfood.analysis.AiSummaryFormatter;
 import com.ciblorenzo.whatsonmyfood.analysis.AiIngredientRecovery;
 import com.ciblorenzo.whatsonmyfood.analysis.HealthVerdict;
 import com.ciblorenzo.whatsonmyfood.analysis.HealthVerdictExplanationBuilder;
+import com.ciblorenzo.whatsonmyfood.analysis.IngredientReviewGate;
 import com.ciblorenzo.whatsonmyfood.analysis.IngredientTextParser;
 import com.ciblorenzo.whatsonmyfood.analysis.BitwiseAnalysisService;
 import com.ciblorenzo.whatsonmyfood.analysis.ProductAnalysisReport;
@@ -103,6 +104,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     private final List<String> suggestedIngredients = new ArrayList<>();
     private final Set<ProductRepository.SourceStatus> displayedSourceStatuses = new LinkedHashSet<>();
     private String translationCheckedBarcode;
+    private boolean ingredientInputPromptVisible;
 
     private TextView aiSourcesTextView;
     private View aiSourcesDivider;
@@ -415,12 +417,17 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         boolean ingredientsMissing = !hasListedIngredients(productDetails);
         contributeIngredientsButton.setVisibility(ingredientsMissing ? View.VISIBLE : View.GONE);
         if (!ingredientsMissing) suggestedIngredients.clear();
-        if (currentReport != null) {
+        if (ingredientsMissing) {
+            healthScoreTextView.setText(R.string.ingredients_required_score);
+            healthScoreTextView.setTextColor(ContextCompat.getColor(requireContext(), R.color.score_unknown));
+            analysisRecyclerView.setAdapter(null);
+            ingredientsTextView.setText(R.string.ingredients_required_message);
+        } else if (currentReport != null) {
             applyRuleBasedScore(productDetails, currentReport);
             analysisRecyclerView.setAdapter(new AnalysisResultAdapter(currentReport.getResults()));
             displayHighlightedIngredients(productDetails, currentReport);
         } else {
-            healthScoreTextView.setText("Needs Review");
+            healthScoreTextView.setText(R.string.analyzing);
             healthScoreTextView.setTextColor(ContextCompat.getColor(requireContext(), R.color.score_unknown));
             analysisRecyclerView.setAdapter(null);
             ingredientsTextView.setText("Could not analyze ingredients.");
@@ -432,6 +439,12 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
         displayNutriments(productDetails.nutriments);
         GlassMotion.enter(detailsLayout, 0L);
+
+        if (allowAiInsight && isAiEnabled() && ingredientsMissing) {
+            showMissingIngredientReviewPrompt(productDetails);
+            hideAiInsight();
+            return;
+        }
 
         if (allowAiInsight && hasListedIngredients(productDetails)
                 && translateListedIngredientsIfNeeded(productDetails)) {
@@ -459,6 +472,11 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
     private void fetchAiInsight(ProductWithDetails productDetails) {
         if (aiSummaryContainer == null) return;
+        if (!hasListedIngredients(productDetails)) {
+            showMissingIngredientReviewPrompt(productDetails);
+            hideAiInsight();
+            return;
+        }
         if (hasListedIngredients(productDetails) && displayCachedAiInsight(productDetails)) return;
 
         aiSummaryContainer.setVisibility(View.VISIBLE);
@@ -800,11 +818,56 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     }
 
     private boolean hasListedIngredients(ProductWithDetails product) {
-        if (product == null || product.ingredients == null) return false;
-        for (Ingredient ingredient : product.ingredients) {
-            if (ingredient != null && ingredient.text != null && !ingredient.text.trim().isEmpty()) return true;
+        return IngredientReviewGate.hasUsableIngredients(product);
+    }
+
+    private void showMissingIngredientReviewPrompt(ProductWithDetails product) {
+        if (ingredientInputPromptVisible || getContext() == null || !isAdded()) return;
+        ingredientInputPromptVisible = true;
+        MissingIngredientReviewDialog.show(requireContext(), new MissingIngredientReviewDialog.Listener() {
+            @Override
+            public void onIngredientsEntered(String ingredients) {
+                ingredientInputPromptVisible = false;
+                saveManualIngredientsAndReview(product, ingredients);
+            }
+
+            @Override
+            public void onIngredientScanRequested() {
+                ingredientInputPromptVisible = false;
+                openIngredientScanMode(product);
+            }
+        });
+    }
+
+    private void saveManualIngredientsAndReview(ProductWithDetails product, String rawIngredients) {
+        if (product == null || product.product == null) return;
+        String barcode = product.product.barcode;
+        product.ingredients = buildIngredientList(barcode, rawIngredients);
+        if (!IngredientReviewGate.hasUsableIngredients(product)) {
+            showMissingIngredientReviewPrompt(product);
+            return;
         }
-        return false;
+        addSourceStatus(ProductRepository.SourceStatus.INGREDIENTS_RECOVERED_FROM_LABEL_OR_SUPPORTING_SERVICE);
+        currentProductDetails = product;
+        executorService.execute(() -> {
+            db.productDao().insertProductWithDetails(product);
+            if (getActivity() != null && isAdded()) {
+                getActivity().runOnUiThread(() -> displayProductDetails(product, true));
+            }
+        });
+    }
+
+    private void openIngredientScanMode(ProductWithDetails product) {
+        if (getContext() == null || product == null || product.product == null) return;
+        Intent intent = new Intent(requireContext(), ScanBarcodeActivity.class);
+        intent.putExtra(ScanBarcodeActivity.EXTRA_SUPPLEMENTAL_TARGET, ScanBarcodeActivity.TARGET_INGREDIENTS);
+        intent.putExtra(ScanBarcodeActivity.EXTRA_SOURCE_BARCODE, product.product.barcode);
+        intent.putExtra(
+                ScanBarcodeActivity.EXTRA_EXISTING_PRODUCT_TEXT,
+                displayProductName(product.product.productName) + "\n"
+                        + (product.product.brands == null ? "" : product.product.brands)
+        );
+        startActivity(intent);
     }
 
     private void showIngredientContribution(String barcode) {

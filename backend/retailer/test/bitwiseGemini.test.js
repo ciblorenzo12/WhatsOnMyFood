@@ -59,7 +59,9 @@ test("uses the local analysis when Gemini is not configured", async () => {
   const result = await handleBitwiseAnalysis(request({ prompt: "Ingredients: water, sugar" }));
   assert.equal(result.status, 200);
   assert.equal(result.body.provider, "local-fallback");
-  assert.equal(JSON.parse(result.body.content).ingredients[0], "water");
+  const content = JSON.parse(result.body.content);
+  assert.equal(content.ingredients[0], "water");
+  assert.equal(content.verdict, "HEALTHY");
 });
 
 test("does not classify a solid food as a drink just because water is an ingredient", async () => {
@@ -257,6 +259,16 @@ test("validates grounded provider output and rejects blank, HTML, malformed, and
   assert.throws(() => validateProviderOutput(""), /blank or HTML/i);
   assert.throws(() => validateProviderOutput("<!DOCTYPE html><title>Starting</title>"), /blank or HTML/i);
   assert.throws(() => validateProviderOutput("not-json"), /malformed JSON/i);
+  assert.throws(() => validateProviderOutput(JSON.stringify(validProviderContent({
+    verdict: "REVIEW",
+    fact_check_status: "grounded",
+    sources: [{ name: "FDA", url: "https://www.fda.gov/food" }],
+  }))), /unsupported verdict/i);
+  assert.throws(() => validateProviderOutput(JSON.stringify(validProviderContent({
+    ingredients: [],
+    fact_check_status: "grounded",
+    sources: [{ name: "FDA", url: "https://www.fda.gov/food" }],
+  }))), /invalid ingredient data/i);
   assert.throws(() => validateProviderOutput(JSON.stringify(validProviderContent({
     verdict_reason: "This product can cure diabetes.",
     fact_check_status: "grounded",

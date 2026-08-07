@@ -148,6 +148,14 @@
     <string name="missing_product_name_scan_message">Se encontraron los ingredientes, pero no el nombre del producto. Gira el envase y escanea el nombre y la marca.</string>
     <string name="missing_ingredients_scan_title">Un escaneo más: ingredientes</string>
     <string name="missing_ingredients_scan_message">Se identificó el producto, pero no se pudieron leer los ingredientes. Escanea la lista completa en la parte posterior.</string>
+    <string name="ingredients_required_title">Se necesitan ingredientes para la evaluación</string>
+    <string name="ingredients_required_message">Para ofrecerte una evaluación completa de Bitwise, escribe los ingredientes exactamente como aparecen en el envase o usa el modo Ingredientes para escanear la etiqueta.</string>
+    <string name="ingredients_required_score">Añade los ingredientes para evaluar</string>
+    <string name="ingredients_manual_hint">Ejemplo: avena integral, azúcar, sal</string>
+    <string name="ingredients_manual_error">Escribe al menos un ingrediente.</string>
+    <string name="analyze_ingredients">Analizar ingredientes</string>
+    <string name="use_ingredients_mode">Usar modo Ingredientes</string>
+    <string name="bitwise_deterministic_fallback">Bitwise no está disponible temporalmente. Se muestra la evaluación basada en los ingredientes.</string>
     <string name="product_name_not_read_title">No se puede leer el nombre</string>
     <string name="product_name_not_read_message">Mantén visibles el nombre y la marca, evita reflejos y no muevas la cámara. Inténtalo de nuevo o elige una foto frontal más clara.</string>
     <string name="barcode_ai_toggle">IA para c&#243;digos de barras</string>
