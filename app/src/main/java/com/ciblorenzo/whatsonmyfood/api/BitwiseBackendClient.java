@@ -6,6 +6,7 @@ import android.os.Looper;
 import android.util.Log;
 
 import com.ciblorenzo.whatsonmyfood.BuildConfig;
+import com.ciblorenzo.whatsonmyfood.analysis.IngredientTextParser;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -16,6 +17,8 @@ import java.io.InterruptedIOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -35,6 +38,15 @@ public class BitwiseBackendClient {
     static final int ANALYSIS_READ_TIMEOUT_SECONDS = 20;
     static final int ANALYSIS_WRITE_TIMEOUT_SECONDS = 15;
     static final int ANALYSIS_CALL_TIMEOUT_SECONDS = 45;
+    private static final Pattern SOURCE_STATUS_PATTERN = Pattern.compile(
+            "(?im)^\\s*(?:source_status|source status)\\s*:\\s*(.+?)\\s*$"
+    );
+    private static final Pattern DETECTED_LABEL_PATTERN = Pattern.compile(
+            "(?is)detected_ingredient_label\\s*:\\s*(.*?)(?=\\n\\s*(?:contains_allergens|may_contain_allergens|product_ocr_text|ocr_text)\\s*:|$)"
+    );
+    private static final Pattern INGREDIENTS_LINE_PATTERN = Pattern.compile(
+            "(?im)^\\s*ingredients\\s*:\\s*(.+?)\\s*$"
+    );
 
     private final OkHttpClient client;
     private final Gson gson = new Gson();
@@ -99,7 +111,13 @@ public class BitwiseBackendClient {
         body.addProperty("prompt", prompt == null ? "" : prompt.trim());
 
         JsonObject structuredProduct = new JsonObject();
-        structuredProduct.addProperty("raw", productContext == null ? "" : productContext.trim());
+        String rawContext = productContext == null ? "" : productContext.trim();
+        structuredProduct.addProperty("raw", rawContext);
+        JsonArray normalizedIngredients = normalizedIngredients(rawContext);
+        structuredProduct.add("normalizedIngredients", normalizedIngredients);
+        String sourceStatus = sourceStatus(rawContext, normalizedIngredients.size());
+        structuredProduct.addProperty("sourceStatus", sourceStatus);
+        structuredProduct.addProperty("uncertainty", uncertainty(sourceStatus, normalizedIngredients.size()));
         body.add("productContext", structuredProduct);
 
         JsonArray structuredRules = new JsonArray();
@@ -110,6 +128,42 @@ public class BitwiseBackendClient {
         }
         body.add("rules", structuredRules);
         return body;
+    }
+
+    static JsonArray normalizedIngredients(String productContext) {
+        JsonArray result = new JsonArray();
+        if (productContext == null || productContext.trim().isEmpty()) return result;
+
+        String ingredientText = firstMatch(DETECTED_LABEL_PATTERN, productContext);
+        if (ingredientText.isEmpty()) ingredientText = firstMatch(INGREDIENTS_LINE_PATTERN, productContext);
+        for (String ingredient : IngredientTextParser.parseIngredientCandidates(ingredientText)) {
+            if (ingredient != null && !ingredient.trim().isEmpty()) result.add(ingredient.trim());
+        }
+        return result;
+    }
+
+    static String sourceStatus(String productContext, int ingredientCount) {
+        String explicit = firstMatch(SOURCE_STATUS_PATTERN, productContext);
+        if (!explicit.isEmpty()) return explicit;
+        if (!firstMatch(DETECTED_LABEL_PATTERN, productContext).isEmpty()) return "scanned_ingredient_label";
+        return ingredientCount > 0 ? "product_record_unspecified" : "unknown";
+    }
+
+    static String uncertainty(String sourceStatus, int ingredientCount) {
+        String normalized = sourceStatus == null ? "" : sourceStatus.toLowerCase(java.util.Locale.US);
+        if (ingredientCount == 0 || normalized.contains("unknown") || normalized.contains("outdated")) {
+            return "Ingredient evidence is missing or uncertain. Preserve deterministic findings, avoid a confident verdict, and explain the limitation.";
+        }
+        if (normalized.contains("recover") || normalized.contains("fallback") || normalized.contains("supporting")) {
+            return "Ingredients came from a recovery or fallback source. Attribute that source and use cautious wording for claims not directly visible on the label.";
+        }
+        return "Keep every claim limited to the supplied product data, normalized ingredients, deterministic findings, and verified sources.";
+    }
+
+    private static String firstMatch(Pattern pattern, String value) {
+        if (value == null) return "";
+        Matcher matcher = pattern.matcher(value);
+        return matcher.find() ? matcher.group(1).trim() : "";
     }
 
     static String configuredBaseUrl(String bitwiseUrl, String retailerUrl) {

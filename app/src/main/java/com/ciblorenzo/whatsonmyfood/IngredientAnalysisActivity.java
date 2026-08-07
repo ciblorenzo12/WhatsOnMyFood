@@ -150,6 +150,7 @@ public class IngredientAnalysisActivity extends BaseActivity {
                 + "scan_mode: ingredients\n"
                 + "image_attached: " + (capturedBitmap != null ? "true" : "false") + "\n"
                 + "available_barcode: " + (sourceBarcode != null ? sourceBarcode : "") + "\n"
+                + "source_status: scanned_ingredient_label\n"
                 + "task: Parse the scanned ingredient label for scoring. Use visible package text and the ingredient pattern to identify the product, but do not replace or invent label ingredients.\n"
                 + "detected_ingredient_label:\n"
                 + detectedIngredientLabel + "\n"

@@ -14,7 +14,9 @@ public class AiExplanationResponseValidatorTest {
                 + "\"summary\":\"<b>Why this rating</b><br>Whole grain oats are the main ingredient. "
                 + "<b>Portion guidance</b><br>Use the serving printed on the package. "
                 + "<b>Fact check</b><br>The label guidance was checked against the cited source.\","
-                + "\"findings\":[{\"rule\":\"Whole grain base\"}],"
+                + "\"ingredients\":[\"whole grain oats\"],"
+                + "\"findings\":[{\"rule\":\"Whole grain base\",\"impact\":\"positive\","
+                + "\"explanation\":\"Whole-grain oats are the first listed ingredient.\"}],"
                 + "\"sources\":[{\"name\":\"FDA Nutrition Facts\",\"url\":\"https://www.fda.gov/food\"}]"
                 + "}";
 
@@ -29,12 +31,35 @@ public class AiExplanationResponseValidatorTest {
         assertFalse(AiExplanationResponseValidator.validate("not-json").usable);
         assertFalse(AiExplanationResponseValidator.validate(
                 "{\"verdict\":\"HEALTHY\",\"summary\":\"Too short\",\"findings\":[],"
-                        + "\"sources\":[{\"url\":\"https://www.fda.gov\"}]}"
+                        + "\"ingredients\":[],\"sources\":[{\"url\":\"https://www.fda.gov\"}]}"
         ).usable);
         assertFalse(AiExplanationResponseValidator.validate(
                 "{\"verdict\":\"HEALTHY\","
-                        + "\"summary\":\"This explanation is long enough to read but has no verified web source.\","
-                        + "\"findings\":[],\"sources\":[{\"url\":\"javascript:alert(1)\"}]}"
+                        + "\"summary\":\"<b>Why this rating</b><br>This explanation is long enough to read. "
+                        + "<b>Portion guidance</b><br>Use the package serving. "
+                        + "<b>Fact check</b><br>This has no verified web source.\","
+                        + "\"ingredients\":[],\"findings\":[],\"sources\":[{\"url\":\"javascript:alert(1)\"}]}"
         ).usable);
+    }
+
+    @Test
+    public void rejectsHtmlAndUnsafeMedicalClaims() {
+        assertFalse(AiExplanationResponseValidator.validate(
+                "<!DOCTYPE html><title>Waiting for service</title>"
+        ).usable);
+
+        String unsafe = "{"
+                + "\"verdict\":\"HEALTHY\","
+                + "\"verdict_reason\":\"This product can cure diabetes.\","
+                + "\"ingredients\":[\"oats\"],"
+                + "\"summary\":\"<b>Why this rating</b><br>Whole-grain oats are the supplied ingredient. "
+                + "<b>Portion guidance</b><br>Use the serving printed on the package. "
+                + "<b>Fact check</b><br>The explanation was checked against the cited nutrition source.\","
+                + "\"findings\":[{\"rule\":\"Whole grain base\",\"impact\":\"positive\","
+                + "\"explanation\":\"Whole-grain oats are the first listed ingredient.\"}],"
+                + "\"sources\":[{\"name\":\"FDA\",\"url\":\"https://www.fda.gov/food\"}]"
+                + "}";
+
+        assertFalse(AiExplanationResponseValidator.validate(unsafe).usable);
     }
 }

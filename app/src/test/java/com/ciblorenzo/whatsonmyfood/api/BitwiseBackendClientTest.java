@@ -68,7 +68,25 @@ public class BitwiseBackendClientTest {
         assertEquals(1, body.get("requestVersion").getAsInt());
         assertEquals("Analyze this product", body.get("prompt").getAsString());
         assertTrue(body.getAsJsonObject("productContext").get("raw").getAsString().contains("Oat cereal"));
+        assertEquals(3, body.getAsJsonObject("productContext").getAsJsonArray("normalizedIngredients").size());
+        assertEquals("oats", body.getAsJsonObject("productContext").getAsJsonArray("normalizedIngredients").get(0).getAsString());
+        assertEquals("product_record_unspecified", body.getAsJsonObject("productContext").get("sourceStatus").getAsString());
+        assertTrue(body.getAsJsonObject("productContext").get("uncertainty").getAsString().contains("supplied product data"));
         assertEquals(2, body.getAsJsonArray("rules").size());
+    }
+
+    @Test
+    public void preservesRecoveredSourceStatusAndUncertainty() {
+        JsonObject body = BitwiseBackendClient.buildRequestBody(
+                "Analyze this product",
+                "Source status: ingredients_recovered_from_label_or_supporting_service\n"
+                        + "Ingredients: oats, sugar",
+                Arrays.asList("Flag added sugar")
+        );
+
+        JsonObject context = body.getAsJsonObject("productContext");
+        assertEquals("ingredients_recovered_from_label_or_supporting_service", context.get("sourceStatus").getAsString());
+        assertTrue(context.get("uncertainty").getAsString().contains("recovery or fallback source"));
     }
 
     @Test

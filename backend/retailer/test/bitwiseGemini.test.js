@@ -10,6 +10,8 @@ const {
   factCheckSourcesForPrompt,
   groundedResponsePrompt,
   urlContextSources,
+  buildSourceAwarePrompt,
+  validateProviderOutput,
 } = require("../src/bitwiseGemini");
 
 const originalFetch = global.fetch;
@@ -19,6 +21,31 @@ function request(body, token = "R7qK2mZ9vP4xT0aLN6cY1sD8wF3hJ5bG") {
   const stream = Readable.from([JSON.stringify(body)]);
   stream.headers = { "x-app-token": token };
   return stream;
+}
+
+function validProviderContent(overrides = {}) {
+  return {
+    product_name: "Oat cereal",
+    brand: "Test",
+    product_type: "food",
+    verdict: "HEALTHY",
+    verdict_reason: "Whole-grain oats are the primary ingredient.",
+    ingredients: ["oats"],
+    ingredients_source: "label",
+    ingredient_confidence: "high",
+    summary: "<b>Why this rating</b><br>Whole-grain oats are the main ingredient, so the explanation stays tied to the supplied label. "
+      + "<br><br><b>Portion guidance</b><br>Use the serving printed on the package and consider the rest of the meal. "
+      + "<br><br><b>Fact check</b><br>The label guidance was checked against the verified nutrition source, while individual needs may differ.",
+    findings: [{
+      rule: "Whole grain base",
+      impact: "positive",
+      triggering_ingredient: "oats",
+      explanation: "Whole-grain oats are the first listed ingredient.",
+      source_url: "",
+    }],
+    sources: [],
+    ...overrides,
+  };
 }
 
 afterEach(() => {
@@ -97,13 +124,20 @@ test("grounds the fact check before generating the structured shopper response",
     assert.match(body.systemInstruction.parts[0].text, /Do not claim to be a doctor/i);
     assert.match(body.contents[0].parts[0].text, /Use URL Context now/i);
     assert.match(body.contents[0].parts[0].text, /FDA.*Nutrition Facts Label/i);
+    assert.match(body.contents[0].parts[0].text, /Source status: updated_from_product_database/i);
+    assert.match(body.contents[0].parts[0].text, /Normalized ingredients: bovine collagen peptides/i);
+    assert.match(body.contents[0].parts[0].text, /Product database identity is trusted; nutrition details remain label-limited/i);
+    assert.match(body.contents[0].parts[0].text, /Preserve the deterministic protein finding/i);
+    assert.match(body.contents[0].parts[0].text, /Do not contradict deterministic findings/i);
     assert.doesNotMatch(body.contents[0].parts[0].text, /Added Sugars on the Nutrition Facts Label/i);
     assert.doesNotMatch(body.contents[0].parts[0].text, /Sodium in Your Diet/i);
     return {
       ok: true,
       text: async () => JSON.stringify({
         candidates: [{
-          content: { parts: [{ text: '{"verdict":"HEALTHY","findings":[],"sources":[{"name":"Invented","url":"https://bad.example"}]}' }] },
+          content: { parts: [{ text: JSON.stringify(validProviderContent({
+            sources: [{ name: "Invented", url: "https://bad.example" }],
+          })) }] },
           urlContextMetadata: {
             urlMetadata: [{
               retrievedUrl: "https://www.fda.gov/food/nutrition-facts-label/how-understand-and-use-nutrition-facts-label",
@@ -117,7 +151,13 @@ test("grounds the fact check before generating the structured shopper response",
 
   const result = await handleBitwiseAnalysis(request({
     prompt: "Analyze this label. Generic rules mention sugar and sodium.",
-    productContext: { raw: "Product: Collagen Peptides. Ingredients: bovine collagen peptides." },
+    productContext: {
+      raw: "Product: Collagen Peptides. Ingredients: bovine collagen peptides.",
+      normalizedIngredients: ["bovine collagen peptides"],
+      sourceStatus: "updated_from_product_database",
+      uncertainty: "Product database identity is trusted; nutrition details remain label-limited.",
+    },
+    rules: ["Preserve the deterministic protein finding"],
     image: { mimeType: "image/jpeg", data: "image-data" },
   }));
   assert.equal(result.status, 200);
@@ -186,6 +226,72 @@ test("does not duplicate product label context in the grounded request", () => {
   assert.doesNotMatch(groundedPrompt, /PRODUCT LABEL DATA TO FACT-CHECK/);
 });
 
+test("builds a source-aware prompt from normalized ingredients, source status, uncertainty, and rules", () => {
+  const prompt = buildSourceAwarePrompt(
+    "Explain this product in plain language.",
+    {
+      raw: "Name: Oat cereal\nIngredients: oats, sugar, salt",
+      normalizedIngredients: ["oats", "sugar", "salt"],
+      sourceStatus: "ingredients_recovered_from_label_or_supporting_service",
+      uncertainty: "Recovered ingredients require cautious attribution.",
+    },
+    ["Added sugar finding", "Preserve the deterministic verdict"],
+  );
+
+  assert.match(prompt, /SOURCE-AWARE REQUEST CONTEXT/);
+  assert.match(prompt, /Normalized ingredients: oats, sugar, salt/);
+  assert.match(prompt, /ingredients_recovered_from_label_or_supporting_service/);
+  assert.match(prompt, /Recovered ingredients require cautious attribution/);
+  assert.match(prompt, /Added sugar finding/);
+  assert.match(prompt, /Do not contradict deterministic findings/);
+  assert.match(prompt, /Do not diagnose, prescribe treatment, or make unsupported medical claims/);
+});
+
+test("validates grounded provider output and rejects blank, HTML, malformed, and unsafe claims", () => {
+  const valid = validProviderContent({
+    fact_check_status: "grounded",
+    sources: [{ name: "FDA", url: "https://www.fda.gov/food" }],
+  });
+  assert.equal(JSON.parse(validateProviderOutput(JSON.stringify(valid))).verdict, "HEALTHY");
+
+  assert.throws(() => validateProviderOutput(""), /blank or HTML/i);
+  assert.throws(() => validateProviderOutput("<!DOCTYPE html><title>Starting</title>"), /blank or HTML/i);
+  assert.throws(() => validateProviderOutput("not-json"), /malformed JSON/i);
+  assert.throws(() => validateProviderOutput(JSON.stringify(validProviderContent({
+    verdict_reason: "This product can cure diabetes.",
+    fact_check_status: "grounded",
+    sources: [{ name: "FDA", url: "https://www.fda.gov/food" }],
+  }))), /unsafe medical claim/i);
+});
+
+test("uses the controlled local fallback when provider output fails validation", async () => {
+  process.env.GEMINI_API_KEY = "test-google-key";
+  global.fetch = async () => ({
+    ok: true,
+    text: async () => JSON.stringify({
+      candidates: [{
+        content: { parts: [{ text: "<!DOCTYPE html><title>Provider startup</title>" }] },
+      }],
+    }),
+  });
+
+  const result = await handleBitwiseAnalysis(request({
+    prompt: "Product: Oat cereal. Ingredients: oats, sugar, salt.",
+    productContext: {
+      raw: "Name: Oat cereal\nIngredients: oats, sugar, salt",
+      normalizedIngredients: ["oats", "sugar", "salt"],
+      sourceStatus: "updated_from_product_database",
+      uncertainty: "Use only the supplied product record.",
+    },
+    rules: ["Flag added sugar"],
+  }));
+
+  assert.equal(result.status, 200);
+  assert.equal(result.body.provider, "local-fallback");
+  assert.match(result.body.fallbackReason, /unavailable/i);
+  assert.equal(JSON.parse(result.body.content).product_name, "Oat cereal");
+});
+
 test("selects nutrition sources that match the scanned label", () => {
   const sources = factCheckSourcesForPrompt(
     "Product: Almond butter. Ingredients: almonds. Added sugar: 0 g. Sodium: 0 mg."
@@ -246,7 +352,9 @@ test("keeps the Pro response with curated sources when URL Context returns no me
               ingredients: ["oats"],
               ingredients_source: "label",
               ingredient_confidence: "high",
-              summary: "A complete but ungrounded model explanation.",
+              summary: "<b>Why this rating</b><br>Oats are the supplied main ingredient, so the explanation is limited to that product evidence. "
+                + "<br><br><b>Portion guidance</b><br>Use the serving printed on the package and consider the full meal. "
+                + "<br><br><b>Fact check</b><br>The claim was checked against the selected authoritative nutrition references.",
               findings: [],
               sources: [],
             }),
@@ -269,7 +377,7 @@ test("keeps the Pro response with curated sources when URL Context returns no me
   const content = JSON.parse(result.body.content);
   assert.equal(content.product_name, "Oat cereal");
   assert.equal(content.brand, "Test");
-  assert.equal(content.summary, "A complete but ungrounded model explanation.");
+  assert.match(content.summary, /Why this rating/);
   assert.equal(content.fact_check_status, "authoritative_sources_selected");
   assert.ok(content.sources.length > 0);
   assert.match(content.sources[0].url, /^https:\/\//);

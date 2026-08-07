@@ -44,6 +44,14 @@ returns its deterministic local analysis so label scans still work.
 `BITWISE_APP_TOKEN` is optional; if you rotate it, update the matching mobile client
 configuration before deploying the backend.
 
+The Android request includes normalized ingredients, deterministic findings, source
+status, and an explicit uncertainty statement. The backend converts that data into a
+source-aware prompt and instructs Gemini not to contradict deterministic findings or
+overstate recovered, cached, fallback, or unknown evidence. Before a provider response
+can reach the app, the backend rejects blank, HTML, malformed, incomplete, uncited, and
+unsafe medical output. Android repeats the essential checks before displaying or caching
+the explanation.
+
 `/health` is a liveness check. `/ready` additionally verifies the hosted HTTPS URL,
 server-side AI credential, application authentication, and RAG provider without exposing
 credential values.

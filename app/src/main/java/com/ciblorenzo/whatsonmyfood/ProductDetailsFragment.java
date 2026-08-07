@@ -474,6 +474,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         productData.append("Brand: ").append(productDetails.product.brands).append("\n");
         productData.append("Categories: ").append(productDetails.product.categories).append("\n");
         productData.append("Quantity: ").append(productDetails.product.quantity).append("\n");
+        productData.append("Source status: ").append(formatSourceStatusesForAi()).append("\n");
         productData.append("Ingredients: ").append(formatIngredientsForAi(productDetails)).append("\n");
         if (productDetails.nutriments != null) {
             productData.append("\nNutrition: ").append(productDetails.nutriments.toString());
@@ -893,6 +894,17 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         );
         sourceStatusTextView.setText(message);
         sourceStatusTextView.setVisibility(message.isEmpty() ? View.GONE : View.VISIBLE);
+    }
+
+    private String formatSourceStatusesForAi() {
+        if (displayedSourceStatuses.isEmpty()) return "unknown";
+        StringBuilder value = new StringBuilder();
+        for (ProductRepository.SourceStatus status : displayedSourceStatuses) {
+            if (status == null) continue;
+            if (value.length() > 0) value.append(", ");
+            value.append(status.name().toLowerCase(java.util.Locale.US));
+        }
+        return value.length() == 0 ? "unknown" : value.toString();
     }
 
     private List<Ingredient> buildIngredientList(String barcode, String ingredientText) {
