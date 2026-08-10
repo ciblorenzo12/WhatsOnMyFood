@@ -13,7 +13,7 @@ public class ProductDetailLayoutContractTest {
 
     @Test
     public void productDetailHierarchy_prioritizesIdentityFindingsExplanationAndActions() throws Exception {
-        String layout = readProjectFile("src/main/res/layout/activity_product_details.xml");
+        String layout = readProjectFile("src/main/res/layout/fragment_product_details.xml");
 
         assertOrdered(layout,
                 "@+id/product_image_view",
@@ -36,6 +36,8 @@ public class ProductDetailLayoutContractTest {
                 layout.contains("@+id/product_actions_card"));
         assertTrue("The findings list must not compete with the page scroll",
                 layout.contains("android:nestedScrollingEnabled=\"false\""));
+        assertTrue("The production fragment must keep its bottom-sheet affordance",
+                layout.contains("@+id/drag_handle"));
     }
 
     @Test
@@ -45,8 +47,10 @@ public class ProductDetailLayoutContractTest {
 
         assertTrue(phoneDimensions.contains("name=\"product_detail_content_padding\">18dp"));
         assertTrue(phoneDimensions.contains("name=\"product_detail_hero_height\">300dp"));
+        assertTrue(phoneDimensions.contains("name=\"product_detail_fragment_image_height\">220dp"));
         assertTrue(tabletDimensions.contains("name=\"product_detail_content_padding\">64dp"));
         assertTrue(tabletDimensions.contains("name=\"product_detail_hero_height\">380dp"));
+        assertTrue(tabletDimensions.contains("name=\"product_detail_fragment_image_height\">300dp"));
     }
 
     private static void assertOrdered(String source, String... values) {

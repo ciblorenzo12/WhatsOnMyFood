@@ -20,13 +20,13 @@ import com.ciblorenzo.whatsonmyfood.analysis.AnalysisResultAdapter;
 
 import java.util.Arrays;
 
-/** Debug-only screen that renders the real product-detail layout with safe sample data. */
+/** Debug-only screen that renders the product-detail fragment layout with safe sample data. */
 public class ProductDetailLayoutPreviewActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_product_details);
+        setContentView(R.layout.fragment_product_details);
 
         findViewById(R.id.loading_overlay).setVisibility(View.GONE);
         ((ImageView) findViewById(R.id.product_image_view)).setImageResource(R.drawable.m4_preview_product);

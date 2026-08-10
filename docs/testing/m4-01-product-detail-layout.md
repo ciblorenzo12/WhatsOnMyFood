@@ -2,10 +2,11 @@
 
 ## What this test proves
 
-This guide verifies that the product-detail screen presents the information a shopper needs in a clear order on both phones and tablets. It checks product identity, health findings, the Bitwise explanation, data-source status, ingredients, nutrition details, marketplace access, and pantry actions.
+This guide verifies that the `ProductDetailsFragment` bottom sheet presents the information a shopper needs in a clear order on both phones and tablets. It checks product identity, health findings, the Bitwise explanation, data-source status, ingredients, nutrition details, marketplace access, and pantry actions.
 
 ## What changed
 
+- The production scan-result fragment now uses the polished hierarchy; the separate activity layout is not required to see these changes after scanning.
 - The product image, name, and brand form the opening product identity area.
 - Data source and freshness now appear in a labeled status panel instead of isolated text.
 - The overall result, Nutri-Score/NOVA/Eco-Score values, warnings, and positive findings are grouped in one **At a glance** card.
@@ -37,11 +38,11 @@ This fast test checks the required visual hierarchy and confirms that both phone
    BUILD SUCCESSFUL
    ```
 
-The test fails if an important section is removed, placed in the wrong order, or the tablet-specific spacing is lost.
+The test fails if an important section is removed from `fragment_product_details.xml`, placed in the wrong order, or the tablet-specific spacing is lost.
 
 ## Automated test 2 - Android UI flow
 
-This test requires an emulator or Android device with internet access and Firebase anonymous authentication enabled.
+This test requires an emulator or Android device. It launches the debug preview that inflates the same `fragment_product_details.xml` used by the production scan flow, so it does not require an account or network connection.
 
 1. Connect the device and confirm it appears:
 
@@ -57,7 +58,7 @@ This test requires an emulator or Android device with internet access and Fireba
 
 3. Confirm the console ends with `BUILD SUCCESSFUL`.
 
-This verifies that a known barcode opens a product result, the product image and name are visible, health findings remain inside their summary card, and the actions card can be reached by scrolling.
+This verifies that the product-detail bottom sheet and drag handle are visible, the product image and name are prominent, source status is labeled, health findings remain inside their summary card, and the actions card can be reached by scrolling.
 
 ## Manual test 1 - Phone layout
 
@@ -76,6 +77,18 @@ Use a phone or emulator between 360 and 480 dp wide.
 
 Expected result: each section is visually distinct, the most important result is understandable quickly, and all controls remain readable and tappable.
 
+## Open the layout preview directly
+
+To inspect the exact fragment layout without scanning a product or waiting for a network request, connect a device or start an emulator and run these commands from the repository root:
+
+```powershell
+cd app
+.\gradlew.bat installDebug
+adb shell am start -n com.ciblorenzo.whatsonmyfood/.ProductDetailLayoutPreviewActivity
+```
+
+The preview activity inflates `fragment_product_details.xml` and supplies safe sample data. Return to the normal scanning flow for the final end-to-end check.
+
 ## Manual test 2 - Tablet layout
 
 Use a tablet or emulator at least 600 dp wide.
@@ -93,9 +106,8 @@ Expected result: the tablet layout feels intentionally spaced rather than like a
 
 Capture at least these two images after the manual checks:
 
-1. **Phone overview:** product image, name/brand, source panel, and At a glance card.
-2. **Phone details:** Bitwise explanation or ingredients plus the Product actions card.
-3. **Tablet overview (recommended):** the same product showing the wider tablet margins.
+1. **Fragment phone overview:** `docs/testing/evidence/m4-01-fragment-phone.png` shows the bottom-sheet hierarchy at phone dimensions.
+2. **Fragment tablet overview:** `docs/testing/evidence/m4-01-fragment-tablet.png` shows the same production fragment with wider tablet margins.
 
 Use screenshots that contain test product information only. Do not include email addresses, account identifiers, API credentials, console secrets, or other private information.
 

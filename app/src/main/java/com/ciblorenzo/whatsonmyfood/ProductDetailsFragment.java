@@ -84,6 +84,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     private ImageView productImageView;
     private TextView productNameTextView, productBrandTextView, packagingTextView, labelsTextView, ingredientsTextView;
     private TextView sourceStatusTextView;
+    private View sourceStatusContainer;
     private TextView nutriscoreTextView, novaTextView, ecoscoreTextView, categoriesTextView, servingSizeTextView, healthScoreTextView;
     private View labelsLabel;
     private HorizontalScrollView certificateBadgesScrollView;
@@ -169,6 +170,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         productNameTextView = view.findViewById(R.id.product_name_text_view);
         productBrandTextView = view.findViewById(R.id.product_brand_text_view);
         sourceStatusTextView = view.findViewById(R.id.source_status_text_view);
+        sourceStatusContainer = view.findViewById(R.id.source_status_container);
         packagingTextView = view.findViewById(R.id.packaging_text_view);
         labelsLabel = view.findViewById(R.id.labels_label);
         labelsTextView = view.findViewById(R.id.labels_text_view);
@@ -956,7 +958,11 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                 new ArrayList<>(displayedSourceStatuses)
         );
         sourceStatusTextView.setText(message);
-        sourceStatusTextView.setVisibility(message.isEmpty() ? View.GONE : View.VISIBLE);
+        boolean hasStatus = !message.isEmpty();
+        sourceStatusTextView.setVisibility(hasStatus ? View.VISIBLE : View.GONE);
+        if (sourceStatusContainer != null) {
+            sourceStatusContainer.setVisibility(hasStatus ? View.VISIBLE : View.GONE);
+        }
     }
 
     private String formatSourceStatusesForAi() {

@@ -3,4 +3,5 @@
     <dimen name="product_detail_hero_height">380dp</dimen>
     <dimen name="product_detail_image_padding">44dp</dimen>
     <dimen name="product_detail_content_padding">64dp</dimen>
+    <dimen name="product_detail_fragment_image_height">300dp</dimen>
 </resources>
