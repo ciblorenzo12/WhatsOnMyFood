@@ -251,4 +251,17 @@
     <string name="add_product">Agregar producto</string>
     <string name="product_lookup_failed_title">No se pudo cargar el producto</string>
     <string name="product_lookup_failed_message">Se ley&#243; el c&#243;digo, pero el servicio no devolvi&#243; informaci&#243;n utilizable. Int&#233;ntalo de nuevo o escanea la etiqueta de ingredientes.</string>
+    <string name="product_image">Imagen del producto</string>
+    <string name="product_data_status">FUENTE Y ACTUALIZACI&#211;N DE LOS DATOS</string>
+    <string name="at_a_glance">Resumen</string>
+    <string name="at_a_glance_hint">Comienza con el resultado general y luego revisa los aspectos positivos y las advertencias que lo determinaron.</string>
+    <string name="overall_result">RESULTADO GENERAL</string>
+    <string name="key_findings">Hallazgos principales</string>
+    <string name="key_findings_hint">Toca un hallazgo para leer la explicaci&#243;n completa y su fuente cuando est&#233; disponible.</string>
+    <string name="explanation_label">Explicaci&#243;n del producto en lenguaje claro</string>
+    <string name="ingredients_hint">Se muestran desde la mejor fuente disponible del envase o de los datos del producto.</string>
+    <string name="nutrition_and_product_details">Nutrici&#243;n y detalles del producto</string>
+    <string name="nutrition_and_product_details_hint">Porci&#243;n, valores nutricionales, categor&#237;as, envase y certificaciones.</string>
+    <string name="product_actions">Acciones del producto</string>
+    <string name="product_actions_hint">Actualiza los datos, completa los ingredientes faltantes o administra este art&#237;culo de la despensa.</string>
 </resources>

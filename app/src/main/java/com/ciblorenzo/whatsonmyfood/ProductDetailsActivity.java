@@ -76,6 +76,7 @@ public class ProductDetailsActivity extends BaseActivity {
     private ImageView productImageView;
     private TextView productNameTextView, productBrandTextView, ingredientsTextView, healthScoreTextView;
     private TextView sourceStatusTextView;
+    private View sourceStatusContainer;
     private TextView nutriscoreTextView, novaTextView, ecoscoreTextView, categoriesTextView, packagingTextView, labelsTextView, servingSizeTextView;
     private View labelsLabel;
     private HorizontalScrollView certificateBadgesScrollView;
@@ -134,6 +135,7 @@ public class ProductDetailsActivity extends BaseActivity {
         productNameTextView = findViewById(R.id.product_name_text_view);
         productBrandTextView = findViewById(R.id.product_brand_text_view);
         sourceStatusTextView = findViewById(R.id.source_status_text_view);
+        sourceStatusContainer = findViewById(R.id.source_status_container);
         ingredientsTextView = findViewById(R.id.ingredients_text_view);
         nutriscoreTextView = findViewById(R.id.nutriscore_text_view);
         novaTextView = findViewById(R.id.nova_text_view);
@@ -868,7 +870,11 @@ public class ProductDetailsActivity extends BaseActivity {
                 new ArrayList<>(displayedSourceStatuses)
         );
         sourceStatusTextView.setText(message);
-        sourceStatusTextView.setVisibility(message.isEmpty() ? View.GONE : View.VISIBLE);
+        boolean hasStatus = !message.isEmpty();
+        sourceStatusTextView.setVisibility(hasStatus ? View.VISIBLE : View.GONE);
+        if (sourceStatusContainer != null) {
+            sourceStatusContainer.setVisibility(hasStatus ? View.VISIBLE : View.GONE);
+        }
     }
 
     private List<Ingredient> buildIngredientList(String barcode, String ingredientText) {

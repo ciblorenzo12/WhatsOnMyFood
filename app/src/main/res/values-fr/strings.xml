@@ -251,4 +251,17 @@
     <string name="add_product">Ajouter le produit</string>
     <string name="product_lookup_failed_title">Impossible de charger le produit</string>
     <string name="product_lookup_failed_message">Le code-barres a &#233;t&#233; lu, mais le service n&#8217;a pas renvoy&#233; d&#8217;informations utilisables. R&#233;essayez ou scannez la liste d&#8217;ingr&#233;dients.</string>
+    <string name="product_image">Image du produit</string>
+    <string name="product_data_status">SOURCE ET ACTUALIT&#201; DES DONN&#201;ES</string>
+    <string name="at_a_glance">En un coup d&#8217;&#339;il</string>
+    <string name="at_a_glance_hint">Commencez par le r&#233;sultat global, puis consultez les points positifs et les avertissements qui l&#8217;expliquent.</string>
+    <string name="overall_result">R&#201;SULTAT GLOBAL</string>
+    <string name="key_findings">Principaux constats</string>
+    <string name="key_findings_hint">Touchez un constat pour lire son explication compl&#232;te et sa source lorsqu&#8217;elle est disponible.</string>
+    <string name="explanation_label">Explication du produit en langage clair</string>
+    <string name="ingredients_hint">Affich&#233;s depuis la meilleure source disponible sur l&#8217;emballage ou dans les donn&#233;es du produit.</string>
+    <string name="nutrition_and_product_details">Nutrition et d&#233;tails du produit</string>
+    <string name="nutrition_and_product_details_hint">Portion, valeurs nutritionnelles, cat&#233;gories, emballage et certifications.</string>
+    <string name="product_actions">Actions sur le produit</string>
+    <string name="product_actions_hint">Actualisez les donn&#233;es, compl&#233;tez les ingr&#233;dients manquants ou g&#233;rez cet article du garde-manger.</string>
 </resources>

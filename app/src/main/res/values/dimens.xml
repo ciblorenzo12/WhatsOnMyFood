@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="product_detail_hero_height">300dp</dimen>
+    <dimen name="product_detail_image_padding">28dp</dimen>
+    <dimen name="product_detail_content_padding">18dp</dimen>
+</resources>

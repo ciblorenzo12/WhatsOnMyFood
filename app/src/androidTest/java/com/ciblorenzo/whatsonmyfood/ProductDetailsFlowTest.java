@@ -19,7 +19,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.action.ViewActions.scrollTo;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
+import static androidx.test.espresso.matcher.ViewMatchers.isDescendantOfA;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
@@ -77,5 +79,12 @@ public class ProductDetailsFlowTest {
         // ASSERT: 
         onView(withId(R.id.product_name_text_view)).check(matches(isDisplayed()));
         onView(withId(R.id.product_name_text_view)).check(matches(not(withText("N/A"))));
+        onView(withId(R.id.product_image_view)).check(matches(isDisplayed()));
+        onView(withId(R.id.health_score_text_view))
+                .check(matches(isDescendantOfA(withId(R.id.health_findings_card))));
+        onView(withId(R.id.analysis_recycler_view))
+                .check(matches(isDescendantOfA(withId(R.id.health_findings_card))));
+        onView(withId(R.id.product_actions_card)).perform(scrollTo()).check(matches(isDisplayed()));
+        onView(withId(R.id.update_product_button)).check(matches(isDisplayed()));
     }
 }
