@@ -33,8 +33,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.ciblorenzo.whatsonmyfood.analysis.AnalysisResult;
-import com.ciblorenzo.whatsonmyfood.analysis.AnalysisResultAdapter;
-import com.ciblorenzo.whatsonmyfood.analysis.AnalysisResultDeduplicator;
 import com.ciblorenzo.whatsonmyfood.analysis.AiSummaryFormatter;
 import com.ciblorenzo.whatsonmyfood.analysis.AiIngredientRecovery;
 import com.ciblorenzo.whatsonmyfood.analysis.HealthVerdict;
@@ -43,6 +41,8 @@ import com.ciblorenzo.whatsonmyfood.analysis.IngredientReviewGate;
 import com.ciblorenzo.whatsonmyfood.analysis.IngredientTextParser;
 import com.ciblorenzo.whatsonmyfood.analysis.BitwiseAnalysisService;
 import com.ciblorenzo.whatsonmyfood.analysis.ProductAnalysisReport;
+import com.ciblorenzo.whatsonmyfood.analysis.ProductFindingsDisplay;
+import com.ciblorenzo.whatsonmyfood.analysis.ProductFindingsViewBinder;
 import com.ciblorenzo.whatsonmyfood.analysis.rules.RuleEngine;
 import com.ciblorenzo.whatsonmyfood.retail.RetailerCommerceViewBinder;
 import com.ciblorenzo.whatsonmyfood.retail.RetailerRepository;
@@ -99,6 +99,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     private android.widget.Button removeFromPantryButton;
     private TableLayout nutritionFactsTable;
     private RecyclerView analysisRecyclerView;
+    private TextView findingsEmptyStateTextView;
     private View loadingOverlay;
     private RetailerCommerceViewBinder retailerCommerceViewBinder;
     private ProductWithDetails currentProductDetails;
@@ -199,6 +200,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         GlassMotion.attachPress(removeFromPantryButton);
         nutritionFactsTable = view.findViewById(R.id.nutrition_facts_table);
         analysisRecyclerView = view.findViewById(R.id.analysis_recycler_view);
+        findingsEmptyStateTextView = view.findViewById(R.id.findings_empty_state_text_view);
         loadingOverlay = view.findViewById(R.id.loading_overlay);
         retailerCommerceViewBinder = new RetailerCommerceViewBinder(
                 requireContext(),
@@ -422,16 +424,16 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         if (ingredientsMissing) {
             healthScoreTextView.setText(R.string.ingredients_required_score);
             healthScoreTextView.setTextColor(ContextCompat.getColor(requireContext(), R.color.score_unknown));
-            analysisRecyclerView.setAdapter(null);
+            bindFindings(ProductFindingsDisplay.fromReport(null, false));
             ingredientsTextView.setText(R.string.ingredients_required_message);
         } else if (currentReport != null) {
             applyRuleBasedScore(productDetails, currentReport);
-            analysisRecyclerView.setAdapter(new AnalysisResultAdapter(currentReport.getResults()));
+            bindFindings(ProductFindingsDisplay.fromReport(currentReport, true));
             displayHighlightedIngredients(productDetails, currentReport);
         } else {
             healthScoreTextView.setText(R.string.analyzing);
             healthScoreTextView.setTextColor(ContextCompat.getColor(requireContext(), R.color.score_unknown));
-            analysisRecyclerView.setAdapter(null);
+            bindFindings(ProductFindingsDisplay.fromReport(null, true));
             ingredientsTextView.setText("Could not analyze ingredients.");
         }
 
@@ -549,17 +551,19 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                                         0, f.optString("triggering_ingredient"), f.optString("explanation")));
                                 }
                             }
-                            if (currentReport != null && currentReport.getResults() != null) {
-                                List<AnalysisResult> combinedResults = new ArrayList<>(currentReport.getResults());
-                                combinedResults.addAll(aiResults);
-                                combinedResults = AnalysisResultDeduplicator.deduplicate(combinedResults);
-                                analysisRecyclerView.setAdapter(new AnalysisResultAdapter(combinedResults));
-                                applyHealthVerdict(productDetails, currentReport, combinedResults, aiVerdict, aiVerdictReason);
-                            } else {
-                                List<AnalysisResult> dedupedAiResults = AnalysisResultDeduplicator.deduplicate(aiResults);
-                                analysisRecyclerView.setAdapter(new AnalysisResultAdapter(dedupedAiResults));
-                                applyHealthVerdict(productDetails, null, dedupedAiResults, aiVerdict, aiVerdictReason);
-                            }
+                            ProductFindingsDisplay findingsDisplay = ProductFindingsDisplay.combine(
+                                    currentReport,
+                                    aiResults,
+                                    hasListedIngredients(productDetails)
+                            );
+                            bindFindings(findingsDisplay);
+                            applyHealthVerdict(
+                                    productDetails,
+                                    currentReport,
+                                    findingsDisplay.getFindings(),
+                                    aiVerdict,
+                                    aiVerdictReason
+                            );
                         } else {
                             applyHealthVerdict(productDetails, currentReport, currentReport != null ? currentReport.getResults() : null, aiVerdict, aiVerdictReason);
                         }
@@ -670,6 +674,11 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
             AiGlowManager.stopGlow(getActivity());
         }
         return true;
+    }
+
+    private void bindFindings(ProductFindingsDisplay display) {
+        if (analysisRecyclerView == null || findingsEmptyStateTextView == null || display == null) return;
+        ProductFindingsViewBinder.bind(analysisRecyclerView, findingsEmptyStateTextView, display);
     }
 
     private void applyRuleBasedScore(ProductWithDetails product, ProductAnalysisReport report) {

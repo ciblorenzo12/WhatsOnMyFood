@@ -16,9 +16,13 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.ciblorenzo.whatsonmyfood.analysis.AnalysisResult;
-import com.ciblorenzo.whatsonmyfood.analysis.AnalysisResultAdapter;
+import com.ciblorenzo.whatsonmyfood.analysis.ProductAnalysisReport;
+import com.ciblorenzo.whatsonmyfood.analysis.ProductFindingsDisplay;
+import com.ciblorenzo.whatsonmyfood.analysis.ProductFindingsViewBinder;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /** Debug-only screen that renders the product-detail fragment layout with safe sample data. */
 public class ProductDetailLayoutPreviewActivity extends AppCompatActivity {
@@ -45,7 +49,7 @@ public class ProductDetailLayoutPreviewActivity extends AppCompatActivity {
         RecyclerView findings = findViewById(R.id.analysis_recycler_view);
         findings.setLayoutManager(new LinearLayoutManager(this));
         findings.setNestedScrollingEnabled(false);
-        findings.setAdapter(new AnalysisResultAdapter(Arrays.asList(
+        List<AnalysisResult> sampleFindings = Arrays.asList(
                 new AnalysisResult(
                         "Whole grain oats",
                         AnalysisResult.WarningLevel.POSITIVE,
@@ -59,8 +63,23 @@ public class ProductDetailLayoutPreviewActivity extends AppCompatActivity {
                         8,
                         "sugar",
                         "Compare the serving size and added-sugar amount with your shopping priorities."
+                ),
+                new AnalysisResult(
+                        "Allergen information",
+                        AnalysisResult.WarningLevel.INFO,
+                        0,
+                        "oats",
+                        "Check the package statement if you manage a food allergy."
+                ),
+                new AnalysisResult(
+                        "Added sugar",
+                        AnalysisResult.WarningLevel.WARNING,
+                        8,
+                        "sugar",
+                        "Duplicate input included to verify that only one result card is displayed."
                 )
-        )));
+        );
+        bindFindingsPreview(findings, sampleFindings);
 
         findViewById(R.id.ai_summary_container).setVisibility(View.VISIBLE);
         setText(R.id.ai_summary_text_view,
@@ -84,6 +103,32 @@ public class ProductDetailLayoutPreviewActivity extends AppCompatActivity {
 
         Button removeButton = findViewById(R.id.remove_from_pantry_button);
         removeButton.setVisibility(View.VISIBLE);
+    }
+
+    private void bindFindingsPreview(RecyclerView findings, List<AnalysisResult> sampleFindings) {
+        String scenario = getIntent().getStringExtra("findings_scenario");
+        ProductFindingsDisplay display;
+        if ("empty".equals(scenario)) {
+            display = ProductFindingsDisplay.fromReport(
+                    new ProductAnalysisReport(100, Collections.emptyList()),
+                    true
+            );
+        } else if ("missing".equals(scenario)) {
+            display = ProductFindingsDisplay.fromReport(null, false);
+        } else if ("unavailable".equals(scenario)) {
+            display = ProductFindingsDisplay.fromReport(null, true);
+        } else {
+            display = ProductFindingsDisplay.fromReport(
+                    new ProductAnalysisReport(79, sampleFindings),
+                    true
+            );
+        }
+
+        ProductFindingsViewBinder.bind(
+                findings,
+                findViewById(R.id.findings_empty_state_text_view),
+                display
+        );
     }
 
     private void bindScore(int viewId, String text, int colorId) {

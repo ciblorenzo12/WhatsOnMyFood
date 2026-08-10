@@ -105,6 +105,9 @@
     <string name="overall_result">OVERALL RESULT</string>
     <string name="key_findings">Key findings</string>
     <string name="key_findings_hint">Tap a finding to read its full explanation and source when available.</string>
+    <string name="findings_none_identified">No specific warnings or positive findings were identified. Review the ingredients and nutrition details below for the complete product context.</string>
+    <string name="findings_ingredients_required">Product findings need an ingredient list. Enter the ingredients from the package or use Ingredients mode to scan the label.</string>
+    <string name="findings_analysis_unavailable">Product findings could not be loaded. The available product details remain visible; refresh the product to try the analysis again.</string>
     <string name="explanation_label">Plain-language product explanation</string>
     <string name="ingredients_hint">Shown from the best available package or product-data source.</string>
     <string name="nutrition_and_product_details">Nutrition and product details</string>

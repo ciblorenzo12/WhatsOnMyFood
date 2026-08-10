@@ -258,6 +258,9 @@
     <string name="overall_result">RESULTADO GENERAL</string>
     <string name="key_findings">Hallazgos principales</string>
     <string name="key_findings_hint">Toca un hallazgo para leer la explicaci&#243;n completa y su fuente cuando est&#233; disponible.</string>
+    <string name="findings_none_identified">No se identificaron advertencias ni hallazgos positivos espec&#237;ficos. Revisa los ingredientes y los detalles nutricionales para obtener el contexto completo del producto.</string>
+    <string name="findings_ingredients_required">Los hallazgos necesitan una lista de ingredientes. Escr&#237;belos desde el envase o usa el modo Ingredientes para escanear la etiqueta.</string>
+    <string name="findings_analysis_unavailable">No se pudieron cargar los hallazgos. Los detalles disponibles del producto siguen visibles; actualiza el producto para intentar el an&#225;lisis nuevamente.</string>
     <string name="explanation_label">Explicaci&#243;n del producto en lenguaje claro</string>
     <string name="ingredients_hint">Se muestran desde la mejor fuente disponible del envase o de los datos del producto.</string>
     <string name="nutrition_and_product_details">Nutrici&#243;n y detalles del producto</string>

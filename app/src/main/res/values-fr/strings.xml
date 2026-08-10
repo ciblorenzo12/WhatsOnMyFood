@@ -258,6 +258,9 @@
     <string name="overall_result">R&#201;SULTAT GLOBAL</string>
     <string name="key_findings">Principaux constats</string>
     <string name="key_findings_hint">Touchez un constat pour lire son explication compl&#232;te et sa source lorsqu&#8217;elle est disponible.</string>
+    <string name="findings_none_identified">Aucun avertissement ni constat positif pr&#233;cis n&#8217;a &#233;t&#233; identifi&#233;. Consultez les ingr&#233;dients et les d&#233;tails nutritionnels pour le contexte complet du produit.</string>
+    <string name="findings_ingredients_required">Les constats n&#233;cessitent une liste d&#8217;ingr&#233;dients. Saisissez-les depuis l&#8217;emballage ou utilisez le mode Ingr&#233;dients pour scanner l&#8217;&#233;tiquette.</string>
+    <string name="findings_analysis_unavailable">Les constats n&#8217;ont pas pu &#234;tre charg&#233;s. Les d&#233;tails disponibles restent visibles; actualisez le produit pour relancer l&#8217;analyse.</string>
     <string name="explanation_label">Explication du produit en langage clair</string>
     <string name="ingredients_hint">Affich&#233;s depuis la meilleure source disponible sur l&#8217;emballage ou dans les donn&#233;es du produit.</string>
     <string name="nutrition_and_product_details">Nutrition et d&#233;tails du produit</string>
