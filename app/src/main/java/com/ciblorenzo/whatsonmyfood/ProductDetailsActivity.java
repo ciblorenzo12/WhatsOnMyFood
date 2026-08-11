@@ -75,7 +75,7 @@ public class ProductDetailsActivity extends BaseActivity {
 
     private ImageView productImageView;
     private TextView productNameTextView, productBrandTextView, ingredientsTextView, healthScoreTextView;
-    private TextView sourceStatusTextView;
+    private TextView sourceStatusIndicatorTextView, sourceStatusTextView, sourceStatusInterpretationTextView;
     private View sourceStatusContainer;
     private TextView nutriscoreTextView, novaTextView, ecoscoreTextView, categoriesTextView, packagingTextView, labelsTextView, servingSizeTextView;
     private View labelsLabel;
@@ -134,7 +134,9 @@ public class ProductDetailsActivity extends BaseActivity {
         productImageView = findViewById(R.id.product_image_view);
         productNameTextView = findViewById(R.id.product_name_text_view);
         productBrandTextView = findViewById(R.id.product_brand_text_view);
+        sourceStatusIndicatorTextView = findViewById(R.id.source_status_indicator_text_view);
         sourceStatusTextView = findViewById(R.id.source_status_text_view);
+        sourceStatusInterpretationTextView = findViewById(R.id.source_status_interpretation_text_view);
         sourceStatusContainer = findViewById(R.id.source_status_container);
         ingredientsTextView = findViewById(R.id.ingredients_text_view);
         nutriscoreTextView = findViewById(R.id.nutriscore_text_view);
@@ -393,6 +395,7 @@ public class ProductDetailsActivity extends BaseActivity {
             AiGlowManager.stopGlow(this);
             return;
         }
+        removeSourceStatus(ProductRepository.SourceStatus.AI_EXPLANATION_UNAVAILABLE);
         if (hasListedIngredients(product) && displayCachedAiInsight(product)) return;
         if (!bitwiseEntitlementManager.canUseBitwise()) {
             showBitwiseUpgradePrompt();
@@ -526,7 +529,9 @@ public class ProductDetailsActivity extends BaseActivity {
                             applyHealthVerdict(product, currentReport, currentReport != null ? currentReport.getResults() : null, aiVerdict, aiVerdictReason);
                         }
                     } catch (Exception e) {
-                        aiSummaryTextView.setText("Bitwise could not format this explanation. Please try again.");
+                        addSourceStatus(ProductRepository.SourceStatus.AI_EXPLANATION_UNAVAILABLE);
+                        aiSummaryTextView.setText(R.string.bitwise_retry_explanation);
+                        aiSummaryContainer.setOnClickListener(v -> performAiReasoning(product));
                     }
                 });
             }
@@ -535,6 +540,7 @@ public class ProductDetailsActivity extends BaseActivity {
             public void onError(Throwable t) {
                 Log.e(TAG, "Protected Bitwise explanation failed", t);
                 runOnUiThread(() -> {
+                    addSourceStatus(ProductRepository.SourceStatus.AI_EXPLANATION_UNAVAILABLE);
                     aiSummaryTextView.setText(R.string.bitwise_retry_explanation);
                     aiSummaryContainer.setOnClickListener(v -> performAiReasoning(product));
                 });
@@ -863,18 +869,20 @@ public class ProductDetailsActivity extends BaseActivity {
         renderSourceStatuses();
     }
 
+    private void removeSourceStatus(ProductRepository.SourceStatus status) {
+        if (status == null) return;
+        if (displayedSourceStatuses.remove(status)) renderSourceStatuses();
+    }
+
     private void renderSourceStatuses() {
-        if (sourceStatusTextView == null) return;
-        String message = SourceStatusMessageFormatter.format(
+        SourceStatusViewBinder.bind(
                 this,
+                sourceStatusContainer,
+                sourceStatusIndicatorTextView,
+                sourceStatusTextView,
+                sourceStatusInterpretationTextView,
                 new ArrayList<>(displayedSourceStatuses)
         );
-        sourceStatusTextView.setText(message);
-        boolean hasStatus = !message.isEmpty();
-        sourceStatusTextView.setVisibility(hasStatus ? View.VISIBLE : View.GONE);
-        if (sourceStatusContainer != null) {
-            sourceStatusContainer.setVisibility(hasStatus ? View.VISIBLE : View.GONE);
-        }
     }
 
     private List<Ingredient> buildIngredientList(String barcode, String ingredientText) {

@@ -37,9 +37,7 @@ public class ProductDetailLayoutPreviewActivity extends AppCompatActivity {
         setText(R.id.product_name_text_view, "Whole Grain Oat Cereal");
         setText(R.id.product_brand_text_view, "Sample Market Foods");
 
-        findViewById(R.id.source_status_container).setVisibility(View.VISIBLE);
-        setText(R.id.source_status_text_view,
-                "Updated from product database. Ingredients verified from the package label.");
+        bindSourcePreview();
 
         setText(R.id.health_score_text_view, "Good choice");
         bindScore(R.id.nutriscore_text_view, "Nutri-Score: B", R.color.nutriscore_b);
@@ -82,9 +80,13 @@ public class ProductDetailLayoutPreviewActivity extends AppCompatActivity {
         bindFindingsPreview(findings, sampleFindings);
 
         findViewById(R.id.ai_summary_container).setVisibility(View.VISIBLE);
-        setText(R.id.ai_summary_text_view,
-                "This cereal starts with whole grain oats and has a moderate added-sugar concern. "
-                        + "Use the serving information below to compare it with similar products.");
+        if ("ai_unavailable".equals(getIntent().getStringExtra("source_scenario"))) {
+            setText(R.id.ai_summary_text_view, getString(R.string.bitwise_retry_explanation));
+        } else {
+            setText(R.id.ai_summary_text_view,
+                    "This cereal starts with whole grain oats and has a moderate added-sugar concern. "
+                            + "Use the serving information below to compare it with similar products.");
+        }
         findViewById(R.id.ai_sources_divider).setVisibility(View.VISIBLE);
         findViewById(R.id.ai_sources_label).setVisibility(View.VISIBLE);
         setText(R.id.ai_sources_text_view, "• FDA Nutrition Facts guidance\n• WHO healthy diet guidance");
@@ -103,6 +105,44 @@ public class ProductDetailLayoutPreviewActivity extends AppCompatActivity {
 
         Button removeButton = findViewById(R.id.remove_from_pantry_button);
         removeButton.setVisibility(View.VISIBLE);
+    }
+
+    private void bindSourcePreview() {
+        String scenario = getIntent().getStringExtra("source_scenario");
+        List<ProductRepository.SourceStatus> statuses;
+        if ("recovered".equals(scenario)) {
+            statuses = Arrays.asList(
+                    ProductRepository.SourceStatus.UPDATED_FROM_PRODUCT_DATABASE,
+                    ProductRepository.SourceStatus.INGREDIENTS_RECOVERED_FROM_LABEL_OR_SUPPORTING_SERVICE
+            );
+        } else if ("stale".equals(scenario)) {
+            statuses = Collections.singletonList(
+                    ProductRepository.SourceStatus.INFORMATION_MAY_BE_OUTDATED
+            );
+        } else if ("offline".equals(scenario)) {
+            statuses = Arrays.asList(
+                    ProductRepository.SourceStatus.SAVED_OFFLINE_RESULT,
+                    ProductRepository.SourceStatus.INFORMATION_MAY_BE_OUTDATED
+            );
+        } else if ("ai_unavailable".equals(scenario)) {
+            statuses = Arrays.asList(
+                    ProductRepository.SourceStatus.UPDATED_FROM_PRODUCT_DATABASE,
+                    ProductRepository.SourceStatus.AI_EXPLANATION_UNAVAILABLE
+            );
+        } else {
+            statuses = Collections.singletonList(
+                    ProductRepository.SourceStatus.UPDATED_FROM_PRODUCT_DATABASE
+            );
+        }
+
+        SourceStatusViewBinder.bind(
+                this,
+                findViewById(R.id.source_status_container),
+                findViewById(R.id.source_status_indicator_text_view),
+                findViewById(R.id.source_status_text_view),
+                findViewById(R.id.source_status_interpretation_text_view),
+                statuses
+        );
     }
 
     private void bindFindingsPreview(RecyclerView findings, List<AnalysisResult> sampleFindings) {

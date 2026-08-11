@@ -83,7 +83,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
     private ImageView productImageView;
     private TextView productNameTextView, productBrandTextView, packagingTextView, labelsTextView, ingredientsTextView;
-    private TextView sourceStatusTextView;
+    private TextView sourceStatusIndicatorTextView, sourceStatusTextView, sourceStatusInterpretationTextView;
     private View sourceStatusContainer;
     private TextView nutriscoreTextView, novaTextView, ecoscoreTextView, categoriesTextView, servingSizeTextView, healthScoreTextView;
     private View labelsLabel;
@@ -170,7 +170,9 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         productImageView = view.findViewById(R.id.product_image_view);
         productNameTextView = view.findViewById(R.id.product_name_text_view);
         productBrandTextView = view.findViewById(R.id.product_brand_text_view);
+        sourceStatusIndicatorTextView = view.findViewById(R.id.source_status_indicator_text_view);
         sourceStatusTextView = view.findViewById(R.id.source_status_text_view);
+        sourceStatusInterpretationTextView = view.findViewById(R.id.source_status_interpretation_text_view);
         sourceStatusContainer = view.findViewById(R.id.source_status_container);
         packagingTextView = view.findViewById(R.id.packaging_text_view);
         labelsLabel = view.findViewById(R.id.labels_label);
@@ -481,6 +483,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
             hideAiInsight();
             return;
         }
+        removeSourceStatus(ProductRepository.SourceStatus.AI_EXPLANATION_UNAVAILABLE);
         if (hasListedIngredients(productDetails) && displayCachedAiInsight(productDetails)) return;
 
         aiSummaryContainer.setVisibility(View.VISIBLE);
@@ -609,7 +612,9 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                         }
 
                     } catch (Exception e) {
-                        updateAiUI(productDetails, "Bitwise could not format this explanation. Please try again.", null);
+                        addSourceStatus(ProductRepository.SourceStatus.AI_EXPLANATION_UNAVAILABLE);
+                        aiSummaryTextView.setText(R.string.bitwise_retry_explanation);
+                        aiSummaryContainer.setOnClickListener(v -> fetchAiInsight(productDetails));
                     }
                 });
             }
@@ -624,6 +629,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
                         AiGlowManager.stopGlow(getActivity());
+                        addSourceStatus(ProductRepository.SourceStatus.AI_EXPLANATION_UNAVAILABLE);
                         aiSummaryTextView.setText(R.string.bitwise_retry_explanation);
                         aiSummaryContainer.setOnClickListener(v -> fetchAiInsight(productDetails));
                     });
@@ -960,18 +966,21 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         renderSourceStatuses();
     }
 
+    private void removeSourceStatus(ProductRepository.SourceStatus status) {
+        if (status == null) return;
+        if (displayedSourceStatuses.remove(status)) renderSourceStatuses();
+    }
+
     private void renderSourceStatuses() {
-        if (sourceStatusTextView == null || getContext() == null) return;
-        String message = SourceStatusMessageFormatter.format(
+        if (getContext() == null) return;
+        SourceStatusViewBinder.bind(
                 getContext(),
+                sourceStatusContainer,
+                sourceStatusIndicatorTextView,
+                sourceStatusTextView,
+                sourceStatusInterpretationTextView,
                 new ArrayList<>(displayedSourceStatuses)
         );
-        sourceStatusTextView.setText(message);
-        boolean hasStatus = !message.isEmpty();
-        sourceStatusTextView.setVisibility(hasStatus ? View.VISIBLE : View.GONE);
-        if (sourceStatusContainer != null) {
-            sourceStatusContainer.setVisibility(hasStatus ? View.VISIBLE : View.GONE);
-        }
     }
 
     private String formatSourceStatusesForAi() {

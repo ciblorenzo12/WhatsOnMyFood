@@ -41,6 +41,8 @@ public final class SourceStatusMessageFormatter {
                 return R.string.source_status_information_may_be_outdated;
             case INGREDIENTS_RECOVERED_FROM_LABEL_OR_SUPPORTING_SERVICE:
                 return R.string.source_status_ingredients_recovered;
+            case AI_EXPLANATION_UNAVAILABLE:
+                return R.string.source_status_ai_unavailable;
             default:
                 throw new IllegalArgumentException("Unknown product source status: " + status);
         }

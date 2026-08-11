@@ -83,6 +83,21 @@
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/source_status_indicator_text_view"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/source_status_indicator_background"
+                    android:paddingStart="10dp"
+                    android:paddingTop="5dp"
+                    android:paddingEnd="10dp"
+                    android:paddingBottom="5dp"
+                    android:textColor="@color/colorPrimaryDark"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    tools:text="PRODUCT DATABASE  •  RECOVERED INGREDIENTS" />
+
+                <TextView
                     android:id="@+id/source_status_text_view"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -91,6 +106,16 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp"
                     tools:text="Updated from product database. Ingredients verified from the package label." />
+
+                <TextView
+                    android:id="@+id/source_status_interpretation_text_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="7dp"
+                    android:lineSpacingExtra="2dp"
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp"
+                    tools:text="Context note: Completeness depends on the information supplied by the product source." />
             </LinearLayout>
 
             <TextView

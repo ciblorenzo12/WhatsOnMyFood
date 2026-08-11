@@ -34,7 +34,8 @@ public class ProductRepository implements ProductLookupGateway {
         FALLBACK_PRODUCT_SOURCE,
         SAVED_OFFLINE_RESULT,
         INFORMATION_MAY_BE_OUTDATED,
-        INGREDIENTS_RECOVERED_FROM_LABEL_OR_SUPPORTING_SERVICE
+        INGREDIENTS_RECOVERED_FROM_LABEL_OR_SUPPORTING_SERVICE,
+        AI_EXPLANATION_UNAVAILABLE
     }
 
     public static class ProductResult {
