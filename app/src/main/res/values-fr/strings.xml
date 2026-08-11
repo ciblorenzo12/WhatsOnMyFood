@@ -97,6 +97,13 @@
     <string name="ingredients_list">Liste des ingredients</string>
     <string name="scan_next">Scanner suivant</string>
     <string name="add_to_pantry">Ajouter au garde-manger</string>
+    <string name="pantry_saving">Enregistrement…</string>
+    <string name="pantry_saved">Enregistré dans le garde-manger</string>
+    <string name="pantry_already_saved">Ce produit est déjà dans votre garde-manger.</string>
+    <string name="pantry_save_failed">Le produit n’a pas pu être enregistré. Veuillez réessayer.</string>
+    <string name="pantry_removing">Suppression…</string>
+    <string name="pantry_removed">Retiré du garde-manger</string>
+    <string name="pantry_already_removed">Ce produit ne se trouve plus dans votre garde-manger.</string>
     <string name="ingredients">Ingredients</string>
     <string name="serving_size">Portion</string>
     <string name="nutrition_facts">Valeurs nutritionnelles</string>

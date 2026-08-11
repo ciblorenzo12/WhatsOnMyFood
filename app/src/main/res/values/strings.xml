@@ -97,6 +97,13 @@
     <string name="ingredients_list">Ingredients List</string>
     <string name="scan_next">Scan Next</string>
     <string name="add_to_pantry">Add to Pantry</string>
+    <string name="pantry_saving">Saving…</string>
+    <string name="pantry_saved">Saved to Pantry</string>
+    <string name="pantry_already_saved">This product is already in your pantry.</string>
+    <string name="pantry_save_failed">The product could not be saved. Please try again.</string>
+    <string name="pantry_removing">Removing…</string>
+    <string name="pantry_removed">Removed from Pantry</string>
+    <string name="pantry_already_removed">This product is no longer in your pantry.</string>
     <string name="ingredients">Ingredients</string>
     <string name="product_image">Product image</string>
     <string name="product_data_status">DATA SOURCE AND FRESHNESS</string>

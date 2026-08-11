@@ -82,6 +82,7 @@ public class ProductDetailsActivity extends BaseActivity {
     private HorizontalScrollView certificateBadgesScrollView;
     private LinearLayout certificateBadgesContainer;
     private Button removeFromPantryButton;
+    private Button addToPantryButton;
     private Button updateProductButton;
     private Button contributeIngredientsButton;
     private CollapsingToolbarLayout collapsingToolbarLayout;
@@ -152,9 +153,11 @@ public class ProductDetailsActivity extends BaseActivity {
         healthScoreTextView = findViewById(R.id.health_score_text_view);
         updateProductButton = findViewById(R.id.update_product_button);
         contributeIngredientsButton = findViewById(R.id.contribute_ingredients_button);
+        addToPantryButton = findViewById(R.id.add_to_pantry_button);
         removeFromPantryButton = findViewById(R.id.remove_from_pantry_button);
         GlassMotion.attachPress(updateProductButton);
         GlassMotion.attachPress(contributeIngredientsButton);
+        GlassMotion.attachPress(addToPantryButton);
         GlassMotion.attachPress(removeFromPantryButton);
         collapsingToolbarLayout = findViewById(R.id.collapsing_toolbar);
         nutritionFactsTable = findViewById(R.id.nutrition_facts_table);
@@ -195,22 +198,16 @@ public class ProductDetailsActivity extends BaseActivity {
         aiEnabled = getIntent().getBooleanExtra(EXTRA_AI_ENABLED, true);
         String barcode = getIntent().getStringExtra(EXTRA_BARCODE);
         if (barcode != null) {
+            PantryActionViewBinder.bind(addToPantryButton, removeFromPantryButton,
+                    PantryActionViewBinder.State.LOADING);
             loadProductDetails(barcode);
             checkIfProductInPantry(barcode);
 
             updateProductButton.setOnClickListener(v -> updateProductFromSources(barcode));
             contributeIngredientsButton.setOnClickListener(v -> showIngredientContribution(barcode));
 
-            removeFromPantryButton.setOnClickListener(v -> {
-                executorService.execute(() -> {
-                    db.productDao().deletePantryProduct(barcode, currentUser.getUid());
-                    runOnUiThread(() -> {
-                        Toast.makeText(this, "Removed from Pantry", Toast.LENGTH_SHORT).show();
-                        setResult(RESULT_OK, new Intent().putExtra(PantryActivity.RESULT_DATA_CHANGED, true));
-                        finish();
-                    });
-                });
-            });
+            addToPantryButton.setOnClickListener(v -> saveProductToPantry(barcode));
+            removeFromPantryButton.setOnClickListener(v -> removeProductFromPantry(barcode));
         } else {
             showErrorState("No barcode provided.", null);
         }
@@ -310,7 +307,63 @@ public class ProductDetailsActivity extends BaseActivity {
     private void checkIfProductInPantry(String barcode) {
         executorService.execute(() -> {
             Pantry pantryItem = db.productDao().findPantryItemByBarcode(barcode, currentUser.getUid());
-            runOnUiThread(() -> removeFromPantryButton.setVisibility(pantryItem != null ? View.VISIBLE : View.GONE));
+            runOnUiThread(() -> PantryActionViewBinder.bind(
+                    addToPantryButton,
+                    removeFromPantryButton,
+                    pantryItem == null
+                            ? PantryActionViewBinder.State.AVAILABLE_TO_SAVE
+                            : PantryActionViewBinder.State.SAVED
+            ));
+        });
+    }
+
+    private void saveProductToPantry(String barcode) {
+        if (currentProductDetails == null
+                || currentProductDetails.product == null
+                || !currentProductDetails.product.isValid()) {
+            Toast.makeText(this, R.string.pantry_save_failed, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        PantryActionViewBinder.bind(addToPantryButton, removeFromPantryButton,
+                PantryActionViewBinder.State.SAVING);
+        executorService.execute(() -> {
+            try {
+                db.productDao().insertProductWithDetails(currentProductDetails);
+                long rowId = db.productDao().insertPantry(new Pantry(barcode, currentUser.getUid()));
+                runOnUiThread(() -> {
+                    PantryActionViewBinder.bind(addToPantryButton, removeFromPantryButton,
+                            PantryActionViewBinder.State.SAVED);
+                    PantryOperationResult.SaveOutcome outcome = PantryOperationResult.fromInsertRowId(rowId);
+                    Toast.makeText(this, outcome == PantryOperationResult.SaveOutcome.ALREADY_SAVED
+                            ? R.string.pantry_already_saved
+                            : R.string.pantry_saved, Toast.LENGTH_SHORT).show();
+                    setResult(RESULT_OK, new Intent().putExtra(PantryActivity.RESULT_DATA_CHANGED, true));
+                });
+            } catch (Exception error) {
+                Log.e(TAG, "Could not save product to pantry", error);
+                runOnUiThread(() -> {
+                    Toast.makeText(this, R.string.pantry_save_failed, Toast.LENGTH_SHORT).show();
+                    checkIfProductInPantry(barcode);
+                });
+            }
+        });
+    }
+
+    private void removeProductFromPantry(String barcode) {
+        PantryActionViewBinder.bind(addToPantryButton, removeFromPantryButton,
+                PantryActionViewBinder.State.REMOVING);
+        executorService.execute(() -> {
+            int removed = db.productDao().deletePantryProduct(barcode, currentUser.getUid());
+            runOnUiThread(() -> {
+                PantryActionViewBinder.bind(addToPantryButton, removeFromPantryButton,
+                        PantryActionViewBinder.State.AVAILABLE_TO_SAVE);
+                PantryOperationResult.RemoveOutcome outcome = PantryOperationResult.fromDeletedRows(removed);
+                Toast.makeText(this, outcome == PantryOperationResult.RemoveOutcome.REMOVED
+                        ? R.string.pantry_removed
+                        : R.string.pantry_already_removed, Toast.LENGTH_SHORT).show();
+                setResult(RESULT_OK, new Intent().putExtra(PantryActivity.RESULT_DATA_CHANGED, true));
+            });
         });
     }
 

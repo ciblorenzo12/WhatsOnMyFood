@@ -616,6 +616,16 @@
                         app:cornerRadius="16dp" />
 
                     <Button
+                        android:id="@+id/add_to_pantry_button"
+                        style="@style/Widget.Material3.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="10dp"
+                        android:text="@string/add_to_pantry"
+                        android:visibility="gone"
+                        app:cornerRadius="16dp" />
+
+                    <Button
                         android:id="@+id/remove_from_pantry_button"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="match_parent"

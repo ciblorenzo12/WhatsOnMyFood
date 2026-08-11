@@ -52,14 +52,17 @@ public interface ProductDao {
     void setFavorite(String barcode, boolean isFavorite);
 
     // Pantry methods
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    void insertPantry(Pantry pantry);
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    long insertPantry(Pantry pantry);
 
     @Query("SELECT * FROM pantry WHERE barcode = :barcode AND userId = :userId")
     Pantry findPantryItemByBarcode(String barcode, String userId);
 
     @Query("DELETE FROM pantry WHERE barcode = :barcode AND userId = :userId")
-    void deletePantryProduct(String barcode, String userId);
+    int deletePantryProduct(String barcode, String userId);
+
+    @Query("SELECT COUNT(*) FROM pantry WHERE userId = :userId")
+    int countPantryProducts(String userId);
     
     @Query("SELECT p.* FROM products p INNER JOIN pantry ON p.barcode = pantry.barcode WHERE pantry.userId = :userId")
     List<Product> getPantryProducts(String userId);

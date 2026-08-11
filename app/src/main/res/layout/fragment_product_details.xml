@@ -575,6 +575,15 @@
                         android:visibility="gone" />
 
                     <Button
+                        android:id="@+id/add_to_pantry_button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:minHeight="48dp"
+                        android:text="@string/add_to_pantry"
+                        android:visibility="gone" />
+
+                    <Button
                         android:id="@+id/remove_from_pantry_button"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"

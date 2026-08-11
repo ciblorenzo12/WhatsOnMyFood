@@ -911,7 +911,7 @@ public class IngredientAnalysisActivity extends BaseActivity {
             return;
         }
         savePantryButton.setEnabled(false);
-        savePantryButton.setText("Saving...");
+        savePantryButton.setText(R.string.pantry_saving);
         new Thread(() -> {
             try {
                 if (capturedBitmap != null) {
@@ -923,15 +923,21 @@ public class IngredientAnalysisActivity extends BaseActivity {
                     } catch (java.io.IOException ignored) {}
                 }
                 AppDatabase.getDatabase(this).productDao().insertProductWithDetails(detectedProduct);
-                AppDatabase.getDatabase(this).productDao().insertPantry(new Pantry(detectedProduct.product.barcode, currentUser.getUid()));
+                long rowId = AppDatabase.getDatabase(this).productDao().insertPantry(
+                        new Pantry(detectedProduct.product.barcode, currentUser.getUid())
+                );
                 runOnUiThread(() -> {
-                    Toast.makeText(this, "Added to Pantry!", Toast.LENGTH_SHORT).show();
-                    savePantryButton.setText("Saved \u2713");
+                    PantryOperationResult.SaveOutcome outcome = PantryOperationResult.fromInsertRowId(rowId);
+                    Toast.makeText(this, outcome == PantryOperationResult.SaveOutcome.ALREADY_SAVED
+                            ? R.string.pantry_already_saved
+                            : R.string.pantry_saved, Toast.LENGTH_SHORT).show();
+                    savePantryButton.setText(R.string.pantry_saved);
                 });
             } catch (Exception e) {
                 runOnUiThread(() -> {
                     savePantryButton.setEnabled(true);
-                    savePantryButton.setText("Add to Pantry");
+                    savePantryButton.setText(R.string.add_to_pantry);
+                    Toast.makeText(this, R.string.pantry_save_failed, Toast.LENGTH_SHORT).show();
                 });
             }
         }).start();

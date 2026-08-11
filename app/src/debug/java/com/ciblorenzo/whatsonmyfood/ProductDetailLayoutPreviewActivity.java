@@ -103,8 +103,13 @@ public class ProductDetailLayoutPreviewActivity extends AppCompatActivity {
         setText(R.id.packaging_text_view, "Recyclable cardboard box");
         setText(R.id.labels_text_view, "Whole grain certified");
 
-        Button removeButton = findViewById(R.id.remove_from_pantry_button);
-        removeButton.setVisibility(View.VISIBLE);
+        bindPantryActionPreview();
+        if (getIntent().getBooleanExtra("pantry_focus", false)) {
+            findViewById(R.id.nested_scroll_view).post(() ->
+                    ((androidx.core.widget.NestedScrollView) findViewById(R.id.nested_scroll_view))
+                            .fullScroll(View.FOCUS_DOWN)
+            );
+        }
     }
 
     private void bindSourcePreview() {
@@ -142,6 +147,25 @@ public class ProductDetailLayoutPreviewActivity extends AppCompatActivity {
                 findViewById(R.id.source_status_text_view),
                 findViewById(R.id.source_status_interpretation_text_view),
                 statuses
+        );
+    }
+
+    private void bindPantryActionPreview() {
+        String state = getIntent().getStringExtra("pantry_state");
+        PantryActionViewBinder.State displayState;
+        if ("available".equals(state)) {
+            displayState = PantryActionViewBinder.State.AVAILABLE_TO_SAVE;
+        } else if ("saving".equals(state)) {
+            displayState = PantryActionViewBinder.State.SAVING;
+        } else if ("removing".equals(state)) {
+            displayState = PantryActionViewBinder.State.REMOVING;
+        } else {
+            displayState = PantryActionViewBinder.State.SAVED;
+        }
+        PantryActionViewBinder.bind(
+                findViewById(R.id.add_to_pantry_button),
+                findViewById(R.id.remove_from_pantry_button),
+                displayState
         );
     }
 

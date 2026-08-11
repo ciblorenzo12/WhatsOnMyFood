@@ -97,6 +97,13 @@
     <string name="ingredients_list">Lista de ingredientes</string>
     <string name="scan_next">Escanear siguiente</string>
     <string name="add_to_pantry">Agregar a despensa</string>
+    <string name="pantry_saving">Guardando…</string>
+    <string name="pantry_saved">Guardado en la despensa</string>
+    <string name="pantry_already_saved">Este producto ya está en tu despensa.</string>
+    <string name="pantry_save_failed">No se pudo guardar el producto. Inténtalo de nuevo.</string>
+    <string name="pantry_removing">Eliminando…</string>
+    <string name="pantry_removed">Eliminado de la despensa</string>
+    <string name="pantry_already_removed">Este producto ya no está en tu despensa.</string>
     <string name="ingredients">Ingredientes</string>
     <string name="serving_size">Tamano de porcion</string>
     <string name="nutrition_facts">Informacion nutricional</string>
