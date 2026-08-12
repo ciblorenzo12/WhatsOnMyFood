@@ -47,6 +47,23 @@ public interface ProductDao {
         }
     }
 
+    /** Replaces externally refreshed data while retaining fields owned by the shopper or local analysis. */
+    @Transaction
+    public default void insertRefreshedProductWithDetails(ProductWithDetails refreshedProduct) {
+        if (refreshedProduct == null || refreshedProduct.product == null
+                || !refreshedProduct.product.isValid()) {
+            return;
+        }
+        ProductWithDetails savedProduct = getProductWithDetails(refreshedProduct.product.barcode);
+        if (savedProduct != null) {
+            ProductRefreshPolicy.preserveLocalState(
+                    refreshedProduct.product,
+                    savedProduct.product
+            );
+        }
+        insertProductWithDetails(refreshedProduct);
+    }
+
     // Favorite method
     @Query("UPDATE products SET isFavorite = :isFavorite WHERE barcode = :barcode")
     void setFavorite(String barcode, boolean isFavorite);

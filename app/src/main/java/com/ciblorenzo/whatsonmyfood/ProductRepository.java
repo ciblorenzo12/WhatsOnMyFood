@@ -135,7 +135,7 @@ public class ProductRepository implements ProductLookupGateway {
             try {
                 ProductWithDetails cachedProduct = productDao.getProductWithDetails(barcode);
                 if (NetworkUtils.isOnline(application)) {
-                    fetchFromApiChain(barcode, callback, cachedProduct, true, false);
+                    fetchFromApiChain(barcode, callback, cachedProduct, true);
                 } else {
                     callback.onError(new IOException("You are offline. Please check your connection."));
                     idlingResource.decrement();
@@ -148,10 +148,6 @@ public class ProductRepository implements ProductLookupGateway {
     }
 
     private void fetchFromApiChain(String barcode, RepositoryCallback<ProductResult> callback, ProductWithDetails cachedProduct, boolean isCacheStale) {
-        fetchFromApiChain(barcode, callback, cachedProduct, isCacheStale, true);
-    }
-
-    private void fetchFromApiChain(String barcode, RepositoryCallback<ProductResult> callback, ProductWithDetails cachedProduct, boolean isCacheStale, boolean preserveAiInsight) {
         ProductResponse bestResponse = null;
         String sourceName = "";
         String supplementalLabels = "";
@@ -203,8 +199,7 @@ public class ProductRepository implements ProductLookupGateway {
                     barcode,
                     firstNonEmpty(openFoodFactsIngredients, supplementalIngredients)
             );
-            preserveSavedFields(fetchedProduct, cachedProduct, preserveAiInsight);
-            productDao.insertProductWithDetails(fetchedProduct);
+            productDao.insertRefreshedProductWithDetails(fetchedProduct);
             productDao.insertCacheMeta(new CacheMeta(barcode, System.currentTimeMillis()));
             boolean usedFallbackSource = !OpenFoodFactsApiClient.class.getSimpleName().equals(sourceName);
             callback.onComplete(new ProductResult(
@@ -622,18 +617,6 @@ public class ProductRepository implements ProductLookupGateway {
                 && productWithDetails.product != null
                 && productWithDetails.product.aiInsight != null
                 && !productWithDetails.product.aiInsight.trim().isEmpty();
-    }
-
-    private void preserveSavedFields(ProductWithDetails fetchedProduct, ProductWithDetails cachedProduct, boolean preserveAiInsight) {
-        if (fetchedProduct == null || fetchedProduct.product == null || cachedProduct == null || cachedProduct.product == null) {
-            return;
-        }
-
-        if (preserveAiInsight) {
-            fetchedProduct.product.aiInsight = cachedProduct.product.aiInsight;
-            fetchedProduct.product.healthScore = cachedProduct.product.healthScore;
-        }
-        fetchedProduct.product.isFavorite = cachedProduct.product.isFavorite;
     }
 
     public void updateProductAiInsight(String barcode, String aiInsight) {
