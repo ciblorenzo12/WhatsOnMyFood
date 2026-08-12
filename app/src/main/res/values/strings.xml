@@ -65,6 +65,13 @@
     <string name="cached_data_clear_failed">Some cached data could not be removed. Please close other app screens and try again.</string>
     <string name="my_pantry">My Pantry</string>
     <string name="pantry">Pantry</string>
+    <string name="pantry_sort">Sort pantry</string>
+    <string name="pantry_sort_recent">Recently saved</string>
+    <string name="pantry_sort_name">Product name</string>
+    <string name="pantry_sort_health_score">Health score: highest first</string>
+    <string name="pantry_empty_title">Your pantry is ready</string>
+    <string name="pantry_empty_message">Save a product from its detail screen and it will appear here for quick review.</string>
+    <string name="open_product_details">Open details for %1$s</string>
     <string name="scan_me">Scan Me!!</string>
     <string name="export_csv">Export to CSV</string>
     <string name="export_json">Export to JSON</string>

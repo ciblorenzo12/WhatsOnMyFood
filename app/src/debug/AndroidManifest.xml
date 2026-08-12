@@ -18,5 +18,8 @@
         <activity
             android:name=".ProductDetailLayoutPreviewActivity"
             android:exported="true" />
+        <activity
+            android:name=".PantryLayoutPreviewActivity"
+            android:exported="true" />
     </application>
 </manifest>

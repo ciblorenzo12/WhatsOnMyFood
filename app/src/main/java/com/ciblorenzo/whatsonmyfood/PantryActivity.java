@@ -37,6 +37,8 @@ import java.util.concurrent.Executors;
 public class PantryActivity extends BaseActivity {
 
     public static final String RESULT_DATA_CHANGED = "com.ciblorenzo.whatsonmyfood.DATA_CHANGED";
+    private static final String PANTRY_PREFERENCES = "pantry_preferences";
+    private static final String SORT_PREFERENCE = "sort_option";
 
     private AppDatabase db;
     private ExecutorService executorService;
@@ -46,6 +48,8 @@ public class PantryActivity extends BaseActivity {
     private String currentExportType = "";
     private FirebaseUser currentUser;
     private View loadingOverlay;
+    private View emptyState;
+    private PantrySortOption currentSort = PantrySortOption.RECENT;
 
     private final ActivityResultLauncher<Intent> detailsActivityLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -93,9 +97,14 @@ public class PantryActivity extends BaseActivity {
 
         db = AppDatabase.getDatabase(this);
         executorService = Executors.newSingleThreadExecutor();
+        currentSort = PantrySortOption.fromPreference(
+                getSharedPreferences(PANTRY_PREFERENCES, MODE_PRIVATE)
+                        .getString(SORT_PREFERENCE, PantrySortOption.RECENT.getPreferenceValue())
+        );
 
         recyclerView = findViewById(R.id.pantry_recycler_view);
         loadingOverlay = findViewById(R.id.loading_overlay);
+        emptyState = findViewById(R.id.pantry_empty_state);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         findViewById(R.id.ingredient_db_fab).setOnClickListener(v -> {
@@ -116,6 +125,14 @@ public class PantryActivity extends BaseActivity {
     }
 
     @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        menu.findItem(R.id.action_sort_recent).setChecked(currentSort == PantrySortOption.RECENT);
+        menu.findItem(R.id.action_sort_name).setChecked(currentSort == PantrySortOption.NAME);
+        menu.findItem(R.id.action_sort_health_score).setChecked(currentSort == PantrySortOption.HEALTH_SCORE);
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_export_csv) {
             currentExportType = "csv";
@@ -127,6 +144,15 @@ public class PantryActivity extends BaseActivity {
         } else if (item.getItemId() == R.id.action_export_json) {
             currentExportType = "json";
             createFile("pantry.json", "application/json");
+            return true;
+        } else if (item.getItemId() == R.id.action_sort_recent) {
+            selectSortOption(PantrySortOption.RECENT);
+            return true;
+        } else if (item.getItemId() == R.id.action_sort_name) {
+            selectSortOption(PantrySortOption.NAME);
+            return true;
+        } else if (item.getItemId() == R.id.action_sort_health_score) {
+            selectSortOption(PantrySortOption.HEALTH_SCORE);
             return true;
         } else if (item.getItemId() == android.R.id.home) {
             onBackPressed();
@@ -143,18 +169,34 @@ public class PantryActivity extends BaseActivity {
         createFileLauncher.launch(intent);
     }
 
+    private void selectSortOption(PantrySortOption option) {
+        if (option == null) return;
+        currentSort = option;
+        getSharedPreferences(PANTRY_PREFERENCES, MODE_PRIVATE)
+                .edit()
+                .putString(SORT_PREFERENCE, option.getPreferenceValue())
+                .apply();
+        invalidateOptionsMenu();
+        loadPantryItems();
+    }
+
     private void loadPantryItems() {
         if (currentUser == null) return;
         if (loadingOverlay != null) loadingOverlay.setVisibility(View.VISIBLE);
         executorService.execute(() -> {
-            pantryProducts = db.productDao().getPantryProducts(currentUser.getUid());
+            pantryProducts = getSortedPantryProducts(currentUser.getUid());
             runOnUiThread(() -> {
                 if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
+                PantryListStateViewBinder.bind(
+                        recyclerView,
+                        emptyState,
+                        pantryProducts == null ? 0 : pantryProducts.size()
+                );
                 if (adapter == null) {
                     adapter = new PantryAdapter(pantryProducts, product -> {
-                        Intent intent = new Intent(PantryActivity.this, ProductDetailsActivity.class);
-                        intent.putExtra(ProductDetailsActivity.EXTRA_BARCODE, product.barcode);
-                        detailsActivityLauncher.launch(intent);
+                        detailsActivityLauncher.launch(
+                                PantryNavigation.productDetailsIntent(PantryActivity.this, product)
+                        );
                     }, (product, score) -> executorService.execute(() ->
                             db.productDao().updateUserIngredientRiskScore(product.barcode, score)
                     ));
@@ -165,6 +207,18 @@ public class PantryActivity extends BaseActivity {
                 }
             });
         });
+    }
+
+    private List<Product> getSortedPantryProducts(String userId) {
+        switch (currentSort) {
+            case NAME:
+                return db.productDao().getPantryProductsByName(userId);
+            case HEALTH_SCORE:
+                return db.productDao().getPantryProductsByHealthScore(userId);
+            case RECENT:
+            default:
+                return db.productDao().getPantryProducts(userId);
+        }
     }
 
     private void setupSwipeToDelete(RecyclerView recyclerView) {

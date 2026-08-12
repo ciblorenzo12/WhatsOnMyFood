@@ -64,8 +64,20 @@ public interface ProductDao {
     @Query("SELECT COUNT(*) FROM pantry WHERE userId = :userId")
     int countPantryProducts(String userId);
     
-    @Query("SELECT p.* FROM products p INNER JOIN pantry ON p.barcode = pantry.barcode WHERE pantry.userId = :userId")
+    @Query("SELECT p.* FROM products p INNER JOIN pantry ON p.barcode = pantry.barcode " +
+            "WHERE pantry.userId = :userId ORDER BY pantry.rowid DESC, p.barcode ASC")
     List<Product> getPantryProducts(String userId);
+
+    @Query("SELECT p.* FROM products p INNER JOIN pantry ON p.barcode = pantry.barcode " +
+            "WHERE pantry.userId = :userId " +
+            "ORDER BY LOWER(COALESCE(NULLIF(TRIM(p.productName), ''), p.barcode)) ASC, p.barcode ASC")
+    List<Product> getPantryProductsByName(String userId);
+
+    @Query("SELECT p.* FROM products p INNER JOIN pantry ON p.barcode = pantry.barcode " +
+            "WHERE pantry.userId = :userId " +
+            "ORDER BY CASE WHEN p.healthScore IS NULL THEN 1 ELSE 0 END ASC, " +
+            "p.healthScore DESC, LOWER(COALESCE(NULLIF(TRIM(p.productName), ''), p.barcode)) ASC, p.barcode ASC")
+    List<Product> getPantryProductsByHealthScore(String userId);
 
     @Transaction
     @Query("SELECT p.* FROM products p INNER JOIN pantry ON p.barcode = pantry.barcode WHERE pantry.userId = :userId")

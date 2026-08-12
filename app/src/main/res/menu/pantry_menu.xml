@@ -1,5 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_sort_pantry"
+        android:icon="@android:drawable/ic_menu_sort_by_size"
+        android:title="@string/pantry_sort"
+        app:showAsAction="ifRoom">
+        <menu>
+            <group android:checkableBehavior="single">
+                <item
+                    android:id="@+id/action_sort_recent"
+                    android:checkable="true"
+                    android:title="@string/pantry_sort_recent" />
+                <item
+                    android:id="@+id/action_sort_name"
+                    android:checkable="true"
+                    android:title="@string/pantry_sort_name" />
+                <item
+                    android:id="@+id/action_sort_health_score"
+                    android:checkable="true"
+                    android:title="@string/pantry_sort_health_score" />
+            </group>
+        </menu>
+    </item>
     <item
         android:id="@+id/action_pantry_insights"
         android:title="@string/pantry_risk_insights" />

@@ -65,6 +65,13 @@
     <string name="cached_data_clear_failed">No se pudieron eliminar todos los datos en caché. Cierra las otras pantallas de la aplicación e inténtalo de nuevo.</string>
     <string name="my_pantry">Mi despensa</string>
     <string name="pantry">Despensa</string>
+    <string name="pantry_sort">Ordenar despensa</string>
+    <string name="pantry_sort_recent">Guardados recientemente</string>
+    <string name="pantry_sort_name">Nombre del producto</string>
+    <string name="pantry_sort_health_score">Puntuaci&#243;n de salud: mayor primero</string>
+    <string name="pantry_empty_title">Tu despensa est&#225; lista</string>
+    <string name="pantry_empty_message">Guarda un producto desde su pantalla de detalles y aparecer&#225; aqu&#237; para consultarlo r&#225;pidamente.</string>
+    <string name="open_product_details">Abrir detalles de %1$s</string>
     <string name="scan_me">Escanear</string>
     <string name="export_csv">Exportar a CSV</string>
     <string name="export_json">Exportar a JSON</string>

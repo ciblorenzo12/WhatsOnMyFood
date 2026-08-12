@@ -118,6 +118,13 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
             } else {
                 productImageView.setImageResource(R.drawable.ic_scan);
             }
+            String accessibleName = product.productName == null || product.productName.trim().isEmpty()
+                    ? product.barcode
+                    : product.productName;
+            itemView.setContentDescription(itemView.getContext().getString(
+                    R.string.open_product_details,
+                    accessibleName
+            ));
             itemView.setOnClickListener(v -> listener.onItemClick(product));
         }
     }

@@ -65,6 +65,13 @@
     <string name="cached_data_clear_failed">Certaines données en cache n’ont pas pu être supprimées. Fermez les autres écrans de l’application et réessayez.</string>
     <string name="my_pantry">Mon garde-manger</string>
     <string name="pantry">Garde-manger</string>
+    <string name="pantry_sort">Trier le garde-manger</string>
+    <string name="pantry_sort_recent">Ajout&#233;s r&#233;cemment</string>
+    <string name="pantry_sort_name">Nom du produit</string>
+    <string name="pantry_sort_health_score">Score sant&#233; : le plus &#233;lev&#233; d\'abord</string>
+    <string name="pantry_empty_title">Votre garde-manger est pr&#234;t</string>
+    <string name="pantry_empty_message">Enregistrez un produit depuis son &#233;cran de d&#233;tails; il appara&#238;tra ici pour une consultation rapide.</string>
+    <string name="open_product_details">Ouvrir les d&#233;tails de %1$s</string>
     <string name="scan_me">Scanner</string>
     <string name="export_csv">Exporter en CSV</string>
     <string name="export_json">Exporter en JSON</string>
