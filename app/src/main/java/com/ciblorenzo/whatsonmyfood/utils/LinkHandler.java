@@ -53,7 +53,7 @@ public class LinkHandler {
 
         String displayTitle = title != null && !title.trim().isEmpty() ? title : "Scientific Source";
         String host = Uri.parse(url).getHost();
-        String message = "This source is a website outside YourHealthyPantry"
+        String message = "This source is a website outside What'sOnMyFood"
                 + (host != null ? " from " + host : "")
                 + ". It will open in the in-app web viewer.";
 

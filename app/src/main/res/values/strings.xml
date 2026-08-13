@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name" translatable="false">WhatsOnMyFood</string>
+    <string name="app_name" translatable="false">What\'sOnMyFood</string>
     <string name="title_activity_scan_barcode">Scan Barcode</string>
     <string name="bitwise_ai">Bitwise AI</string>
     <string name="bitwise_plus">Bitwise Plus</string>

@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-YourHealthyPantry uses scientific and public-health references to support the explanations shown with a product result. A source link by itself, however, does not tell a shopper whether the publisher is authoritative, whether the reference matches the claim, or whether the source was actually used during the fact-checking step.
+What'sOnMyFood uses scientific and public-health references to support the explanations shown with a product result. A source link by itself, however, does not tell a shopper whether the publisher is authoritative, whether the reference matches the claim, or whether the source was actually used during the fact-checking step.
 
 The source-quality verification layer addresses that problem by assigning each displayed reference:
 
