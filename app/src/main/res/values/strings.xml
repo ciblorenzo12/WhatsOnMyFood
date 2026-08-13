@@ -101,6 +101,13 @@
     <string name="score">SCORE</string>
     <string name="verdict">VERDICT</string>
     <string name="scientific_sources">SCIENTIFIC SOURCES</string>
+    <string name="source_quality_disclaimer">Quality estimate based on authority, evidence type, claim relevance, and traceability. It is not a guarantee that every claim is true.</string>
+    <string name="source_quality_score">Verification estimate: %1$d%% · %2$s</string>
+    <string name="source_quality_very_strong">Very strong</string>
+    <string name="source_quality_strong">Strong</string>
+    <string name="source_quality_moderate">Moderate</string>
+    <string name="source_quality_limited">Limited</string>
+    <string name="source_fallback_name">Scientific source</string>
     <string name="ingredients_list">Ingredients List</string>
     <string name="scan_next">Scan Next</string>
     <string name="add_to_pantry">Add to Pantry</string>

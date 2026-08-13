@@ -227,33 +227,7 @@ public class IngredientAnalysisActivity extends BaseActivity {
             String productKey = sourceBarcode != null ? sourceBarcode : "ai-" + System.currentTimeMillis();
 
             JSONArray sourcesArr = obj.optJSONArray("sources");
-            android.text.SpannableStringBuilder sourcesBuilder = new android.text.SpannableStringBuilder();
-            if (sourcesArr != null) {
-                for (int i = 0; i < sourcesArr.length(); i++) {
-                    JSONObject sourceObj = sourcesArr.optJSONObject(i);
-                    if (sourceObj != null) {
-                        String sName = sourceObj.optString("name", "Source");
-                        String url = sourceObj.optString("url", "");
-                        String query = sourceObj.optString("search_query", "");
-
-                        int start = sourcesBuilder.length();
-                        sourcesBuilder.append("\u2022 ").append(sName).append("\n");
-                        int end = sourcesBuilder.length() - 1;
-
-                        if (!url.isEmpty()) {
-                            String visualQuote = sourceObj.optString("visual_quote", "");
-                            sourcesBuilder.setSpan(new android.text.style.ClickableSpan() {
-                                @Override
-                                public void onClick(@androidx.annotation.NonNull View widget) {
-                                    LinkHandler.openLink(IngredientAnalysisActivity.this, url, sName, visualQuote);
-                                }
-                            }, start + 2, end, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                            sourcesBuilder.setSpan(new android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, R.color.colorPrimary)), start + 2, end, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                        }
-                    }
-                }
-            }
-            final CharSequence finalSources = sourcesBuilder;
+            final CharSequence finalSources = ScientificSourceTextBuilder.build(this, sourcesArr);
 
             TextView nameView = findViewById(R.id.product_name_text_view);
             TextView brandView = findViewById(R.id.product_brand_text_view);

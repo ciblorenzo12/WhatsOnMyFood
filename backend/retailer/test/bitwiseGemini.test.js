@@ -12,6 +12,7 @@ const {
   urlContextSources,
   buildSourceAwarePrompt,
   validateProviderOutput,
+  sourceVerification,
 } = require("../src/bitwiseGemini");
 
 const originalFetch = global.fetch;
@@ -179,12 +180,20 @@ test("grounds the fact check before generating the structured shopper response",
   const content = JSON.parse(result.body.content);
   assert.equal(content.verdict, "HEALTHY");
   assert.equal(content.fact_check_status, "grounded");
-  assert.deepEqual(content.sources, [{
+  assert.equal(content.sources.length, 1);
+  assert.deepEqual({
+    name: content.sources[0].name,
+    url: content.sources[0].url,
+    visual_quote: content.sources[0].visual_quote,
+    search_query: content.sources[0].search_query,
+  }, {
     name: "FDA - How to Understand and Use the Nutrition Facts Label",
     url: "https://www.fda.gov/food/nutrition-facts-label/how-understand-and-use-nutrition-facts-label",
     visual_quote: "Used by Gemini to fact-check the product explanation.",
     search_query: "",
-  }]);
+  });
+  assert.ok(content.sources[0].verification.score >= 90);
+  assert.equal(content.sources[0].verification.level, "very_strong");
 });
 
 test("deduplicates grounded web sources and rejects unverified finding links", () => {
@@ -409,4 +418,27 @@ test("keeps the Pro response with curated sources when URL Context returns no me
 test("rejects a request with the wrong app token", async () => {
   const result = await handleBitwiseAnalysis(request({ prompt: "Analyze" }, "wrong-token"));
   assert.equal(result.status, 401);
+});
+
+test("rates an official topic-matched nutrition source without another model request", () => {
+  const rating = sourceVerification({
+    key: "added_sugars",
+    name: "FDA - Added Sugars on the Nutrition Facts Label",
+    url: "https://www.fda.gov/food/nutrition-facts-label/added-sugars-nutrition-facts-label",
+  }, "Ingredients: cane sugar and corn syrup", "grounded");
+
+  assert.ok(rating.score >= 90);
+  assert.equal(rating.level, "very_strong");
+  assert.equal(rating.method, "source_quality_v1");
+  assert.match(rating.note, /not the probability/i);
+});
+
+test("does not overrate an unclassified publisher with weak claim fit", () => {
+  const rating = sourceVerification({
+    name: "Food opinion",
+    url: "https://example.com/article",
+  }, "Ingredients: sodium benzoate", "grounded");
+
+  assert.ok(rating.score < 60);
+  assert.equal(rating.level, "limited");
 });

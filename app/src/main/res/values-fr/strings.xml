@@ -295,4 +295,11 @@
     <string name="nutrition_and_product_details_hint">Portion, valeurs nutritionnelles, cat&#233;gories, emballage et certifications.</string>
     <string name="product_actions">Actions sur le produit</string>
     <string name="product_actions_hint">Actualisez les donn&#233;es, compl&#233;tez les ingr&#233;dients manquants ou g&#233;rez cet article du garde-manger.</string>
+    <string name="source_quality_disclaimer">Estimation de qualit&#233; fond&#233;e sur l&#8217;autorit&#233;, le type de preuve, la pertinence pour l&#8217;affirmation et la tra&#231;abilit&#233;. Elle ne garantit pas que chaque affirmation est vraie.</string>
+    <string name="source_quality_score">Estimation de v&#233;rification : %1$d%% &#183; %2$s</string>
+    <string name="source_quality_very_strong">Tr&#232;s solide</string>
+    <string name="source_quality_strong">Solide</string>
+    <string name="source_quality_moderate">Mod&#233;r&#233;e</string>
+    <string name="source_quality_limited">Limit&#233;e</string>
+    <string name="source_fallback_name">Source scientifique</string>
 </resources>

@@ -68,6 +68,114 @@ const TRUSTED_FACT_CHECK_SOURCES = [
   },
 ];
 
+const SOURCE_TOPIC_TERMS = {
+  nutrition_label: ["nutrition", "label", "serving", "calorie", "daily value"],
+  fats: ["fat", "oil", "butter", "trans fat", "saturated"],
+  added_sugars: ["sugar", "sweetener", "syrup", "fructose", "sucrose"],
+  sodium: ["sodium", "salt"],
+  additives: ["additive", "preservative", "color", "dye", "emulsifier", "stabilizer"],
+  healthy_diet: ["healthy diet", "food", "ingredient", "nutrition"],
+};
+
+const PRIMARY_HEALTH_AUTHORITIES = [
+  "fda.gov", "nih.gov", "ncbi.nlm.nih.gov", "cdc.gov", "usda.gov",
+  "who.int", "efsa.europa.eu", "cochranelibrary.com",
+];
+const RESEARCH_HOSTS = ["pubmed.ncbi.nlm.nih.gov", "pmc.ncbi.nlm.nih.gov", "doi.org", "bmj.com"];
+const PROFESSIONAL_HEALTH_HOSTS = ["heart.org"];
+
+function sourceHost(value) {
+  try {
+    return new URL(String(value || "")).hostname.toLowerCase().replace(/^www\./, "");
+  } catch (_error) {
+    return "";
+  }
+}
+
+function hostMatches(host, candidate) {
+  return host === candidate || host.endsWith(`.${candidate}`);
+}
+
+function sourceAuthorityScore(host) {
+  if (PRIMARY_HEALTH_AUTHORITIES.some((candidate) => hostMatches(host, candidate))) return 30;
+  if (RESEARCH_HOSTS.some((candidate) => hostMatches(host, candidate)) || host.endsWith(".edu")) return 27;
+  if (PROFESSIONAL_HEALTH_HOSTS.some((candidate) => hostMatches(host, candidate))) return 22;
+  if (host.endsWith(".gov") || host.endsWith(".int")) return 24;
+  if (host.endsWith(".org")) return 12;
+  return 6;
+}
+
+function sourceEvidenceScore(host) {
+  if (PRIMARY_HEALTH_AUTHORITIES.some((candidate) => hostMatches(host, candidate))) return 24;
+  if (RESEARCH_HOSTS.some((candidate) => hostMatches(host, candidate)) || host.endsWith(".edu")) return 24;
+  if (PROFESSIONAL_HEALTH_HOSTS.some((candidate) => hostMatches(host, candidate))) return 18;
+  if (hostMatches(host, "openfoodfacts.org")) return 12;
+  return 8;
+}
+
+function sourceClaimMatchScore(source, claimContext) {
+  const key = String(source?.key || "");
+  const context = String(claimContext || "").toLowerCase();
+  if (key && !["nutrition_label", "healthy_diet"].includes(key)) {
+    const terms = SOURCE_TOPIC_TERMS[key] || [];
+    if (terms.some((term) => context.includes(term))) return 25;
+  }
+  if (key) return 18;
+
+  const sourceText = `${source?.name || ""} ${source?.url || ""}`.toLowerCase();
+  const contextTerms = Object.values(SOURCE_TOPIC_TERMS).flat()
+    .filter((term) => context.includes(term));
+  const matches = contextTerms.filter((term) => sourceText.includes(term)).length;
+  if (matches >= 2) return 22;
+  if (matches === 1 || String(source?.search_query || "").trim()) return 16;
+  return 6;
+}
+
+/**
+ * Lightweight post-generation source-quality estimate. This is deliberately
+ * separate from the prompt and provider request, so it adds no model latency.
+ * It estimates provenance and claim fit; it is not the probability that every
+ * statement on the linked page is true.
+ */
+function sourceVerification(source, claimContext, factCheckStatus = "authoritative_sources_selected") {
+  const url = String(source?.url || "").trim();
+  const host = sourceHost(url);
+  const authority = sourceAuthorityScore(host);
+  const evidence = sourceEvidenceScore(host);
+  const claimMatch = sourceClaimMatchScore(source, claimContext);
+  const retrieval = factCheckStatus === "grounded" ? 12 : 7;
+  const transport = /^https:\/\//i.test(url) ? 8 : 0;
+  const score = Math.max(0, Math.min(100, authority + evidence + claimMatch + retrieval + transport));
+  const level = score >= 90 ? "very_strong" : score >= 75 ? "strong" : score >= 60 ? "moderate" : "limited";
+
+  const basis = [];
+  if (authority >= 27) basis.push("authoritative_or_research_host");
+  else if (authority >= 22) basis.push("recognized_health_organization");
+  else basis.push("publisher_authority_limited");
+  if (claimMatch >= 22) basis.push("strong_topic_match");
+  else if (claimMatch >= 16) basis.push("general_topic_match");
+  else basis.push("claim_match_limited");
+  basis.push(factCheckStatus === "grounded" ? "retrieved_for_fact_check" : "curated_reference");
+
+  return {
+    score,
+    level,
+    basis,
+    method: "source_quality_v1",
+    note: "Evidence-quality estimate, not the probability that every claim is true.",
+  };
+}
+
+function addSourceVerification(sources, claimContext, factCheckStatus) {
+  return sources.map((source) => {
+    const { key: _internalTopicKey, ...publicSource } = source;
+    return {
+      ...publicSource,
+      verification: sourceVerification(source, claimContext, factCheckStatus),
+    };
+  });
+}
+
 const BITWISE_RESPONSE_SCHEMA = {
   type: "object",
   properties: {
@@ -305,6 +413,7 @@ function urlContextSources(result, requestedSources) {
   return requestedSources
     .filter((source) => retrieved.has(normalizeSourceUrl(source.url)))
     .map((source) => ({
+      key: source.key,
       name: source.name,
       url: source.url,
       visual_quote: "Used by Gemini to fact-check the product explanation.",
@@ -314,6 +423,7 @@ function urlContextSources(result, requestedSources) {
 
 function authoritativeSources(requestedSources) {
   return requestedSources.map((source) => ({
+    key: source.key,
     name: source.name,
     url: source.url,
     visual_quote: "Authoritative reference selected by Bitwise for this explanation.",
@@ -333,10 +443,10 @@ function normalizeSourceUrl(value) {
   }
 }
 
-function attachVerifiedSources(content, sources, factCheckStatus = "grounded") {
+function attachVerifiedSources(content, sources, factCheckStatus = "grounded", claimContext = "") {
   const parsed = JSON.parse(content);
   parsed.fact_check_status = sources.length > 0 ? factCheckStatus : "source_unavailable";
-  parsed.sources = sources;
+  parsed.sources = addSourceVerification(sources, claimContext, factCheckStatus);
 
   const allowedUrls = new Set(sources.map((source) => source.url));
   if (Array.isArray(parsed.findings)) {
@@ -451,10 +561,17 @@ function analysisGenerationConfig(model) {
 }
 
 function fallbackResponse(prompt, reason, errorCategory = "provider_unavailable") {
+  const fallbackContent = analyzePrompt(prompt);
+  fallbackContent.fact_check_status = "authoritative_sources_selected";
+  fallbackContent.sources = addSourceVerification(
+    Array.isArray(fallbackContent.sources) ? fallbackContent.sources : [],
+    prompt,
+    "authoritative_sources_selected",
+  );
   return {
     status: 200,
     body: {
-      content: JSON.stringify(analyzePrompt(prompt)),
+      content: JSON.stringify(fallbackContent),
       provider: "local-fallback",
       fallbackReason: reason,
     },
@@ -554,6 +671,7 @@ async function requestGemini(prompt, image, structuredProductContext, rules) {
       cleanModelJson(content),
       sources,
       usedGroundedSources ? "grounded" : "authoritative_sources_selected",
+      factCheckContext,
     );
   return {
     content: validateProviderOutput(verifiedContent),
@@ -615,6 +733,8 @@ module.exports = {
   validateProviderOutput,
   urlContextSources,
   authoritativeSources,
+  sourceVerification,
+  addSourceVerification,
   structuredContextError,
   fallbackPrompt,
 };

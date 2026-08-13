@@ -295,4 +295,11 @@
     <string name="nutrition_and_product_details_hint">Porci&#243;n, valores nutricionales, categor&#237;as, envase y certificaciones.</string>
     <string name="product_actions">Acciones del producto</string>
     <string name="product_actions_hint">Actualiza los datos, completa los ingredientes faltantes o administra este art&#237;culo de la despensa.</string>
+    <string name="source_quality_disclaimer">Estimaci&#243;n de calidad basada en la autoridad, el tipo de evidencia, la relevancia para la afirmaci&#243;n y la trazabilidad. No garantiza que cada afirmaci&#243;n sea verdadera.</string>
+    <string name="source_quality_score">Estimaci&#243;n de verificaci&#243;n: %1$d%% &#183; %2$s</string>
+    <string name="source_quality_very_strong">Muy s&#243;lida</string>
+    <string name="source_quality_strong">S&#243;lida</string>
+    <string name="source_quality_moderate">Moderada</string>
+    <string name="source_quality_limited">Limitada</string>
+    <string name="source_fallback_name">Fuente cient&#237;fica</string>
 </resources>

@@ -831,35 +831,9 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
 
     private void displaySources(org.json.JSONArray sources) {
         if (aiSourcesTextView == null || getContext() == null) return;
-
-        SpannableStringBuilder builder = new SpannableStringBuilder();
-        if (sources != null) {
-            for (int i = 0; i < sources.length(); i++) {
-                org.json.JSONObject sourceObj = sources.optJSONObject(i);
-                if (sourceObj == null) continue;
-
-                String name = sourceObj.optString("name", "Source").trim();
-                String url = sourceObj.optString("url", "").trim();
-                String visualQuote = sourceObj.optString("visual_quote", "");
-                if (url.isEmpty()) continue;
-
-                int start = builder.length();
-                builder.append("\u2022 ").append(name.isEmpty() ? "Source" : name).append("\n");
-                int end = builder.length() - 1;
-                builder.setSpan(new android.text.style.ClickableSpan() {
-                    @Override
-                    public void onClick(@NonNull View widget) {
-                        if (getActivity() != null) {
-                            LinkHandler.openLink(getActivity(), url, name, visualQuote);
-                        }
-                    }
-                }, start + 2, end, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                builder.setSpan(new android.text.style.ForegroundColorSpan(ContextCompat.getColor(requireContext(), R.color.colorPrimary)), start + 2, end, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            }
-        }
-
-        boolean hasSources = builder.length() > 0;
-        aiSourcesTextView.setText(builder);
+        CharSequence sourceText = ScientificSourceTextBuilder.build(requireContext(), sources);
+        boolean hasSources = sourceText.length() > 0;
+        aiSourcesTextView.setText(sourceText);
         aiSourcesTextView.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
         aiSourcesTextView.setVisibility(hasSources ? View.VISIBLE : View.GONE);
         if (aiSourcesDivider != null) aiSourcesDivider.setVisibility(hasSources ? View.VISIBLE : View.GONE);

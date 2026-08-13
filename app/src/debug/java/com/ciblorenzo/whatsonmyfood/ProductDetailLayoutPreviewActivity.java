@@ -20,6 +20,9 @@ import com.ciblorenzo.whatsonmyfood.analysis.ProductAnalysisReport;
 import com.ciblorenzo.whatsonmyfood.analysis.ProductFindingsDisplay;
 import com.ciblorenzo.whatsonmyfood.analysis.ProductFindingsViewBinder;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -89,7 +92,10 @@ public class ProductDetailLayoutPreviewActivity extends AppCompatActivity {
         }
         findViewById(R.id.ai_sources_divider).setVisibility(View.VISIBLE);
         findViewById(R.id.ai_sources_label).setVisibility(View.VISIBLE);
-        setText(R.id.ai_sources_text_view, "• FDA Nutrition Facts guidance\n• WHO healthy diet guidance");
+        ((TextView) findViewById(R.id.ai_sources_text_view)).setText(buildSourcePreview());
+        ((TextView) findViewById(R.id.ai_sources_text_view)).setMovementMethod(
+                android.text.method.LinkMovementMethod.getInstance()
+        );
         findViewById(R.id.ai_sources_text_view).setVisibility(View.VISIBLE);
 
         setText(R.id.ingredients_text_view,
@@ -148,6 +154,23 @@ public class ProductDetailLayoutPreviewActivity extends AppCompatActivity {
                 findViewById(R.id.source_status_interpretation_text_view),
                 statuses
         );
+    }
+
+    private CharSequence buildSourcePreview() {
+        JSONArray sources = new JSONArray();
+        try {
+            sources.put(new JSONObject()
+                    .put("name", "FDA Nutrition Facts guidance")
+                    .put("url", "https://www.fda.gov/food/nutrition-facts-label/how-understand-and-use-nutrition-facts-label")
+                    .put("search_query", "nutrition facts label serving size"));
+            sources.put(new JSONObject()
+                    .put("name", "WHO healthy diet guidance")
+                    .put("url", "https://www.who.int/news-room/fact-sheets/detail/healthy-diet")
+                    .put("search_query", "healthy diet nutrition"));
+        } catch (Exception ignored) {
+            return "";
+        }
+        return ScientificSourceTextBuilder.build(this, sources);
     }
 
     private void bindPantryActionPreview() {
