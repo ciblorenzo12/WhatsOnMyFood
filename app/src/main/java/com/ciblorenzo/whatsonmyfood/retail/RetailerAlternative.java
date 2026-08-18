@@ -11,6 +11,7 @@ public class RetailerAlternative {
     public final int healthScore;
     public final double priceValue;
     public final double distanceValue;
+    public final String providerName;
 
     public RetailerAlternative(String productName, String brand, String reason, String healthSignal,
                                String retailerHint, String productUrl, String imageUrl) {
@@ -20,6 +21,14 @@ public class RetailerAlternative {
     public RetailerAlternative(String productName, String brand, String reason, String healthSignal,
                                String retailerHint, String productUrl, String imageUrl,
                                int healthScore, double priceValue, double distanceValue) {
+        this(productName, brand, reason, healthSignal, retailerHint, productUrl, imageUrl,
+                healthScore, priceValue, distanceValue, "");
+    }
+
+    public RetailerAlternative(String productName, String brand, String reason, String healthSignal,
+                               String retailerHint, String productUrl, String imageUrl,
+                               int healthScore, double priceValue, double distanceValue,
+                               String providerName) {
         this.productName = productName;
         this.brand = brand;
         this.reason = reason;
@@ -30,6 +39,6 @@ public class RetailerAlternative {
         this.healthScore = healthScore;
         this.priceValue = priceValue;
         this.distanceValue = distanceValue;
+        this.providerName = providerName;
     }
 }
-

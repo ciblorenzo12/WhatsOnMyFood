@@ -7,13 +7,17 @@ class RetailerService {
 
   async getAvailability(query) {
     const providerResults = await Promise.all(
-      this.providers.map((provider) => this.safeProviderCall(provider, "getAvailability", query)),
+      this.providers.map(async (provider) => this.annotateProviderResults(
+        provider,
+        await this.safeProviderCall(provider, "getAvailability", query),
+      )),
     );
     const results = this.filterAvailability(flatten(providerResults));
 
     return {
       barcode: query.barcode,
       providerMode: this.providerMode(),
+      resultMode: resultMode(results),
       generatedAt: new Date().toISOString(),
       results,
     };
@@ -21,14 +25,19 @@ class RetailerService {
 
   async getAlternatives(query) {
     const providerResults = await Promise.all(
-      this.providers.map((provider) => this.safeProviderCall(provider, "getAlternatives", query)),
+      this.providers.map(async (provider) => this.annotateProviderResults(
+        provider,
+        await this.safeProviderCall(provider, "getAlternatives", query),
+      )),
     );
+    const results = flatten(providerResults);
 
     return {
       barcode: query.barcode,
       providerMode: this.providerMode(),
+      resultMode: resultMode(results),
       generatedAt: new Date().toISOString(),
-      results: flatten(providerResults),
+      results,
     };
   }
 
@@ -117,6 +126,17 @@ class RetailerService {
     }
   }
 
+  annotateProviderResults(provider, results) {
+    if (!Array.isArray(results)) return [];
+    const providerName = provider && provider.name ? provider.name : "UnknownRetailerProvider";
+    return results
+      .filter((item) => item && typeof item === "object")
+      .map((item) => ({
+        ...item,
+        providerName: firstNonEmpty(item.providerName, providerName),
+      }));
+  }
+
   filterAvailability(results) {
     const hasLiveWalmart = results.some((item) =>
       item && item.retailerName === "Walmart" && item.providerName === "WalmartAffiliatesProvider"
@@ -133,7 +153,19 @@ class RetailerService {
 }
 
 function flatten(items) {
-  return items.reduce((all, item) => all.concat(item), []);
+  return items.reduce((all, item) => all.concat(Array.isArray(item) ? item : []), []);
+}
+
+function resultMode(results) {
+  const providerNames = (Array.isArray(results) ? results : [])
+    .map((item) => item && item.providerName)
+    .filter(Boolean);
+  if (providerNames.length === 0) return "empty";
+
+  const hasMock = providerNames.some((name) => name === "MockRetailerProvider");
+  const hasLive = providerNames.some((name) => name !== "MockRetailerProvider");
+  if (hasLive && hasMock) return "mixed";
+  return hasLive ? "live" : "mock";
 }
 
 function extractIngredientsText(product) {
@@ -155,4 +187,5 @@ function firstNonEmpty(...values) {
 
 module.exports = {
   RetailerService,
+  resultMode,
 };

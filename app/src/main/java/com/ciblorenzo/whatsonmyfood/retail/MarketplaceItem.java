@@ -14,10 +14,11 @@ public class MarketplaceItem {
     public final String productUrl;
     public final String imageUrl;
     public final ItemType type;
+    public final String sourceLabel;
 
     public MarketplaceItem(String productName, String brand, String retailerName, String price, double priceValue,
                            String distance, double distanceValue, int healthScore, String productUrl,
-                           String imageUrl, ItemType type) {
+                           String imageUrl, ItemType type, String sourceLabel) {
         this.productName = productName;
         this.brand = brand;
         this.retailerName = retailerName;
@@ -29,5 +30,6 @@ public class MarketplaceItem {
         this.productUrl = productUrl;
         this.imageUrl = imageUrl;
         this.type = type;
+        this.sourceLabel = sourceLabel;
     }
 }

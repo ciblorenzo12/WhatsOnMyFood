@@ -26,6 +26,16 @@ public class MockRetailerBackendClient implements RetailerBackendClient {
         return mockAlternatives;
     }
 
+    @Override
+    public RetailerEndpointResult<RetailerAvailability> fetchAvailabilityResult(RetailerProductQuery query) throws Exception {
+        return RetailerEndpointResult.mock(fetchAvailability(query));
+    }
+
+    @Override
+    public RetailerEndpointResult<RetailerAlternative> fetchAlternativesResult(RetailerProductQuery query) throws Exception {
+        return RetailerEndpointResult.mock(fetchAlternatives(query));
+    }
+
     private List<RetailerAlternative> getMockAlternatives(RetailerProductQuery query) {
         String productContext = normalize((query.category != null ? query.category : "") + " "
                 + (query.productName != null ? query.productName : ""));
@@ -469,7 +479,8 @@ public class MockRetailerBackendClient implements RetailerBackendClient {
                 "",
                 healthScore,
                 price,
-                distance
+                distance,
+                "MockRetailerProvider"
         );
     }
 

@@ -109,6 +109,32 @@ public class RetailerRepository {
         });
     }
 
+    public void getMarketplaceData(ProductWithDetails productDetails,
+                                   ProductRepository.RepositoryCallback<RetailerMarketplaceResult> callback) {
+        RetailerProductQuery query = buildQuery(productDetails, null, 0, 0);
+        executorService.execute(() -> {
+            try {
+                RetailerEndpointResult<RetailerAvailability> availabilityResponse =
+                        backendClient.fetchAvailabilityResult(query);
+                RetailerEndpointResult<RetailerAlternative> alternativesResponse =
+                        backendClient.fetchAlternativesResult(query);
+
+                List<RetailerAvailability> availability = sortAndDedupeAvailability(
+                        availabilityResponse.results);
+                List<RetailerAlternative> alternatives = sortAndDedupeAlternatives(
+                        alternativesResponse.results);
+                boolean hasResults = !availability.isEmpty() || !alternatives.isEmpty();
+                RetailerEndpointResult.SourceMode sourceMode = RetailerMarketplaceResult.combineSources(
+                        availabilityResponse.sourceMode,
+                        alternativesResponse.sourceMode,
+                        hasResults);
+                callback.onComplete(new RetailerMarketplaceResult(availability, alternatives, sourceMode));
+            } catch (Exception error) {
+                callback.onError(error);
+            }
+        });
+    }
+
     public void close() {
         if (!executorService.isShutdown()) {
             executorService.shutdown();
@@ -215,7 +241,8 @@ public class RetailerRepository {
                         imageUrl,
                         item.healthScore,
                         item.priceValue,
-                        item.distanceValue
+                        item.distanceValue,
+                        item.providerName
                 ));
             }
         }

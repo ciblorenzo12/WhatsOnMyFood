@@ -22,6 +22,9 @@ The first provider is mock data so the app flow can ship before retailer approva
 5. Google Places for nearby store discovery only
 
 Retailer API keys belong in backend environment variables, never in the Android app.
+The availability and alternatives endpoints share the protected-service rate limit. Their
+responses include `providerMode`, a normalized `resultMode` (`live`, `mock`, `mixed`,
+or `empty`), and a `providerName` on each returned item so the app can label the source.
 The ingredient RAG endpoint is protected by the same `X-APP-TOKEN` header and
 rate limit used by the other protected application services.
 

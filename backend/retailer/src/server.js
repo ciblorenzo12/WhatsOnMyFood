@@ -40,6 +40,7 @@ function isProtectedEndpoint(pathname) {
   return pathname === "/v1/bitwise/analyze"
     || pathname === "/v1/billing/google-play/verify"
     || pathname === "/v1/chat/completions"
+    || /^\/api\/retail\/products\/[^/]+\/(availability|alternatives)$/.test(pathname)
     || /^\/api\/retail\/products\/[^/]+\/ingredients\/rag$/.test(pathname);
 }
 
