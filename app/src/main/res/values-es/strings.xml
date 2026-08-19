@@ -238,7 +238,9 @@
     <string name="marketplace_state_error_title">Los resultados de tiendas no est&#225;n disponibles</string>
     <string name="marketplace_state_error_message">El servicio de tiendas no pudo responder. Int&#233;ntelo m&#225;s tarde o regrese a los detalles del producto.</string>
     <string name="sort_by">Ordenar por</string>
-    <string name="view_marketplace_comparison">Ver comparaci&#243;n del mercado</string>
+    <string name="view_marketplace_comparison">Comparar alternativas</string>
+    <string name="compare_alternatives_for_product">Comparar alternativas para %1$s</string>
+    <string name="comparison_unavailable">Las alternativas no est&#225;n disponibles porque a este producto le falta el c&#243;digo de barras o el nombre.</string>
     <string name="home">Inicio</string>
     <string name="additive_database">Base de aditivos e ingredientes</string>
     <string name="additive_database_nav">Base</string>

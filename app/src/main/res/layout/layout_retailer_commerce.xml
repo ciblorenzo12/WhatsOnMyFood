@@ -33,6 +33,18 @@
                 android:text="@string/view_marketplace_comparison"
                 android:textSize="13sp"
                 app:cornerRadius="16dp" />
+
+            <TextView
+                android:id="@+id/comparison_unavailable_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="@string/comparison_unavailable"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:visibility="gone"
+                tools:visibility="visible" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 

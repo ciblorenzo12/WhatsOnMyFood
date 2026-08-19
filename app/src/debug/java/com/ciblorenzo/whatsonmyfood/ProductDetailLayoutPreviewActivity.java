@@ -19,6 +19,7 @@ import com.ciblorenzo.whatsonmyfood.analysis.AnalysisResult;
 import com.ciblorenzo.whatsonmyfood.analysis.ProductAnalysisReport;
 import com.ciblorenzo.whatsonmyfood.analysis.ProductFindingsDisplay;
 import com.ciblorenzo.whatsonmyfood.analysis.ProductFindingsViewBinder;
+import com.ciblorenzo.whatsonmyfood.retail.MarketplaceNavigation;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -109,6 +110,8 @@ public class ProductDetailLayoutPreviewActivity extends AppCompatActivity {
         setText(R.id.packaging_text_view, "Recyclable cardboard box");
         setText(R.id.labels_text_view, "Whole grain certified");
 
+        bindMarketplaceActionPreview();
+
         bindPantryActionPreview();
         if (getIntent().getBooleanExtra("pantry_focus", false)) {
             findViewById(R.id.nested_scroll_view).post(() ->
@@ -116,6 +119,34 @@ public class ProductDetailLayoutPreviewActivity extends AppCompatActivity {
                             .fullScroll(View.FOCUS_DOWN)
             );
         }
+    }
+
+    private void bindMarketplaceActionPreview() {
+        ProductWithDetails productDetails = new ProductWithDetails();
+        boolean unsupported = "unsupported".equals(
+                getIntent().getStringExtra("comparison_scenario")
+        );
+        productDetails.product = new Product(
+                unsupported ? "" : "012345678905",
+                "Whole Grain Oat Cereal",
+                "Sample Market Foods",
+                "12 oz",
+                "",
+                "Whole grain",
+                "Cardboard box",
+                "Breakfast cereals, whole grain foods",
+                "1 cup (36 g)",
+                "b",
+                "2",
+                "b"
+        );
+        findViewById(R.id.retailer_commerce_layout).setVisibility(View.VISIBLE);
+        MarketplaceNavigation.bindAction(
+                this,
+                findViewById(R.id.comparison_view_button),
+                findViewById(R.id.comparison_unavailable_text),
+                productDetails
+        );
     }
 
     private void bindSourcePreview() {

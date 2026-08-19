@@ -22,7 +22,6 @@ import com.ciblorenzo.whatsonmyfood.BuildConfig;
 import com.ciblorenzo.whatsonmyfood.ProductRepository;
 import com.ciblorenzo.whatsonmyfood.ProductWithDetails;
 import com.ciblorenzo.whatsonmyfood.R;
-import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -92,12 +91,11 @@ public class MarketplaceActivity extends BaseActivity {
             return;
         }
 
-        String productJson = getIntent().getStringExtra(EXTRA_PRODUCT_JSON);
-        if (productJson != null) {
-            productDetails = new Gson().fromJson(productJson, ProductWithDetails.class);
+        productDetails = MarketplaceNavigation.readProduct(getIntent());
+        if (productDetails != null) {
             loadData();
         } else {
-            Toast.makeText(this, "No product data", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.comparison_unavailable, Toast.LENGTH_LONG).show();
             finish();
         }
     }

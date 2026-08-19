@@ -13,9 +13,7 @@ import com.ciblorenzo.whatsonmyfood.ProductWithDetails;
 import com.ciblorenzo.whatsonmyfood.R;
 import com.ciblorenzo.whatsonmyfood.utils.GlassMotion;
 import com.ciblorenzo.whatsonmyfood.utils.LocationHelper;
-import com.google.gson.Gson;
 
-import android.content.Intent;
 import java.util.List;
 
 public class RetailerCommerceViewBinder {
@@ -29,7 +27,8 @@ public class RetailerCommerceViewBinder {
     private final RetailerRepository repository;
     private final Host host;
     private final View commerceLayout;
-    private final Button betterAlternativesButton;
+    private final Button comparisonButton;
+    private final TextView comparisonUnavailableText;
     private final View whereToBuySection;
     private final View alternativesSection;
     private final TextView whereToBuyEmptyText;
@@ -50,14 +49,9 @@ public class RetailerCommerceViewBinder {
         this.host = host;
         this.locationHelper = new LocationHelper(context);
         
-        betterAlternativesButton = null;
         commerceLayout = root.findViewById(R.id.retailer_commerce_layout);
-        
-        // Add specific comparison button if it exists in the layout
-        View comparisonButton = root.findViewById(R.id.comparison_view_button);
-        if (comparisonButton != null) {
-            comparisonButton.setOnClickListener(v -> openMarketplace());
-        }
+        comparisonButton = root.findViewById(R.id.comparison_view_button);
+        comparisonUnavailableText = root.findViewById(R.id.comparison_unavailable_text);
 
         RecyclerView whereToBuyRecyclerView = root.findViewById(R.id.where_to_buy_recycler_view);
         RecyclerView alternativesRecyclerView = root.findViewById(R.id.better_alternatives_recycler_view);
@@ -86,17 +80,19 @@ public class RetailerCommerceViewBinder {
             availabilityMapView.submitList(null);
         }
         alternativeAdapter.submitList(null);
-        if (betterAlternativesButton != null) {
-            betterAlternativesButton.setVisibility(View.GONE);
-            betterAlternativesButton.setEnabled(false);
-        }
         setSectionVisible(whereToBuySection, false);
         setSectionVisible(alternativesSection, false);
         setMessage(whereToBuyEmptyText, "");
         setMessage(alternativesEmptyText, "");
         setSectionVisible(commerceLayout, currentProduct != null && currentProduct.product != null);
-        if (currentProduct != null && currentProduct.product != null) {
-            setBetterAlternativesButton(true);
+        boolean comparisonAvailable = MarketplaceNavigation.isAvailable(currentProduct);
+        MarketplaceNavigation.bindAction(
+                context,
+                comparisonButton,
+                comparisonUnavailableText,
+                currentProduct
+        );
+        if (comparisonAvailable) {
             refreshLocationAndLoad();
         }
     }
@@ -158,7 +154,6 @@ public class RetailerCommerceViewBinder {
         if (cachedAlternatives != null) {
             alternativeAdapter.submitList(cachedAlternatives);
             setMessage(alternativesEmptyText, cachedAlternatives.isEmpty() ? context.getString(R.string.no_alternatives_found) : "");
-            setBetterAlternativesButton(!cachedAlternatives.isEmpty());
             if (cachedAlternatives.isEmpty()) {
                 setSectionVisible(alternativesSection, false);
             } else {
@@ -176,7 +171,6 @@ public class RetailerCommerceViewBinder {
                     cachedAlternatives = result;
                     alternativeAdapter.submitList(result);
                     boolean hasAlternatives = result != null && !result.isEmpty();
-                    setBetterAlternativesButton(hasAlternatives);
                     setMessage(alternativesEmptyText, hasAlternatives ? "" : context.getString(R.string.no_alternatives_found));
                     setSectionVisible(alternativesSection, hasAlternatives);
                     if (hasAlternatives) {
@@ -189,7 +183,6 @@ public class RetailerCommerceViewBinder {
             public void onError(Exception e) {
                 host.runOnUiThread(() -> {
                     if (!host.isActive()) return;
-                    setBetterAlternativesButton(false);
                     setMessage(alternativesEmptyText, context.getString(R.string.alternative_lookup_failed));
                 });
             }
@@ -200,19 +193,6 @@ public class RetailerCommerceViewBinder {
         if (section != null) {
             section.setVisibility(visible ? View.VISIBLE : View.GONE);
         }
-    }
-
-    private void setBetterAlternativesButton(boolean enabled) {
-        if (betterAlternativesButton == null) return;
-        betterAlternativesButton.setVisibility(enabled ? View.VISIBLE : View.GONE);
-        betterAlternativesButton.setEnabled(enabled);
-    }
-
-    private void openMarketplace() {
-        if (currentProduct == null) return;
-        Intent intent = new Intent(context, MarketplaceActivity.class);
-        intent.putExtra(MarketplaceActivity.EXTRA_PRODUCT_JSON, new Gson().toJson(currentProduct));
-        context.startActivity(intent);
     }
 
     private void setMessage(TextView textView, String message) {
