@@ -323,4 +323,18 @@
     <string name="source_quality_moderate">Moderada</string>
     <string name="source_quality_limited">Limitada</string>
     <string name="source_fallback_name">Fuente cient&#237;fica</string>
+    <string name="marketplace_item_original">PRODUCTO ESCANEADO</string>
+    <string name="marketplace_item_alternative">OPCI&#211;N ALTERNATIVA</string>
+    <string name="marketplace_score_value">%1$d/100</string>
+    <string name="marketplace_score_unavailable">Puntuaci&#243;n no disponible</string>
+    <string name="marketplace_comparison_reference">Este es el producto que escaneaste.</string>
+    <string name="marketplace_comparison_higher">La puntuaci&#243;n de la app es mayor que la del producto escaneado.</string>
+    <string name="marketplace_comparison_similar">La puntuaci&#243;n de la app es similar a la del producto escaneado.</string>
+    <string name="marketplace_comparison_lower">La puntuaci&#243;n de la app es menor que la del producto escaneado.</string>
+    <string name="marketplace_comparison_unavailable">Compara los ingredientes y los detalles del envase.</string>
+    <string name="marketplace_comparison_disclaimer">Comparaci&#243;n de la app solamente; no es consejo m&#233;dico.</string>
+    <string name="marketplace_action_view_retailer">Ver tienda</string>
+    <string name="marketplace_action_unavailable">Enlace de tienda no disponible</string>
+    <string name="marketplace_product_image">Imagen de producto de %1$s</string>
+    <string name="marketplace_product_image_unavailable">Imagen de producto no disponible para %1$s</string>
 </resources>

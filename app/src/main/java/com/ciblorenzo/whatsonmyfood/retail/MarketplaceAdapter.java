@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.ciblorenzo.whatsonmyfood.R;
 import com.ciblorenzo.whatsonmyfood.utils.LinkHandler;
+import com.google.android.material.button.MaterialButton;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
@@ -46,15 +47,22 @@ public class MarketplaceAdapter extends RecyclerView.Adapter<MarketplaceAdapter.
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         MarketplaceItem item = items.get(position);
 
+        holder.itemRole.setText(item.type == MarketplaceItem.ItemType.ORIGINAL
+                ? R.string.marketplace_item_original
+                : R.string.marketplace_item_alternative);
         holder.productName.setText(MarketplacePresentation.safeText(item.productName, "Product name unavailable"));
-        holder.brandName.setText(MarketplacePresentation.safeText(item.brand, "Brand not provided"));
+        boolean hasBrand = item.brand != null && !item.brand.trim().isEmpty();
+        holder.brandName.setVisibility(hasBrand ? View.VISIBLE : View.GONE);
+        if (hasBrand) holder.brandName.setText(item.brand.trim());
         holder.retailerName.setText(MarketplacePresentation.safeText(item.retailerName, "Retailer availability varies"));
         holder.priceText.setText(MarketplacePresentation.safeText(item.price, "Price unavailable"));
         holder.distanceText.setText(MarketplacePresentation.safeText(item.distance, "Availability varies"));
         holder.sourceLabel.setText(MarketplacePresentation.safeText(item.sourceLabel, "PROVIDER SOURCE UNKNOWN"));
-        holder.healthScore.setText(item.healthScore + "/100");
+        bindComparison(holder, item);
 
         if (item.imageUrl != null && !item.imageUrl.isEmpty()) {
+            holder.productImage.setContentDescription(context.getString(
+                    R.string.marketplace_product_image, holder.productName.getText()));
             Picasso.get()
                     .load(item.imageUrl)
                     .placeholder(R.drawable.ic_pantry)
@@ -62,19 +70,18 @@ public class MarketplaceAdapter extends RecyclerView.Adapter<MarketplaceAdapter.
                     .into(holder.productImage);
         } else {
             holder.productImage.setImageResource(R.drawable.ic_pantry);
+            holder.productImage.setContentDescription(context.getString(
+                    R.string.marketplace_product_image_unavailable, holder.productName.getText()));
         }
 
-        // Color coding score
-        int scoreColor = getScoreColor(item.healthScore);
-        holder.healthScore.getBackground().setTint(scoreColor);
-
         boolean hasProductLink = item.productUrl != null && !item.productUrl.trim().isEmpty();
-        holder.itemView.setOnClickListener(hasProductLink
+        holder.retailerAction.setText(hasProductLink
+                ? R.string.marketplace_action_view_retailer
+                : R.string.marketplace_action_unavailable);
+        holder.retailerAction.setEnabled(hasProductLink);
+        holder.retailerAction.setOnClickListener(hasProductLink
                 ? v -> LinkHandler.openRetailerLink(context, item.productUrl, item.retailerName)
                 : null);
-        holder.itemView.setClickable(hasProductLink);
-        holder.itemView.setFocusable(hasProductLink);
-        holder.itemView.setAlpha(hasProductLink ? 1.0f : 0.88f);
 
         RetailerBrandAssets brand = RetailerBrandAssets.resolve(item.retailerName);
         if (brand.logoUrl != null) {
@@ -86,6 +93,37 @@ public class MarketplaceAdapter extends RecyclerView.Adapter<MarketplaceAdapter.
         } else {
             holder.retailerLogo.setImageResource(brand.logoResId);
         }
+    }
+
+    private void bindComparison(ViewHolder holder, MarketplaceItem item) {
+        if (item.healthScore >= 0) {
+            holder.healthScore.setText(context.getString(R.string.marketplace_score_value, item.healthScore));
+            holder.healthScore.getBackground().setTint(getScoreColor(item.healthScore));
+        } else {
+            holder.healthScore.setText(R.string.marketplace_score_unavailable);
+            holder.healthScore.getBackground().setTint(Color.parseColor("#6B7280"));
+        }
+
+        int comparisonText;
+        switch (item.comparisonCue) {
+            case REFERENCE:
+                comparisonText = R.string.marketplace_comparison_reference;
+                break;
+            case HIGHER:
+                comparisonText = R.string.marketplace_comparison_higher;
+                break;
+            case SIMILAR:
+                comparisonText = R.string.marketplace_comparison_similar;
+                break;
+            case LOWER:
+                comparisonText = R.string.marketplace_comparison_lower;
+                break;
+            case UNAVAILABLE:
+            default:
+                comparisonText = R.string.marketplace_comparison_unavailable;
+                break;
+        }
+        holder.comparisonCue.setText(comparisonText);
     }
 
     private int getScoreColor(int score) {
@@ -101,6 +139,7 @@ public class MarketplaceAdapter extends RecyclerView.Adapter<MarketplaceAdapter.
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         final ImageView productImage;
+        final TextView itemRole;
         final TextView productName;
         final TextView brandName;
         final ImageView retailerLogo;
@@ -109,10 +148,13 @@ public class MarketplaceAdapter extends RecyclerView.Adapter<MarketplaceAdapter.
         final TextView priceText;
         final TextView distanceText;
         final TextView sourceLabel;
+        final TextView comparisonCue;
+        final MaterialButton retailerAction;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
             productImage = itemView.findViewById(R.id.product_image);
+            itemRole = itemView.findViewById(R.id.marketplace_item_role);
             productName = itemView.findViewById(R.id.product_name);
             brandName = itemView.findViewById(R.id.brand_name);
             retailerLogo = itemView.findViewById(R.id.retailer_logo);
@@ -121,6 +163,8 @@ public class MarketplaceAdapter extends RecyclerView.Adapter<MarketplaceAdapter.
             priceText = itemView.findViewById(R.id.price_text);
             distanceText = itemView.findViewById(R.id.distance_text);
             sourceLabel = itemView.findViewById(R.id.provider_source_text);
+            comparisonCue = itemView.findViewById(R.id.comparison_cue_text);
+            retailerAction = itemView.findViewById(R.id.retailer_action_button);
         }
     }
 }

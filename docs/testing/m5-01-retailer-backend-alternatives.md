@@ -31,7 +31,7 @@ This proves that:
 - the request uses the protected backend URL instead of a retailer API URL;
 - the Android build does not declare Walmart or Amazon retailer credentials;
 - incomplete retailer fields use safe fallback text instead of crashing; and
-- missing product links are not treated as clickable retailer links.
+- missing product links produce a disabled, clearly labeled retailer action.
 
 ## Automated test 2 - Backend response contract
 
@@ -98,7 +98,7 @@ Pass result: a supported product returns alternatives through the backend and ex
 5. Confirm that alternative cards appear.
 6. Confirm each card identifies `LIVE PROVIDER` or `DEVELOPMENT SAMPLE`.
 7. Confirm prices, distance, and missing brand information use readable fallback text.
-8. Tap a card with a retailer link and confirm it opens. Confirm a card without a link does nothing and does not crash.
+8. Tap **View retailer** on a card with a retailer link and confirm it opens. Confirm a card without a link shows a disabled **Retailer link unavailable** button.
 9. Use the back arrow and confirm the product-detail screen remains available.
 
 Pass result: the Android screen displays the backend alternatives, remains safe with incomplete records, and keeps retailer credentials off the device.

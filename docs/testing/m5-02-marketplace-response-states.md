@@ -141,8 +141,8 @@ The automated presentation test supplies an alternative with a missing brand, re
 
 Expected result:
 
-- the card uses `Brand not provided`, `Multiple retailers`, and other readable fallbacks;
-- the card without a URL is not clickable; and
+- the missing brand line is hidden while retailer and availability fields use readable fallbacks;
+- the card without a URL shows a disabled **Retailer link unavailable** button; and
 - scrolling, sorting, retry, and back navigation do not crash.
 
 ## Final quality command

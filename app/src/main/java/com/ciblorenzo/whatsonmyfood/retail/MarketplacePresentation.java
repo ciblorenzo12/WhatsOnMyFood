@@ -32,6 +32,16 @@ public final class MarketplacePresentation {
         return "LIVE PROVIDER";
     }
 
+    public static MarketplaceItem.ComparisonCue comparisonCue(int alternativeScore, int originalScore) {
+        if (alternativeScore < 0 || originalScore < 0) {
+            return MarketplaceItem.ComparisonCue.UNAVAILABLE;
+        }
+        int difference = alternativeScore - originalScore;
+        if (difference >= 5) return MarketplaceItem.ComparisonCue.HIGHER;
+        if (difference <= -5) return MarketplaceItem.ComparisonCue.LOWER;
+        return MarketplaceItem.ComparisonCue.SIMILAR;
+    }
+
     public static boolean isMockProvider(String providerName) {
         return providerName != null && providerName.toLowerCase(Locale.US).contains("mock");
     }

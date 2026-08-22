@@ -15,7 +15,7 @@ public class RetailerAlternative {
 
     public RetailerAlternative(String productName, String brand, String reason, String healthSignal,
                                String retailerHint, String productUrl, String imageUrl) {
-        this(productName, brand, reason, healthSignal, retailerHint, productUrl, imageUrl, 100, 0.0, 0.0);
+        this(productName, brand, reason, healthSignal, retailerHint, productUrl, imageUrl, -1, 0.0, 0.0);
     }
 
     public RetailerAlternative(String productName, String brand, String reason, String healthSignal,

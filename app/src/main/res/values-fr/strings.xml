@@ -323,4 +323,18 @@
     <string name="source_quality_moderate">Mod&#233;r&#233;e</string>
     <string name="source_quality_limited">Limit&#233;e</string>
     <string name="source_fallback_name">Source scientifique</string>
+    <string name="marketplace_item_original">PRODUIT SCANN&#201;</string>
+    <string name="marketplace_item_alternative">OPTION ALTERNATIVE</string>
+    <string name="marketplace_score_value">%1$d/100</string>
+    <string name="marketplace_score_unavailable">Score indisponible</string>
+    <string name="marketplace_comparison_reference">C&#8217;est le produit que vous avez scann&#233;.</string>
+    <string name="marketplace_comparison_higher">Le score de l&#8217;application est sup&#233;rieur &#224; celui du produit scann&#233;.</string>
+    <string name="marketplace_comparison_similar">Le score de l&#8217;application est similaire &#224; celui du produit scann&#233;.</string>
+    <string name="marketplace_comparison_lower">Le score de l&#8217;application est inf&#233;rieur &#224; celui du produit scann&#233;.</string>
+    <string name="marketplace_comparison_unavailable">Comparez les ingr&#233;dients et les d&#233;tails de l&#8217;emballage.</string>
+    <string name="marketplace_comparison_disclaimer">Comparaison de l&#8217;application uniquement; ce n&#8217;est pas un avis m&#233;dical.</string>
+    <string name="marketplace_action_view_retailer">Voir le vendeur</string>
+    <string name="marketplace_action_unavailable">Lien vers le vendeur indisponible</string>
+    <string name="marketplace_product_image">Image du produit %1$s</string>
+    <string name="marketplace_product_image_unavailable">Image du produit indisponible pour %1$s</string>
 </resources>

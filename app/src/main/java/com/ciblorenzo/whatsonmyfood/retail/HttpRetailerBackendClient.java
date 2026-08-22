@@ -89,7 +89,7 @@ public class HttpRetailerBackendClient implements RetailerBackendClient {
                     text(item, "retailerHint"),
                     text(item, "productUrl"),
                     text(item, "imageUrl"),
-                    (int) number(item, "healthScore"),
+                    integerOrUnavailable(item, "healthScore"),
                     number(item, "priceValue"),
                     number(item, "distanceValue"),
                     text(item, "providerName")
@@ -180,6 +180,15 @@ public class HttpRetailerBackendClient implements RetailerBackendClient {
             return item.get(key).getAsDouble();
         } catch (Exception ignored) {
             return 0.0;
+        }
+    }
+
+    private int integerOrUnavailable(JsonObject item, String key) {
+        if (!item.has(key) || item.get(key).isJsonNull() || !item.get(key).isJsonPrimitive()) return -1;
+        try {
+            return item.get(key).getAsInt();
+        } catch (Exception ignored) {
+            return -1;
         }
     }
 }

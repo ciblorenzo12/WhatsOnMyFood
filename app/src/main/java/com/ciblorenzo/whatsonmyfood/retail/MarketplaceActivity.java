@@ -123,7 +123,8 @@ public class MarketplaceActivity extends BaseActivity {
                     "",
                     "",
                     MarketplaceItem.ItemType.ALTERNATIVE,
-                    mock ? "DEVELOPMENT SAMPLE" : "LIVE PROVIDER"));
+                    mock ? "DEVELOPMENT SAMPLE" : "LIVE PROVIDER",
+                    MarketplaceItem.ComparisonCue.UNAVAILABLE));
             adapter.submitList(new ArrayList<>(allItems));
         }
         renderState(state);
@@ -155,14 +156,14 @@ public class MarketplaceActivity extends BaseActivity {
     private void processResults(RetailerMarketplaceResult result) {
         allItems.clear();
         if (productDetails == null || productDetails.product == null || result == null) return;
-        int originalScore = productDetails.product.healthScore != null ? productDetails.product.healthScore : 0;
+        int originalScore = productDetails.product.healthScore != null ? productDetails.product.healthScore : -1;
         boolean defaultMock = result.sourceMode == RetailerEndpointResult.SourceMode.MOCK;
 
         for (RetailerAvailability a : result.availability) {
             if (a != null) {
                 allItems.add(new MarketplaceItem(
                         MarketplacePresentation.safeText(productDetails.product.productName, "Scanned product"),
-                        MarketplacePresentation.safeText(productDetails.product.brands, "Brand not provided"),
+                        MarketplacePresentation.safeText(productDetails.product.brands, ""),
                         MarketplacePresentation.safeText(a.retailerName, "Retailer availability varies"),
                         MarketplacePresentation.safeText(a.price, "Price unavailable"),
                         a.priceValue,
@@ -172,7 +173,8 @@ public class MarketplaceActivity extends BaseActivity {
                         a.productUrl,
                         productDetails.product.imageUrl,
                         MarketplaceItem.ItemType.ORIGINAL,
-                        MarketplacePresentation.sourceLabel(a.providerName, defaultMock)
+                        MarketplacePresentation.sourceLabel(a.providerName, defaultMock),
+                        MarketplaceItem.ComparisonCue.REFERENCE
                 ));
             }
         }
@@ -181,7 +183,7 @@ public class MarketplaceActivity extends BaseActivity {
             if (alt != null && alt.productName != null && !alt.productName.trim().isEmpty()) {
                 allItems.add(new MarketplaceItem(
                         alt.productName,
-                        MarketplacePresentation.safeText(alt.brand, "Brand not provided"),
+                        MarketplacePresentation.safeText(alt.brand, ""),
                         MarketplacePresentation.retailerName(alt),
                         alt.priceValue > 0 ? String.format(java.util.Locale.US, "$%.2f", alt.priceValue) : "Price varies",
                         alt.priceValue,
@@ -191,7 +193,8 @@ public class MarketplaceActivity extends BaseActivity {
                         alt.productUrl,
                         alt.imageUrl,
                         MarketplaceItem.ItemType.ALTERNATIVE,
-                        MarketplacePresentation.sourceLabel(alt.providerName, defaultMock)
+                        MarketplacePresentation.sourceLabel(alt.providerName, defaultMock),
+                        MarketplacePresentation.comparisonCue(alt.healthScore, originalScore)
                 ));
             }
         }

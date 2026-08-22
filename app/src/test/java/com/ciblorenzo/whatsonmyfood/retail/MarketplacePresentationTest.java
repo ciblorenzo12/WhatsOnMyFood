@@ -31,4 +31,30 @@ public class MarketplacePresentationTest {
         assertEquals("Walmart", MarketplacePresentation.retailerName(live));
         assertEquals("LIVE PROVIDER", MarketplacePresentation.sourceLabel(live.providerName, false));
     }
+
+    @Test
+    public void comparisonCueUsesAVisibleFivePointDifference() {
+        assertEquals(MarketplaceItem.ComparisonCue.HIGHER,
+                MarketplacePresentation.comparisonCue(82, 75));
+        assertEquals(MarketplaceItem.ComparisonCue.LOWER,
+                MarketplacePresentation.comparisonCue(68, 75));
+        assertEquals(MarketplaceItem.ComparisonCue.SIMILAR,
+                MarketplacePresentation.comparisonCue(78, 75));
+    }
+
+    @Test
+    public void comparisonCueDoesNotGuessWhenEitherScoreIsMissing() {
+        assertEquals(MarketplaceItem.ComparisonCue.UNAVAILABLE,
+                MarketplacePresentation.comparisonCue(-1, 75));
+        assertEquals(MarketplaceItem.ComparisonCue.UNAVAILABLE,
+                MarketplacePresentation.comparisonCue(82, -1));
+    }
+
+    @Test
+    public void alternativeWithoutAProvidedScoreKeepsScoreUnavailable() {
+        RetailerAlternative alternative = new RetailerAlternative(
+                "Simple snack", "Brand", "Reason", "Signal", "Retailer", "", "");
+
+        assertEquals(-1, alternative.healthScore);
+    }
 }
