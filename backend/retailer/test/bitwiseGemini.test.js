@@ -136,13 +136,15 @@ test("grounds the fact check before generating the structured shopper response",
     assert.match(body.systemInstruction.parts[0].text, /warm, evidence-aware food-label assistant/i);
     assert.match(body.systemInstruction.parts[0].text, /evidence-checking stage/i);
     assert.match(body.systemInstruction.parts[0].text, /Do not claim to be a doctor/i);
+    assert.match(body.systemInstruction.parts[0].text, /private implementation evidence/i);
+    assert.match(body.systemInstruction.parts[0].text, /concrete label evidence/i);
     assert.match(body.contents[0].parts[0].text, /Use URL Context now/i);
     assert.match(body.contents[0].parts[0].text, /FDA.*Nutrition Facts Label/i);
     assert.match(body.contents[0].parts[0].text, /Source status: updated_from_product_database/i);
     assert.match(body.contents[0].parts[0].text, /Normalized ingredients: bovine collagen peptides/i);
     assert.match(body.contents[0].parts[0].text, /Product database identity is trusted; nutrition details remain label-limited/i);
     assert.match(body.contents[0].parts[0].text, /Preserve the deterministic protein finding/i);
-    assert.match(body.contents[0].parts[0].text, /Do not contradict deterministic findings/i);
+    assert.match(body.contents[0].parts[0].text, /Do not contradict the private rating evidence/i);
     assert.doesNotMatch(body.contents[0].parts[0].text, /Added Sugars on the Nutrition Facts Label/i);
     assert.doesNotMatch(body.contents[0].parts[0].text, /Sodium in Your Diet/i);
     return {
@@ -265,7 +267,9 @@ test("builds a source-aware prompt from normalized ingredients, source status, u
   assert.match(prompt, /ingredients_recovered_from_label_or_supporting_service/);
   assert.match(prompt, /Recovered ingredients require cautious attribution/);
   assert.match(prompt, /Added sugar finding/);
-  assert.match(prompt, /Do not contradict deterministic findings/);
+  assert.match(prompt, /PRIVATE RATING EVIDENCE/);
+  assert.match(prompt, /Do not contradict the private rating evidence/);
+  assert.match(prompt, /Never mention internal rules/i);
   assert.match(prompt, /Do not diagnose, prescribe treatment, or make unsupported medical claims/);
 });
 
@@ -294,6 +298,23 @@ test("validates grounded provider output and rejects blank, HTML, malformed, and
     fact_check_status: "grounded",
     sources: [{ name: "FDA", url: "https://www.fda.gov/food" }],
   }))), /unsafe medical claim/i);
+});
+
+test("rejects explanations that expose internal scoring instead of explaining the food", () => {
+  const internalScoring = validProviderContent({
+    verdict: "NOT_HEALTHY",
+    verdict_reason: "The app's rules lowered the score.",
+    summary: "<b>Why this rating</b><br>The app's rules lowered this product's score because predefined criteria were triggered. "
+      + "<br><br><b>Portion guidance</b><br>Use the serving printed on the package and consider the rest of the meal. "
+      + "<br><br><b>Fact check</b><br>The label guidance was checked against the verified nutrition source.",
+    fact_check_status: "grounded",
+    sources: [{ name: "FDA", url: "https://www.fda.gov/food" }],
+  });
+
+  assert.throws(
+    () => validateProviderOutput(JSON.stringify(internalScoring)),
+    /internal scoring language/i,
+  );
 });
 
 test("uses the controlled local fallback when provider output fails validation", async () => {

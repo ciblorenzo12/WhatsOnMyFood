@@ -97,6 +97,25 @@ public class RuleEngineTest {
     }
 
     @Test
+    public void analyze_withHighSugar_includesSpecificAmountAndSource() {
+        ProductWithDetails product = new ProductBuilder("high_sugar")
+                .withIngredients(Collections.singletonList(new Ingredient("high_sugar", "Oats", 1)))
+                .withSugars(25.0)
+                .build();
+
+        ProductAnalysisReport report = ruleEngine.analyze(product);
+        AnalysisResult highSugar = report.getResults().stream()
+                .filter(result -> "High sugar content".equals(result.getMessage()))
+                .findFirst()
+                .orElse(null);
+
+        assertNotNull(highSugar);
+        assertTrue(highSugar.getExplanation().contains("25.0 g"));
+        assertTrue(highSugar.getExplanation().contains("occasional choice"));
+        assertTrue(highSugar.getSourceUrl().startsWith("https://www.nhs.uk/"));
+    }
+
+    @Test
     public void analyze_withMultiplePenalties_calculatesCorrectScore() {
         // ARRANGE: A product designed to trigger multiple rules.
         List<Ingredient> ingredients = Arrays.asList(

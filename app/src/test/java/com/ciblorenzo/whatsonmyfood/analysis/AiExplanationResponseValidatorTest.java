@@ -78,4 +78,24 @@ public class AiExplanationResponseValidatorTest {
                 "{\"verdict\":\"HEALTHY\",\"ingredients\":[]" + common
         ).usable);
     }
+
+    @Test
+    public void rejectsInternalScoringLanguage() {
+        String response = "{"
+                + "\"verdict\":\"NOT_HEALTHY\","
+                + "\"verdict_reason\":\"The app's rules lowered the score.\","
+                + "\"ingredients\":[\"sugar\",\"oats\"],"
+                + "\"summary\":\"<b>Why this rating</b><br>The app's rules lowered the score because a predefined criterion was triggered. "
+                + "<b>Portion guidance</b><br>Use the serving printed on the package. "
+                + "<b>Fact check</b><br>The explanation was checked against the cited nutrition source.\","
+                + "\"findings\":[{\"rule\":\"Added sugar\",\"impact\":\"warning\","
+                + "\"explanation\":\"Sugar is listed near the beginning of the ingredient list.\"}],"
+                + "\"sources\":[{\"name\":\"FDA\",\"url\":\"https://www.fda.gov/food\"}]"
+                + "}";
+
+        AiExplanationResponseValidator.Result result = AiExplanationResponseValidator.validate(response);
+
+        assertFalse(result.usable);
+        assertTrue(result.error.contains("food label"));
+    }
 }

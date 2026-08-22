@@ -27,6 +27,13 @@ public final class AiExplanationResponseValidator {
             Pattern.compile("\\b(?:stop|start|change|skip)\\s+(?:taking\\s+)?(?:your\\s+)?(?:medication|medicine|insulin|prescription)\\b", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\\bguaranteed\\s+(?:weight loss|health benefit|blood sugar control)\\b", Pattern.CASE_INSENSITIVE)
     };
+    private static final Pattern[] INTERNAL_SCORING_LANGUAGE = new Pattern[]{
+            Pattern.compile("\\b(?:internal|app(?:lication)?(?:['’]s)?)\\s+(?:rules?|logic|policy|criteri(?:on|a)|scoring|formula|system)\\b", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\\b(?:deterministic|hard[- ]coded|predefined|built[- ]in)\\s+(?:rules?|findings?|logic|criteri(?:on|a)|scoring)\\b", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\\b(?:rules?|policy|criteri(?:on|a))\\s+(?:was|were|is|are)\\s+(?:triggered|applied|met|used)\\b", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\\b(?:according to|because of|based on)\\s+(?:the\\s+)?(?:app(?:['’]s)?\\s+)?(?:rules?|scoring system|algorithm)\\b", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\\b(?:subtract(?:ed|s|ing)?|deduct(?:ed|s|ing)?|add(?:ed|s|ing)?)\\s+\\d+\\s+points?\\b", Pattern.CASE_INSENSITIVE)
+    };
 
     public static final class Result {
         public final boolean usable;
@@ -112,11 +119,17 @@ public final class AiExplanationResponseValidator {
             StringBuilder claimText = new StringBuilder(stringValue(root, "verdict_reason"))
                     .append(' ').append(summary);
             for (JsonElement finding : findings) {
+                claimText.append(' ').append(stringValue(finding.getAsJsonObject(), "rule"));
                 claimText.append(' ').append(stringValue(finding.getAsJsonObject(), "explanation"));
             }
             for (Pattern unsafeClaim : UNSAFE_MEDICAL_CLAIMS) {
                 if (unsafeClaim.matcher(claimText).find()) {
                     return invalid("Bitwise returned an unsafe medical claim.");
+                }
+            }
+            for (Pattern internalScoringPhrase : INTERNAL_SCORING_LANGUAGE) {
+                if (internalScoringPhrase.matcher(claimText).find()) {
+                    return invalid("Bitwise described internal scoring instead of the food label. Please try again.");
                 }
             }
 

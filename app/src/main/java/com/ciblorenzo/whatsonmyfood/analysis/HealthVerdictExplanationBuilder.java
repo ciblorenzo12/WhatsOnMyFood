@@ -68,7 +68,10 @@ public final class HealthVerdictExplanationBuilder {
         return text.contains("reasonable everyday choice")
                 || text.contains("low-concern")
                 || text.contains("no major high-concern")
-                || text.contains("solid choice");
+                || text.contains("solid choice")
+                || text.matches("(?s).*\\b(?:is|seems|appears) (?:a )?healthy\\b.*")
+                || text.matches("(?s).*\\bhealthy (?:choice|option|product|rating|verdict)\\b.*")
+                || text.matches("(?s).*\\b(?:earns|supports|receives) (?:a )?healthy (?:rating|verdict)\\b.*");
     }
 
     private static List<AnalysisResult> collectConcerns(List<AnalysisResult> results) {

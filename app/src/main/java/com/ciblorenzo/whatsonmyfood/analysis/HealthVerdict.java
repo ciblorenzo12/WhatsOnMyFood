@@ -29,11 +29,13 @@ public final class HealthVerdict {
         int warningCount = 0;
         int positiveCount = 0;
         boolean naturalFlavorWarning = false;
+        boolean highSugarWarning = false;
 
         if (results != null) {
             for (AnalysisResult result : results) {
                 if (result == null || result.getLevel() == null) continue;
                 if (isNaturalFlavorWarning(result)) naturalFlavorWarning = true;
+                if (isHighSugarWarning(result)) highSugarWarning = true;
                 switch (result.getLevel()) {
                     case SEVERE:
                         severeCount++;
@@ -52,6 +54,14 @@ public final class HealthVerdict {
 
         if (severeCount > 0) {
             return new HealthVerdict(Status.NOT_HEALTHY, "Not Healthy", "Contains a high-concern ingredient or nutrition signal.");
+        }
+
+        if (highSugarWarning) {
+            return new HealthVerdict(
+                    Status.NOT_HEALTHY,
+                    "Not Healthy",
+                    "The nutrition data places this food in the high total-sugar range, so it is better treated as an occasional choice."
+            );
         }
 
         if (naturalFlavorWarning) {
@@ -76,6 +86,15 @@ public final class HealthVerdict {
                 ? ""
                 : result.getTriggeringIngredient().toLowerCase();
         return rule.contains("natural flavor") || ingredient.contains("natural flavor");
+    }
+
+    private static boolean isHighSugarWarning(AnalysisResult result) {
+        if (result.getLevel() != AnalysisResult.WarningLevel.WARNING
+                && result.getLevel() != AnalysisResult.WarningLevel.SEVERE) {
+            return false;
+        }
+        String finding = result.getMessage() == null ? "" : result.getMessage().toLowerCase();
+        return finding.contains("high sugar content") || finding.contains("high total sugar");
     }
 
     public static HealthVerdict fromAiVerdict(String aiVerdict, String aiReason, List<AnalysisResult> fallbackResults, int ingredientCount) {

@@ -33,6 +33,35 @@ public class HealthVerdictTest {
     }
 
     @Test
+    public void fromResults_withHighSugarAndPositiveFinding_returnsNotHealthy() {
+        HealthVerdict verdict = HealthVerdict.fromResults(
+                Arrays.asList(
+                        new AnalysisResult("High sugar content", AnalysisResult.WarningLevel.WARNING, 15, "total sugar", "25 g per 100 g"),
+                        new AnalysisResult("Short ingredient list", AnalysisResult.WarningLevel.POSITIVE, -10, null, "Short label")
+                ),
+                3
+        );
+
+        assertEquals(HealthVerdict.Status.NOT_HEALTHY, verdict.getStatus());
+        assertEquals("Not Healthy", verdict.getLabel());
+    }
+
+    @Test
+    public void fromAiVerdict_cannotOverrideHighSugarWithHealthy() {
+        HealthVerdict verdict = HealthVerdict.fromAiVerdict(
+                "HEALTHY",
+                "The ingredient list is short.",
+                Arrays.asList(
+                        new AnalysisResult("High sugar content", AnalysisResult.WarningLevel.WARNING, 15, "total sugar", "25 g per 100 g"),
+                        new AnalysisResult("Short ingredient list", AnalysisResult.WarningLevel.POSITIVE, -10, null, "Short label")
+                ),
+                3
+        );
+
+        assertEquals(HealthVerdict.Status.NOT_HEALTHY, verdict.getStatus());
+    }
+
+    @Test
     public void fromResults_withoutIngredients_returnsReview() {
         HealthVerdict verdict = HealthVerdict.fromResults(Collections.emptyList(), 0);
 

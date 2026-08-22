@@ -29,4 +29,11 @@ public class HealthVerdictExplanationBuilderTest {
         assertFalse(explanation.toLowerCase().contains("open food facts"));
         assertFalse(explanation.contains("Why this rating"));
     }
+
+    @Test
+    public void recognizesAnExplicitHealthyExplanationAsContradictory() {
+        assertTrue(HealthVerdictExplanationBuilder.isContradictingNotHealthy(
+                "<b>Why this rating</b><br>This product earns a healthy rating because its ingredient list is short."
+        ));
+    }
 }
