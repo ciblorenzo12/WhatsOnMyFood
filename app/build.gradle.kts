@@ -1,7 +1,7 @@
 import java.util.Properties
 
 plugins {
-    id("com.android.application") version "9.2.1"
+    id("com.android.application") version "9.3.1"
     id("com.google.gms.google-services") version "4.4.4"
 }
 
