@@ -20,6 +20,34 @@ import org.junit.runner.RunWith;
 public class ProductSourceStatusFlowTest {
 
     @Test
+    public void onlineCurrentData_isAttributedWithoutClaimingGuaranteedFreshness() {
+        try (ActivityScenario<ProductDetailLayoutPreviewActivity> scenario = launch("online")) {
+            scenario.onActivity(activity -> {
+                assertEquals("PRODUCT DATABASE", text(activity, R.id.source_status_indicator_text_view));
+                assertContains(text(activity, R.id.source_status_text_view), "Updated from product database");
+                assertContains(
+                        text(activity, R.id.source_status_interpretation_text_view),
+                        "depends on the information supplied by the product source"
+                );
+            });
+        }
+    }
+
+    @Test
+    public void freshCache_isClearlyLabeledAsRecentSavedData() {
+        try (ActivityScenario<ProductDetailLayoutPreviewActivity> scenario = launch("fresh_cache")) {
+            scenario.onActivity(activity -> {
+                assertEquals("RECENT SAVED RESULT", text(activity, R.id.source_status_indicator_text_view));
+                assertContains(text(activity, R.id.source_status_text_view), "Fresh cached result");
+                assertContains(
+                        text(activity, R.id.source_status_interpretation_text_view),
+                        "depends on the information supplied by the product source"
+                );
+            });
+        }
+    }
+
+    @Test
     public void databaseAndRecoveredIngredients_showSourceAndReviewContext() {
         try (ActivityScenario<ProductDetailLayoutPreviewActivity> scenario = launch("recovered")) {
             scenario.onActivity(activity -> {

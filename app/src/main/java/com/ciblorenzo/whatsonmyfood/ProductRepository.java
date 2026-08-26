@@ -95,30 +95,35 @@ public class ProductRepository implements ProductLookupGateway {
 
                 long currentTime = System.currentTimeMillis();
                 boolean isCacheStale = cacheMeta == null || (currentTime - cacheMeta.lastUpdated) > (24 * 60 * 60 * 1000);
+                boolean isOnline = NetworkUtils.isOnline(application);
 
                 if (cachedProduct != null && hasMeaningfulProductName(cachedProduct) && hasParsedIngredients(cachedProduct)) {
+                    CacheLookupPolicy.Decision cacheDecision =
+                            CacheLookupPolicy.forCachedResult(isOnline, isCacheStale);
                     callback.onComplete(new ProductResult(
                             cachedProduct,
-                            isCacheStale ? DataStatus.STALE : DataStatus.FRESH,
+                            cacheDecision.dataStatus,
                             hasSavedAiInsight(cachedProduct) ? "Cache (Saved AI insight)" : "Cache",
-                            SourceStatusResolver.forCachedResult(isCacheStale)
+                            cacheDecision.sourceStatuses
                     ));
                     idlingResource.decrement();
                     return;
                 }
 
-                if (NetworkUtils.isOnline(application)) {
+                if (isOnline) {
                     fetchFromApiChain(barcode, callback, cachedProduct, isCacheStale);
                 } else {
                     if (cachedProduct != null) {
+                        CacheLookupPolicy.Decision cacheDecision =
+                                CacheLookupPolicy.forCachedResult(false, isCacheStale);
                         callback.onComplete(new ProductResult(
                                 cachedProduct,
-                                DataStatus.OFFLINE,
+                                cacheDecision.dataStatus,
                                 "Cache",
-                                SourceStatusResolver.forSavedOfflineResult()
+                                cacheDecision.sourceStatuses
                         ));
                     } else {
-                        callback.onError(new IOException("You are offline. Please check your connection."));
+                        callback.onError(new IOException(CacheLookupPolicy.offlineCacheMissMessage()));
                     }
                     idlingResource.decrement();
                 }

@@ -161,6 +161,10 @@ public class ProductDetailLayoutPreviewActivity extends AppCompatActivity {
             statuses = Collections.singletonList(
                     ProductRepository.SourceStatus.INFORMATION_MAY_BE_OUTDATED
             );
+        } else if ("fresh_cache".equals(scenario)) {
+            statuses = Collections.singletonList(
+                    ProductRepository.SourceStatus.FRESH_CACHED_RESULT
+            );
         } else if ("offline".equals(scenario)) {
             statuses = Arrays.asList(
                     ProductRepository.SourceStatus.SAVED_OFFLINE_RESULT,

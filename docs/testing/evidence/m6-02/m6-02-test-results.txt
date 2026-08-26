@@ -1,0 +1,63 @@
+M6-02 ONLINE, STALE-CACHE, AND OFFLINE VERIFICATION
+
+Run date: 2026-08-25 21:50 EDT
+Target release: v0.31.0-rc1
+Base commit: 2e0b125ca9096c4e9c99fce425e6cadebfb038f6
+Device: Samsung SM-X800 tablet
+Android version: 16
+
+RESULTS
+
+Targeted Android unit tests: PASS
+- Tests: 19
+- Failures: 0
+- Errors: 0
+- Skipped: 0
+
+Android source-status device tests: PASS
+- Tests: 6
+- Failures: 0
+- Errors: 0
+- Skipped: 0
+
+Total: 25 passed, 0 failed
+
+CHECKLIST MAPPING
+
+[PASS] Online lookup with current data
+  The tablet displayed PRODUCT DATABASE and Updated from product database. The
+  interpretation says the result depends on the source record and does not promise
+  guaranteed freshness.
+
+[PASS] Valid fresh-cache result
+  The repository returned FRESH with FRESH_CACHED_RESULT. The tablet displayed
+  RECENT SAVED RESULT and Fresh cached result, identifying it as saved data.
+
+[PASS] Stale-cache result
+  The repository returned STALE with INFORMATION_MAY_BE_OUTDATED. The tablet
+  displayed REFRESH RECOMMENDED and explained that saved information may be older.
+
+[PASS] Offline mode with cached data
+  Both recent and stale cached inputs returned OFFLINE with SAVED_OFFLINE_RESULT
+  and INFORMATION_MAY_BE_OUTDATED. The tablet displayed OFFLINE COPY and stated
+  that it cannot confirm freshness while offline.
+
+[PASS] Offline mode without cached data
+  The repository returned: You are offline. No saved result is available for this
+  product.
+
+[PASS] Source and freshness messages
+  Repository policy, presentation mapping, and exact tablet wording passed for all
+  five required conditions.
+
+DEFECT FOUND AND CORRECTED
+
+A complete cached product was previously returned before connectivity affected the
+source state. A recent saved result could therefore appear fresh while the device
+was offline. Connectivity is now part of the cache decision, so every offline saved
+result is clearly labeled as an offline copy with unconfirmed freshness.
+
+COMMANDS
+
+.\app\gradlew.bat -p .\app testDebugUnitTest --tests ProductRepositoryCacheBehaviorTest --tests SourceStatusResolverTest --tests SourceStatusPresentationTest --tests ProductRepositoryRefreshPolicyTest --tests ProductLookupDispatcherTest
+.\app\gradlew.bat -p .\app connectedDebugAndroidTest -P...ProductSourceStatusFlowTest
