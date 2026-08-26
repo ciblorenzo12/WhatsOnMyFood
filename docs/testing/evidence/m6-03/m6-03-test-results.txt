@@ -1,0 +1,62 @@
+M6-03 BACKEND FAILURE AND TIMEOUT VERIFICATION
+
+Run date: 2026-08-25 21:17 EDT
+Target release: v0.31.0-rc1
+Base commit: d13f2bca490fa5e1c37e08a28325af7bc1432a78
+Device: Samsung SM-X800 tablet
+Android version: 16
+
+RESULTS
+
+Targeted Android unit tests: PASS
+- Tests: 24
+- Failures: 0
+- Errors: 0
+- Skipped: 0
+
+Retailer backend tests: PASS
+- Tests: 37
+- Failures: 0
+- Skipped: 0
+
+Android device tests: PASS
+- Tests: 5
+- Failures: 0
+- Errors: 0
+- Skipped: 0
+- ProductSourceStatusFlowTest: 4 passed
+- MarketplaceStateDisplayFlowTest: 1 passed
+
+Total: 66 passed, 0 failed
+
+CHECKLIST MAPPING
+
+[PASS] Timeout responses
+  SocketTimeoutException receives one bounded retry. Final Android and marketplace
+  states use friendly timeout wording and keep retry available.
+
+[PASS] Rate-limit responses
+  HTTP 429 with Retry-After does not retry automatically. The wait time is included
+  in the shopper message, and diagnostics classify the outcome as rate_limit.
+
+[PASS] Invalid and HTML startup responses
+  Non-JSON and malformed output are rejected. RunPod-style HTML receives one bounded
+  startup retry and is never displayed as an AI explanation.
+
+[PASS] HTTP 502, 503, and 504
+  Each status receives no more than one retry and returns friendly fallback wording
+  without exposing the raw provider response.
+
+[PASS] Rule-based results remain visible
+  The SM-X800 device test confirmed that the product name, health findings card, and
+  non-empty deterministic findings list remain visible when AI is unavailable.
+
+[PASS] Retry and fallback messages are understandable
+  Device tests confirmed distinct REQUEST TIMED OUT and SERVICE UNAVAILABLE states,
+  a visible Try again action, and available toolbar navigation.
+
+COMMANDS
+
+.\app\gradlew.bat -p .\app testDebugUnitTest --tests selected M6-03 unit suites
+.\app\gradlew.bat -p .\app connectedDebugAndroidTest -P...ProductSourceStatusFlowTest,MarketplaceStateDisplayFlowTest
+backend\retailer> npm test

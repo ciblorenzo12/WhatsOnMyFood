@@ -41,6 +41,20 @@ public class BitwiseBackendClientTest {
     }
 
     @Test
+    public void gatewayFailuresUseTheSameFriendlyBoundedFallback() {
+        String rawProviderBody = "{\"error\":\"upstream connection refused\"}";
+
+        for (int status : new int[]{502, 503, 504}) {
+            assertEquals(
+                    "Bitwise is starting up. Please try again in a moment.",
+                    BitwiseBackendClient.friendlyErrorMessage(status, rawProviderBody)
+            );
+            assertTrue(ResilientRequestPolicy.shouldRetryStatus(status, 0));
+            assertFalse(ResilientRequestPolicy.shouldRetryStatus(status, 1));
+        }
+    }
+
+    @Test
     public void handlesRateLimitWithoutRetryLoopWording() {
         assertEquals(
                 "Bitwise has reached its request limit. Please try again in 30 seconds.",
