@@ -80,6 +80,21 @@ Run all unit tests:
 .\gradlew.bat testDebugUnitTest
 ```
 
+### Participant testing build
+
+Debug APKs disable the normal three-per-day Bitwise limit so test participants can
+complete every assigned AI-supported scan without subscribing. The subscription
+state is not changed and usage is not counted in this build. Production release
+APKs keep the normal freemium and verified Google Play subscription behavior.
+
+Build the participant APK with:
+
+```powershell
+.\gradlew.bat assembleDebug
+```
+
+Distribute `app/build/outputs/apk/debug/app-debug.apk` for the test session.
+
 Run focused analysis tests:
 
 ```powershell

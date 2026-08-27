@@ -27,8 +27,11 @@
     <string name="checking_google_play_purchases">V&#233;rification des achats Google Play&#8230;</string>
     <string name="bitwise_plan_active">Bitwise Plus actif</string>
     <string name="bitwise_plan_free">Acc&#232;s Bitwise gratuit</string>
+    <string name="bitwise_plan_testing">Acc&#232;s aux tests participants</string>
     <string name="bitwise_usage_unlimited">Ce compte dispose d\'explications Bitwise illimit&#233;es.</string>
+    <string name="bitwise_usage_testing_unlimited">Cette version de test permet des explications Bitwise illimit&#233;es.</string>
     <string name="bitwise_usage_remaining">Il reste %1$d explications gratuites sur %2$d aujourd\'hui. R&#233;initialisation le %3$s.</string>
+    <string name="bitwise_testing_access_active">Acc&#232;s illimit&#233; aux tests actif</string>
     <string name="bitwise_free_limit_reached">Vous avez utilis&#233; les explications gratuites du jour. Passez &#224; Bitwise Plus pour un raisonnement IA illimit&#233;.</string>
     <string name="action_print">Imprimer</string>
     <string name="app_display_name">What\'s On My Food</string>

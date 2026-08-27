@@ -90,7 +90,9 @@ public class SubscriptionActivity extends BaseActivity implements BitwiseEntitle
     }
 
     private void updateUi() {
+        boolean testingAccess = entitlementManager.isTestingAccessEnabled();
         boolean premium = entitlementManager.isPremiumActive();
+        boolean unlimited = entitlementManager.hasUnlimitedBitwiseAccess();
         int used = entitlementManager.getDailyUsage();
         int limit = entitlementManager.getDailyLimit();
         int remaining = entitlementManager.getRemainingFreeUses();
@@ -99,17 +101,23 @@ public class SubscriptionActivity extends BaseActivity implements BitwiseEntitle
         boolean productQueryComplete = entitlementManager.isProductQueryComplete();
         BitwiseEntitlementManager.AccessState accessState = entitlementManager.getAccessState();
 
-        planStatusText.setText(premium ? R.string.bitwise_plan_active : R.string.bitwise_plan_free);
-        usageText.setText(premium
-                ? getString(R.string.bitwise_usage_unlimited)
-                : getString(R.string.bitwise_usage_remaining, remaining, limit, entitlementManager.getResetLabel()));
+        planStatusText.setText(testingAccess
+                ? R.string.bitwise_plan_testing
+                : premium ? R.string.bitwise_plan_active : R.string.bitwise_plan_free);
+        usageText.setText(testingAccess
+                ? getString(R.string.bitwise_usage_testing_unlimited)
+                : premium
+                        ? getString(R.string.bitwise_usage_unlimited)
+                        : getString(R.string.bitwise_usage_remaining, remaining, limit, entitlementManager.getResetLabel()));
         priceText.setText(entitlementManager.getPriceLabel());
         renewalTermsText.setText(entitlementManager.getRenewalTerms());
 
         String billingMessage = entitlementManager.getLastBillingMessage();
         billingStateText.setText(billingMessage);
         billingStateText.setVisibility(billingMessage.isEmpty() ? View.GONE : View.VISIBLE);
-        if (premium) {
+        if (testingAccess) {
+            subscribeButton.setText(R.string.bitwise_testing_access_active);
+        } else if (premium) {
             subscribeButton.setText(R.string.bitwise_plus_active);
         } else if (accessState == BitwiseEntitlementManager.AccessState.VERIFYING) {
             subscribeButton.setText(R.string.billing_verifying_purchase);
@@ -124,7 +132,7 @@ public class SubscriptionActivity extends BaseActivity implements BitwiseEntitle
         } else {
             subscribeButton.setText(R.string.subscribe_bitwise_plus);
         }
-        subscribeButton.setEnabled(!premium
+        subscribeButton.setEnabled(!unlimited
                 && accessState != BitwiseEntitlementManager.AccessState.VERIFYING
                 && accessState != BitwiseEntitlementManager.AccessState.PENDING
                 && billingReady
@@ -134,7 +142,7 @@ public class SubscriptionActivity extends BaseActivity implements BitwiseEntitle
         usageMeterFill.post(() -> {
             View parent = (View) usageMeterFill.getParent();
             int parentWidth = parent.getWidth();
-            float ratio = premium ? 1f : Math.min(1f, Math.max(0f, (float) (limit - used) / (float) limit));
+            float ratio = unlimited ? 1f : Math.min(1f, Math.max(0f, (float) (limit - used) / (float) limit));
             ViewGroup.LayoutParams params = usageMeterFill.getLayoutParams();
             params.width = Math.max(0, Math.round(parentWidth * ratio));
             usageMeterFill.setLayoutParams(params);

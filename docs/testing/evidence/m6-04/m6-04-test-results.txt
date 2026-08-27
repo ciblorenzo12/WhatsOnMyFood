@@ -1,0 +1,78 @@
+M6-04 CRITICAL DEFECT TRIAGE - VERIFICATION EVIDENCE
+
+Run date: 2026-08-26 EDT
+Base commit: 237a3821ae095396e53ca84ffb4cd65a9698f20e
+Target release: v0.31.0-rc1
+Device: Samsung SM-X800 tablet
+Android version: 16
+
+DEFECT RETEST
+
+[PASS] DEF-M6-04-001 - Offline cached product source state
+The current repository includes the M6-02 connectivity-before-cache decision fix.
+The full Android unit suite and connected source/persistence coverage passed.
+
+[PASS] DEF-M6-04-002 - Malformed release-candidate version name
+Before: 0.31.-rc1
+After:  0.31.0-rc1
+Regression test: ReleaseIdentityTest.releaseCandidateUsesTheMatrixVersionName
+Generated APK metadata: versionCode=12, versionName=0.31.0-rc1
+
+[PASS] DEF-M6-04-003 - Participant freemium restriction
+Debug BuildConfig: UNLIMITED_AI_TESTING=true
+Release BuildConfig: UNLIMITED_AI_TESTING=false
+ParticipantTestingAccessTest completed 20 uses while usage remained unchanged.
+BitwiseUsagePolicyTest confirms the production free tier still enforces its limit.
+
+FINAL RESULTS
+
+Android unit tests: PASS
+- Tests: 205
+- Failures: 0
+- Errors: 0
+- Skipped: 0
+
+Android lint: PASS
+- Variant: debug
+- Blocking errors: 0
+
+Android builds: PASS
+- assembleDebug
+- assembleDebugAndroidTest
+
+Connected demo-path tests: PASS
+- Device: SM-X800 - Android 16
+- Tests: 30
+- Failures: 0
+- Errors: 0
+- Skipped: 0
+- Duration reported by testsuites: 36.774 seconds
+
+Retailer backend tests: PASS
+- Tests: 37
+- Failures: 0
+- Skipped: 0
+
+Automated total: 272 passed, 0 failed
+
+APK ARTIFACT
+
+Path: app/build/outputs/apk/debug/app-debug.apk
+Size: 83,241,580 bytes
+SHA-256: 908B48781C2D01478F5A24CE83E0C86EF2A1852E62FE8EA6711724AB2B53EA05
+
+COMMANDS
+
+.\app\gradlew.bat -p .\app testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest assembleRelease --rerun-tasks
+
+.\app\gradlew.bat -p .\app connectedDebugAndroidTest '-Pandroid.testInstrumentationRunnerArguments.class=com.ciblorenzo.whatsonmyfood.IngredientModeUiTest,com.ciblorenzo.whatsonmyfood.BarcodeProductDetailsNavigationTest,com.ciblorenzo.whatsonmyfood.OpenFoodFactsOcrSampleTest,com.ciblorenzo.whatsonmyfood.ProductFindingsDisplayFlowTest,com.ciblorenzo.whatsonmyfood.ProductSourceStatusFlowTest,com.ciblorenzo.whatsonmyfood.PantryActionDisplayFlowTest,com.ciblorenzo.whatsonmyfood.PantryDaoFlowTest,com.ciblorenzo.whatsonmyfood.PantryDisplayFlowTest,com.ciblorenzo.whatsonmyfood.PantryNavigationTest,com.ciblorenzo.whatsonmyfood.PantryRestartPersistenceTest,com.ciblorenzo.whatsonmyfood.PantrySortingDaoTest,com.ciblorenzo.whatsonmyfood.MarketplaceNavigationFlowTest,com.ciblorenzo.whatsonmyfood.MarketplaceStateDisplayFlowTest'
+
+Push-Location backend\retailer
+npm test
+Pop-Location
+
+NOTE
+
+The Android test harness printed an app-ops warning because androidx.test.services
+did not yet have a UID. The runner continued, executed all 30 selected tests, and
+returned BUILD SUCCESSFUL. This is tracked as LIM-M6-04-004 and is not a demo blocker.

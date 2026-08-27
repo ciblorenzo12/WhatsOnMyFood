@@ -87,7 +87,7 @@ public class BitwiseEntitlementManager implements PurchasesUpdatedListener {
                         .build())
                 .enableAutoServiceReconnection()
                 .build();
-        accessState = isPremiumActive() ? AccessState.ACTIVE : AccessState.CONNECTING;
+        accessState = hasUnlimitedBitwiseAccess() ? AccessState.ACTIVE : AccessState.CONNECTING;
     }
 
     public void setListener(@Nullable Listener listener) {
@@ -95,6 +95,11 @@ public class BitwiseEntitlementManager implements PurchasesUpdatedListener {
     }
 
     public void start() {
+        if (isTestingAccessEnabled()) {
+            accessState = AccessState.ACTIVE;
+            notifyChanged();
+            return;
+        }
         if (billingClient.isReady()) {
             queryProductDetails();
             refreshPurchases();
@@ -161,7 +166,7 @@ public class BitwiseEntitlementManager implements PurchasesUpdatedListener {
     }
 
     public AccessState getAccessState() {
-        return isPremiumActive() ? AccessState.ACTIVE : accessState;
+        return hasUnlimitedBitwiseAccess() ? AccessState.ACTIVE : accessState;
     }
 
     public String getLastBillingMessage() {
@@ -169,13 +174,25 @@ public class BitwiseEntitlementManager implements PurchasesUpdatedListener {
     }
 
     public boolean canUseBitwise() {
-        return isPremiumActive() || getRemainingFreeUses() > 0;
+        return BitwiseUsagePolicy.canUse(
+                isTestingAccessEnabled(),
+                isPremiumActive(),
+                getRemainingFreeUses()
+        );
     }
 
     public void recordBitwiseUse() {
-        if (isPremiumActive()) return;
+        if (!BitwiseUsagePolicy.shouldRecordUse(isTestingAccessEnabled(), isPremiumActive())) return;
         resetUsageWindowIfNeeded();
         prefs.edit().putInt(KEY_DAILY_USAGE, getDailyUsage() + 1).apply();
+    }
+
+    public boolean isTestingAccessEnabled() {
+        return BuildConfig.UNLIMITED_AI_TESTING;
+    }
+
+    public boolean hasUnlimitedBitwiseAccess() {
+        return BitwiseUsagePolicy.isUnlimited(isTestingAccessEnabled(), isPremiumActive());
     }
 
     public int getDailyLimit() {
@@ -287,6 +304,11 @@ public class BitwiseEntitlementManager implements PurchasesUpdatedListener {
     }
 
     public void refreshPurchases() {
+        if (isTestingAccessEnabled()) {
+            accessState = AccessState.ACTIVE;
+            notifyChanged();
+            return;
+        }
         if (!billingClient.isReady()) {
             start();
             return;

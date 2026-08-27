@@ -52,7 +52,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 12
-        versionName = "0.31.-rc1"
+        versionName = "0.31.0-rc1"
 
         buildConfigField("String", "FDC_API_KEY", buildConfigString(apiKey("FDC_API_KEY")))
         buildConfigField("String", "NUTRITIONIX_APP_ID", buildConfigString(apiKey("NUTRITIONIX_APP_ID")))
@@ -79,10 +79,12 @@ android {
 
     buildTypes {
         debug {
+            buildConfigField("boolean", "UNLIMITED_AI_TESTING", "true")
             manifestPlaceholders["usesCleartextTraffic"] = true
         }
 
         release {
+            buildConfigField("boolean", "UNLIMITED_AI_TESTING", "false")
             isMinifyEnabled = false
             manifestPlaceholders["usesCleartextTraffic"] = false
             if (releaseSigningConfigured) {
