@@ -1,0 +1,69 @@
+M6-05 FIRST BETA 1.0 - BUILD AND DEMO EVIDENCE
+
+Prepared: 2026-08-28 EDT
+Base commit: ffd66f6
+Target release: 1.0.0-beta1
+Version code: 13
+Device: Samsung SM-X800 tablet
+Android version: 16
+
+CLEAN BUILD PIPELINE
+
+[PASS] Android unit tests
+Tests: 207
+Failures: 0
+Errors: 0
+Skipped: 0
+
+[PASS] Android lintDebug
+Blocking errors: 0
+
+[PASS] Android APK builds
+- assembleDebug
+- assembleDebugAndroidTest
+- assembleRelease
+
+[PASS] Retailer backend tests
+Tests: 37
+Failures: 0
+Skipped: 0
+
+APK ARTIFACTS
+
+Debug path: app/build/outputs/apk/debug/app-debug.apk
+Debug size: 83,241,512 bytes
+Debug SHA-256: 2731C6B1EDB3ADD4368805580590A099A9EDB39860148460DA75CCF74E84F99E
+
+Release path: app/build/outputs/apk/release/WhatsOnMyFood-1.0.0-beta1.apk
+Release size: 80,031,401 bytes
+Release SHA-256: 41DDBDD4D4C255C4AA4FAB58EADC3289C5ADB0D95749C12C6EE3D9AF50A3B297
+Release certificate SHA-256: 41a6c16a81e8df9bd542a17ffcad597e0a7cb08b34f2e4860690677c27007e23
+Release metadata: versionCode=13, versionName=1.0.0-beta1
+UNLIMITED_AI_TESTING=true
+
+SAMPLE PRODUCT PREFLIGHT
+
+[PASS] 016000275287 - Cheerios - identity and ingredients returned
+[PASS] 3017620422003 - Nutella - identity and ingredients returned
+[PASS] 028400090896 - Doritos Nacho Cheese - identity and ingredients returned
+[PASS] 012000161155 - LIFEWTR pH Balanced - identity and ingredients returned
+
+TARGET DEVICE
+
+[PASS] Beta debug APK installed as an in-place update; signed-in app data preserved.
+[INVALID] The first connected suite attempt began while the Samsung lock screen was active.
+The resulting NoActivityResumedException and saved-state transition were device-state failures,
+not accepted application defects. The run was stopped and is excluded from pass/fail totals.
+
+Final unlocked connected-suite and operator-rehearsal results: PENDING
+
+COMMANDS
+
+.\app\gradlew.bat -p .\app clean testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest assembleRelease
+
+.\app\gradlew.bat -p .\app connectedDebugAndroidTest '-Pandroid.testInstrumentationRunnerArguments.class=com.ciblorenzo.whatsonmyfood.IngredientModeUiTest,com.ciblorenzo.whatsonmyfood.BarcodeProductDetailsNavigationTest,com.ciblorenzo.whatsonmyfood.OpenFoodFactsOcrSampleTest,com.ciblorenzo.whatsonmyfood.ProductFindingsDisplayFlowTest,com.ciblorenzo.whatsonmyfood.ProductSourceStatusFlowTest,com.ciblorenzo.whatsonmyfood.PantryActionDisplayFlowTest,com.ciblorenzo.whatsonmyfood.PantryDaoFlowTest,com.ciblorenzo.whatsonmyfood.PantryDisplayFlowTest,com.ciblorenzo.whatsonmyfood.PantryNavigationTest,com.ciblorenzo.whatsonmyfood.PantryRestartPersistenceTest,com.ciblorenzo.whatsonmyfood.PantrySortingDaoTest,com.ciblorenzo.whatsonmyfood.MarketplaceNavigationFlowTest,com.ciblorenzo.whatsonmyfood.MarketplaceStateDisplayFlowTest'
+
+Push-Location backend\retailer
+npm test
+Pop-Location
+
