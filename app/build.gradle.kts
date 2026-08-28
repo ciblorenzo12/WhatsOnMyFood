@@ -84,7 +84,9 @@ android {
         }
 
         release {
-            buildConfigField("boolean", "UNLIMITED_AI_TESTING", "false")
+            // Keep unlimited AI access enabled for the current testing release.
+            // Change this value to false when the normal freemium limit is reinstated.
+            buildConfigField("boolean", "UNLIMITED_AI_TESTING", "true")
             isMinifyEnabled = false
             manifestPlaceholders["usesCleartextTraffic"] = false
             if (releaseSigningConfigured) {

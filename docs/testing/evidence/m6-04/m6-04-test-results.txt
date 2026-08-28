@@ -20,9 +20,10 @@ Generated APK metadata: versionCode=12, versionName=0.31.0-rc1
 
 [PASS] DEF-M6-04-003 - Participant freemium restriction
 Debug BuildConfig: UNLIMITED_AI_TESTING=true
-Release BuildConfig: UNLIMITED_AI_TESTING=false
+Release BuildConfig: UNLIMITED_AI_TESTING=true
 ParticipantTestingAccessTest completed 20 uses while usage remained unchanged.
-BitwiseUsagePolicyTest confirms the production free tier still enforces its limit.
+BitwiseUsagePolicyTest confirms the freemium policy still enforces its limit when
+the release override is changed back to false.
 
 FINAL RESULTS
 
@@ -55,11 +56,17 @@ Retailer backend tests: PASS
 
 Automated total: 272 passed, 0 failed
 
-APK ARTIFACT
+APK ARTIFACTS
 
-Path: app/build/outputs/apk/debug/app-debug.apk
-Size: 83,241,580 bytes
-SHA-256: 908B48781C2D01478F5A24CE83E0C86EF2A1852E62FE8EA6711724AB2B53EA05
+Debug path: app/build/outputs/apk/debug/app-debug.apk
+Debug size: 83,241,516 bytes
+Debug SHA-256: 8060DF2EE0C0B5439352E8379A1DBD2F2F3E99638B219971183982E25B9816C1
+
+Release path: app/build/outputs/apk/release/app-release.apk
+Release size: 80,031,409 bytes
+Release SHA-256: B417CF6EB379567E2114BFB0D4B46A8264C2DEDAF79E1B0DA84252F71E8E17B8
+Release metadata: versionCode=12, versionName=0.31.0-rc1,
+UNLIMITED_AI_TESTING=true
 
 COMMANDS
 

@@ -27,11 +27,11 @@
     <string name="checking_google_play_purchases">Checking Google Play purchases...</string>
     <string name="bitwise_plan_active">Bitwise Plus active</string>
     <string name="bitwise_plan_free">Free Bitwise access</string>
-    <string name="bitwise_plan_testing">Participant testing access</string>
+    <string name="bitwise_plan_testing">Unlimited AI access</string>
     <string name="bitwise_usage_unlimited">Unlimited Bitwise explanations are available on this account.</string>
-    <string name="bitwise_usage_testing_unlimited">Unlimited Bitwise explanations are enabled for this test build.</string>
+    <string name="bitwise_usage_testing_unlimited">Unlimited Bitwise explanations are currently enabled.</string>
     <string name="bitwise_usage_remaining">%1$d of %2$d free Bitwise explanations left today. Resets %3$s.</string>
-    <string name="bitwise_testing_access_active">Unlimited testing access active</string>
+    <string name="bitwise_testing_access_active">Unlimited access active</string>
     <string name="bitwise_free_limit_reached">You have used today\'s free Bitwise explanations. Upgrade to Bitwise Plus for unlimited AI reasoning.</string>
     <string name="action_print">Print</string>
     <string name="app_display_name">What\'s On My Food</string>

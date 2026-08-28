@@ -82,10 +82,11 @@ Run all unit tests:
 
 ### Participant testing build
 
-Debug APKs disable the normal three-per-day Bitwise limit so test participants can
-complete every assigned AI-supported scan without subscribing. The subscription
-state is not changed and usage is not counted in this build. Production release
-APKs keep the normal freemium and verified Google Play subscription behavior.
+Debug and release APKs currently disable the normal three-per-day Bitwise limit so
+users can complete every assigned AI-supported scan without subscribing. The
+subscription state is not changed and usage is not counted while this override is
+enabled. To reinstate the release limit later, set `UNLIMITED_AI_TESTING` to `false`
+in the release build type in `app/build.gradle.kts`.
 
 Build the participant APK with:
 
