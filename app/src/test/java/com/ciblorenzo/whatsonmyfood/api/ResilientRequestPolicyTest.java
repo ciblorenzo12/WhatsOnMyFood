@@ -10,6 +10,7 @@ import java.net.SocketTimeoutException;
 import javax.net.ssl.SSLHandshakeException;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class ResilientRequestPolicyTest {
@@ -46,5 +47,24 @@ public class ResilientRequestPolicyTest {
         assertFalse(ResilientRequestPolicy.shouldRetryResponse(404, startup, 0));
         assertFalse(ResilientRequestPolicy.shouldRetryResponse(200, "not valid JSON", 0));
         assertFalse(ResilientRequestPolicy.shouldRetryResponse(200, "{\"content\":\"ok\"}", 0));
+    }
+
+    @Test
+    public void bitwiseColdStartBudgetAllowsTwoRetriesWithoutChangingSharedDefault() {
+        String startup = "<!DOCTYPE html><title>Waiting for service to respond - RunPod</title>";
+
+        assertTrue(ResilientRequestPolicy.shouldRetryResponse(503, startup, 0, 2));
+        assertTrue(ResilientRequestPolicy.shouldRetryResponse(503, startup, 1, 2));
+        assertFalse(ResilientRequestPolicy.shouldRetryResponse(503, startup, 2, 2));
+        assertTrue(ResilientRequestPolicy.shouldRetryFailure(new SocketTimeoutException("timeout"), 1, 2));
+        assertFalse(ResilientRequestPolicy.shouldRetryFailure(new SocketTimeoutException("timeout"), 2, 2));
+
+        assertFalse(ResilientRequestPolicy.shouldRetryStatus(503, 1));
+    }
+
+    @Test
+    public void coldStartBackoffGivesTheHostedWorkerTimeToWake() {
+        assertEquals(1_500L, ResilientRequestPolicy.coldStartRetryDelayMs(0));
+        assertEquals(5_000L, ResilientRequestPolicy.coldStartRetryDelayMs(1));
     }
 }

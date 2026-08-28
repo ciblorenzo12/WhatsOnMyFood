@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.animation.AccelerateDecelerateInterpolator;
 
+import com.ciblorenzo.whatsonmyfood.api.SecureAiService;
 import com.ciblorenzo.whatsonmyfood.utils.GlassMotion;
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -15,6 +16,10 @@ public class SplashActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
+
+        // Wake the hosted Bitwise service before the shopper reaches the first scan result.
+        // This is best-effort; analysis still has its own bounded cold-start recovery path.
+        SecureAiService.warmUp();
 
         // Simple entrance animation
         findViewById(R.id.splash_logo).animate()

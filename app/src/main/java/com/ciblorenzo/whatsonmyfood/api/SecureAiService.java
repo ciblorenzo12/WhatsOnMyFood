@@ -15,6 +15,10 @@ public class SecureAiService {
         void onError(String error);
     }
 
+    public static Call warmUp() {
+        return llmClient.warmUp();
+    }
+
     public static Call analyzeProduct(String prompt, Bitmap bitmap, AiCallback callback) {
         return analyzeProduct(prompt, "", java.util.Collections.emptyList(), bitmap, callback);
     }

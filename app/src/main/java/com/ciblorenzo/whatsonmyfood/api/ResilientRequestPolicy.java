@@ -13,27 +13,45 @@ import javax.net.ssl.SSLException;
 public final class ResilientRequestPolicy {
     public static final int MAX_TRANSIENT_RETRIES = 1;
     public static final long RETRY_DELAY_MS = 750L;
+    static final long FIRST_COLD_START_RETRY_DELAY_MS = 1_500L;
+    static final long SECOND_COLD_START_RETRY_DELAY_MS = 5_000L;
 
     private ResilientRequestPolicy() {
     }
 
     public static boolean shouldRetryStatus(int statusCode, int attempt) {
-        return attempt < MAX_TRANSIENT_RETRIES && isTransientStatus(statusCode);
+        return shouldRetryStatus(statusCode, attempt, MAX_TRANSIENT_RETRIES);
+    }
+
+    public static boolean shouldRetryStatus(int statusCode, int attempt, int maxRetries) {
+        return attempt < maxRetries && isTransientStatus(statusCode);
     }
 
     public static boolean shouldRetryStartupBody(String body, int attempt) {
-        return attempt < MAX_TRANSIENT_RETRIES && looksLikeStartupHtml(body);
+        return shouldRetryStartupBody(body, attempt, MAX_TRANSIENT_RETRIES);
+    }
+
+    public static boolean shouldRetryStartupBody(String body, int attempt, int maxRetries) {
+        return attempt < maxRetries && looksLikeStartupHtml(body);
     }
 
     public static boolean shouldRetryResponse(int statusCode, String body, int attempt) {
-        if (shouldRetryStatus(statusCode, attempt)) return true;
+        return shouldRetryResponse(statusCode, body, attempt, MAX_TRANSIENT_RETRIES);
+    }
+
+    public static boolean shouldRetryResponse(int statusCode, String body, int attempt, int maxRetries) {
+        if (shouldRetryStatus(statusCode, attempt, maxRetries)) return true;
         boolean successfulOrStartupStatus = (statusCode >= 200 && statusCode < 300)
                 || isTransientStatus(statusCode);
-        return successfulOrStartupStatus && shouldRetryStartupBody(body, attempt);
+        return successfulOrStartupStatus && shouldRetryStartupBody(body, attempt, maxRetries);
     }
 
     public static boolean shouldRetryFailure(IOException error, int attempt) {
-        if (attempt >= MAX_TRANSIENT_RETRIES || error == null) return false;
+        return shouldRetryFailure(error, attempt, MAX_TRANSIENT_RETRIES);
+    }
+
+    public static boolean shouldRetryFailure(IOException error, int attempt, int maxRetries) {
+        if (attempt >= maxRetries || error == null) return false;
         if (error instanceof ProtocolException || error instanceof SSLException) return false;
         String message = error.getMessage();
         if (message != null && message.equalsIgnoreCase("Canceled")) return false;
@@ -56,8 +74,22 @@ public final class ResilientRequestPolicy {
     }
 
     public static void waitBeforeRetry() throws IOException {
+        waitFor(RETRY_DELAY_MS);
+    }
+
+    public static long coldStartRetryDelayMs(int attempt) {
+        return attempt <= 0
+                ? FIRST_COLD_START_RETRY_DELAY_MS
+                : SECOND_COLD_START_RETRY_DELAY_MS;
+    }
+
+    public static void waitBeforeColdStartRetry(int attempt) throws IOException {
+        waitFor(coldStartRetryDelayMs(attempt));
+    }
+
+    private static void waitFor(long delayMs) throws IOException {
         try {
-            Thread.sleep(RETRY_DELAY_MS);
+            Thread.sleep(delayMs);
         } catch (InterruptedException error) {
             Thread.currentThread().interrupt();
             throw new IOException("Retry interrupted", error);

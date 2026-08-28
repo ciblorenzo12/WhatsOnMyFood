@@ -11,9 +11,9 @@ import okhttp3.Call;
 
 public class BitwiseAnalysisService {
 
-    // The client allows at most two 20-second read attempts plus a short delay.
-    // Keep the UI guard just beyond the bounded 45-second OkHttp call window.
-    static final long ANALYSIS_TIMEOUT_MS = 50_000L;
+    // The client allows three bounded attempts so a cold hosted worker can finish waking up.
+    // Keep the UI guard just beyond the 90-second OkHttp call window.
+    static final long ANALYSIS_TIMEOUT_MS = 95_000L;
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private Call activeCall;

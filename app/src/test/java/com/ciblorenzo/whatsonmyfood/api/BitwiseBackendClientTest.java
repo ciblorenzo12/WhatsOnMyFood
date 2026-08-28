@@ -14,12 +14,12 @@ import static org.junit.Assert.assertTrue;
 public class BitwiseBackendClientTest {
 
     @Test
-    public void interactiveAnalysisUsesOneBoundedRetryWindow() {
-        assertEquals(1, BitwiseBackendClient.MAX_TRANSIENT_RETRIES);
+    public void interactiveAnalysisAllowsAColdStartRecoveryWindow() {
+        assertEquals(2, BitwiseBackendClient.MAX_TRANSIENT_RETRIES);
         assertEquals(10, BitwiseBackendClient.ANALYSIS_CONNECT_TIMEOUT_SECONDS);
-        assertEquals(20, BitwiseBackendClient.ANALYSIS_READ_TIMEOUT_SECONDS);
+        assertEquals(25, BitwiseBackendClient.ANALYSIS_READ_TIMEOUT_SECONDS);
         assertEquals(15, BitwiseBackendClient.ANALYSIS_WRITE_TIMEOUT_SECONDS);
-        assertEquals(45, BitwiseBackendClient.ANALYSIS_CALL_TIMEOUT_SECONDS);
+        assertEquals(90, BitwiseBackendClient.ANALYSIS_CALL_TIMEOUT_SECONDS);
     }
 
     @Test
@@ -49,8 +49,12 @@ public class BitwiseBackendClientTest {
                     "Bitwise is starting up. Please try again in a moment.",
                     BitwiseBackendClient.friendlyErrorMessage(status, rawProviderBody)
             );
-            assertTrue(ResilientRequestPolicy.shouldRetryStatus(status, 0));
-            assertFalse(ResilientRequestPolicy.shouldRetryStatus(status, 1));
+            assertTrue(ResilientRequestPolicy.shouldRetryStatus(
+                    status, 0, BitwiseBackendClient.MAX_TRANSIENT_RETRIES));
+            assertTrue(ResilientRequestPolicy.shouldRetryStatus(
+                    status, 1, BitwiseBackendClient.MAX_TRANSIENT_RETRIES));
+            assertFalse(ResilientRequestPolicy.shouldRetryStatus(
+                    status, 2, BitwiseBackendClient.MAX_TRANSIENT_RETRIES));
         }
     }
 

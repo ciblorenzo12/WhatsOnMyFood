@@ -30,12 +30,13 @@ import okhttp3.Response;
 
 public class BitwiseBackendClient {
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-    // One retry fits within the total call window and avoids long retry loops.
-    static final int MAX_TRANSIENT_RETRIES = ResilientRequestPolicy.MAX_TRANSIENT_RETRIES;
+    // A hosted Bitwise worker can need more than one request window to wake from a cold start.
+    // Keep the budget bounded so a permanent outage still resolves to the safe fallback UI.
+    static final int MAX_TRANSIENT_RETRIES = 2;
     static final int ANALYSIS_CONNECT_TIMEOUT_SECONDS = 10;
-    static final int ANALYSIS_READ_TIMEOUT_SECONDS = 20;
+    static final int ANALYSIS_READ_TIMEOUT_SECONDS = 25;
     static final int ANALYSIS_WRITE_TIMEOUT_SECONDS = 15;
-    static final int ANALYSIS_CALL_TIMEOUT_SECONDS = 45;
+    static final int ANALYSIS_CALL_TIMEOUT_SECONDS = 90;
     private static final Pattern SOURCE_STATUS_PATTERN = Pattern.compile(
             "(?im)^\\s*(?:source_status|source status)\\s*:\\s*(.+?)\\s*$"
     );
@@ -68,6 +69,33 @@ public class BitwiseBackendClient {
 
     public Call askBitwise(String prompt, Bitmap bitmap, LlmCallback callback) {
         return askBitwise(prompt, "", Collections.emptyList(), bitmap, callback);
+    }
+
+    /** Starts the hosted backend while the user is still navigating to the scanner. */
+    public Call warmUp() {
+        String configuredBaseUrl = configuredBaseUrl(
+                BuildConfig.BITWISE_LLM_BASE_URL,
+                BuildConfig.RETAILER_BACKEND_BASE_URL
+        );
+        if (configuredBaseUrl.isEmpty()) return null;
+
+        Request request = new Request.Builder()
+                .url(configuredBaseUrl + "health")
+                .get()
+                .build();
+        Call call = client.newCall(request);
+        call.enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException error) {
+                // The real analysis request has its own bounded retry and user-visible fallback.
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) {
+                response.close();
+            }
+        });
+        return call;
     }
 
     public Call askBitwise(
@@ -325,16 +353,21 @@ public class BitwiseBackendClient {
                     boolean retry = ResilientRequestPolicy.shouldRetryResponse(
                             response.code(),
                             preview,
-                            attempt
+                            attempt,
+                            MAX_TRANSIENT_RETRIES
                     );
                     if (!retry) return response;
 
                     response.close();
-                    ResilientRequestPolicy.waitBeforeRetry();
+                    ResilientRequestPolicy.waitBeforeColdStartRetry(attempt);
                 } catch (IOException error) {
                     lastFailure = error;
-                    if (!ResilientRequestPolicy.shouldRetryFailure(error, attempt)) throw error;
-                    ResilientRequestPolicy.waitBeforeRetry();
+                    if (!ResilientRequestPolicy.shouldRetryFailure(
+                            error,
+                            attempt,
+                            MAX_TRANSIENT_RETRIES
+                    )) throw error;
+                    ResilientRequestPolicy.waitBeforeColdStartRetry(attempt);
                 }
             }
             throw lastFailure != null ? lastFailure : new IOException("Protected analysis retry failed");
