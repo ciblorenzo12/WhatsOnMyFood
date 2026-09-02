@@ -137,6 +137,12 @@
             android:theme="@style/Theme.MyApplication" />
 
         <activity
+            android:name=".recall.FoodRecallActivity"
+            android:exported="false"
+            android:label="@string/food_recall_title"
+            android:theme="@style/Theme.MyApplication" />
+
+        <activity
             android:name=".retail.MarketplaceActivity"
             android:exported="false"
             android:label="@string/marketplace_comparison"

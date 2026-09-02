@@ -413,6 +413,8 @@
                     tools:text="Whole grain oats&#10;Corn starch&#10;Sugar&#10;Salt" />
             </com.google.android.material.card.MaterialCardView>
 
+            <include layout="@layout/layout_food_recall_entry" />
+
             <include layout="@layout/layout_retailer_commerce" />
 
             <TextView

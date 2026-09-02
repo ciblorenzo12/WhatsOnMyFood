@@ -340,6 +340,49 @@
     <string name="view_marketplace_comparison">Compare alternatives</string>
     <string name="compare_alternatives_for_product">Compare alternatives for %1$s</string>
     <string name="comparison_unavailable">Alternatives are not available because this product is missing a barcode or product name.</string>
+
+    <!-- Milestone 7 food recall flow -->
+    <string name="food_recall_title">Food recall status</string>
+    <string name="food_recall_entry_title">Check this product for recalls</string>
+    <string name="food_recall_entry_message">Review current recall information before using or consuming a product.</string>
+    <string name="food_recall_action">Check food recalls</string>
+    <string name="food_recall_action_for_product">Check food recalls for %1$s</string>
+    <string name="food_recall_unavailable_product">Recall checking needs a valid barcode and product name.</string>
+    <string name="food_recall_scanned_context">Opened from a scanned product</string>
+    <string name="food_recall_saved_context">Opened from a saved pantry product</string>
+    <string name="food_recall_product_fallback">Product name unavailable</string>
+    <string name="food_recall_brand_fallback">Brand not provided</string>
+    <string name="food_recall_barcode_value">Barcode: %1$s</string>
+    <string name="food_recall_official_source">Open official FDA recalls</string>
+    <string name="food_recall_disclaimer">A no-known-match result is not a guarantee that a product is safe. Always compare the lot, date, and package details with the official recall notice.</string>
+
+    <string name="food_recall_ready_badge">RECALL CHECK</string>
+    <string name="food_recall_ready_title">Ready to check this product</string>
+    <string name="food_recall_ready_message">The recall flow uses the barcode first, then carefully compares the product name and brand when needed.</string>
+    <string name="food_recall_checking_badge">CHECKING SOURCE</string>
+    <string name="food_recall_checking_title">Looking for current recall information</string>
+    <string name="food_recall_checking_message">Keep this screen open while the product is compared with the configured recall source.</string>
+    <string name="food_recall_clear_badge">NO KNOWN MATCH</string>
+    <string name="food_recall_clear_title">No matching recall was found</string>
+    <string name="food_recall_clear_message">No current record matched the available product details. This result is not a guarantee of safety.</string>
+    <string name="food_recall_possible_badge">POSSIBLE MATCH</string>
+    <string name="food_recall_possible_title">Check the package details</string>
+    <string name="food_recall_possible_message">A recall may involve a similar product. Compare the lot code, date, size, and package with the official notice before using it.</string>
+    <string name="food_recall_confirmed_badge">RECALL MATCH</string>
+    <string name="food_recall_confirmed_title">Do not use this product yet</string>
+    <string name="food_recall_confirmed_message">The product details match an active recall record. Follow the official notice for return, disposal, or contact instructions.</string>
+    <string name="food_recall_stale_badge">RESULT MAY BE OUTDATED</string>
+    <string name="food_recall_stale_title">A newer check is recommended</string>
+    <string name="food_recall_stale_message">The last saved recall result is old. Reconnect and check again before relying on it.</string>
+    <string name="food_recall_unavailable_badge">CHECK UNAVAILABLE</string>
+    <string name="food_recall_unavailable_title">Automatic matching is not connected yet</string>
+    <string name="food_recall_unavailable_message">Use the official FDA recall source below for current information while the automated source is being connected.</string>
+    <string name="food_recall_error_badge">CHECK FAILED</string>
+    <string name="food_recall_error_title">The recall check could not finish</string>
+    <string name="food_recall_error_message">Check the connection and try again. You can still open the official recall source.</string>
+    <string name="food_recall_check_again">Check again</string>
+    <string name="food_recall_view_notice">View official notice</string>
+    <string name="food_recall_missing_product">This product does not have enough identifying information for a recall check.</string>
     <string-array name="sort_options">
         <item>Cost (Lowest)</item>
         <item>Distance (Nearest)</item>

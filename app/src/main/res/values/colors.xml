@@ -50,6 +50,12 @@
     <color name="nutriscore_e">#EF4444</color>
     <color name="score_unknown">#9CA3AF</color>
 
+    <!-- Food recall status palette -->
+    <color name="recall_neutral">#5B21B6</color>
+    <color name="recall_clear">#047857</color>
+    <color name="recall_caution">#B45309</color>
+    <color name="recall_critical">#B91C1C</color>
+
     <!-- NOVA Group Colors -->
     <color name="nova_1">#059669</color>
     <color name="nova_2">#F59E0B</color>

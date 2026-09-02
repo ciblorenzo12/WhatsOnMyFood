@@ -424,6 +424,8 @@
                     tools:text="Whole grain oats, corn starch, sugar, salt, tripotassium phosphate" />
             </com.google.android.material.card.MaterialCardView>
 
+            <include layout="@layout/layout_food_recall_entry" />
+
             <include layout="@layout/layout_retailer_commerce" />
 
             <TextView

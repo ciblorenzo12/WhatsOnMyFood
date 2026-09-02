@@ -44,6 +44,7 @@ import com.ciblorenzo.whatsonmyfood.analysis.IngredientReviewGate;
 import com.ciblorenzo.whatsonmyfood.analysis.IngredientTextParser;
 import com.ciblorenzo.whatsonmyfood.analysis.ProductAnalysisReport;
 import com.ciblorenzo.whatsonmyfood.analysis.rules.RuleEngine;
+import com.ciblorenzo.whatsonmyfood.recall.FoodRecallNavigation;
 import com.ciblorenzo.whatsonmyfood.retail.RetailerCommerceViewBinder;
 import com.ciblorenzo.whatsonmyfood.retail.RetailerRepository;
 import com.ciblorenzo.whatsonmyfood.utils.GlassMotion;
@@ -386,6 +387,12 @@ public class ProductDetailsActivity extends BaseActivity {
         if (retailerCommerceViewBinder != null) {
             retailerCommerceViewBinder.bind(productDetails);
         }
+        FoodRecallNavigation.bindEntry(
+                this,
+                findViewById(android.R.id.content),
+                productDetails,
+                FoodRecallNavigation.EntryPoint.SAVED_PRODUCT
+        );
 
         currentReport = ruleEngine.analyze(productDetails);
         boolean ingredientsMissing = !hasListedIngredients(productDetails);

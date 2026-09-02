@@ -45,6 +45,7 @@ import com.ciblorenzo.whatsonmyfood.analysis.ProductAnalysisReport;
 import com.ciblorenzo.whatsonmyfood.analysis.ProductFindingsDisplay;
 import com.ciblorenzo.whatsonmyfood.analysis.ProductFindingsViewBinder;
 import com.ciblorenzo.whatsonmyfood.analysis.rules.RuleEngine;
+import com.ciblorenzo.whatsonmyfood.recall.FoodRecallNavigation;
 import com.ciblorenzo.whatsonmyfood.retail.RetailerCommerceViewBinder;
 import com.ciblorenzo.whatsonmyfood.retail.RetailerRepository;
 import com.ciblorenzo.whatsonmyfood.utils.GlassMotion;
@@ -464,6 +465,12 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         if (retailerCommerceViewBinder != null) {
             retailerCommerceViewBinder.bind(productDetails);
         }
+        FoodRecallNavigation.bindEntry(
+                requireContext(),
+                getView(),
+                productDetails,
+                FoodRecallNavigation.EntryPoint.SCAN_RESULT
+        );
         packagingTextView.setText(productDetails.product.packaging != null ? productDetails.product.packaging : "");
         ProductCertificateBadgeRenderer.bind(
                 requireContext(),
