@@ -63,6 +63,7 @@ android {
         buildConfigField("String", "BITWISE_LLM_BASE_URL", buildConfigString(apiKey("BITWISE_LLM_BASE_URL")))
         buildConfigField("String", "BITWISE_APP_TOKEN", buildConfigString(bitwiseAppToken))
         buildConfigField("String", "GOOGLE_MAPS_API_KEY", buildConfigString(apiKey("GOOGLE_MAPS_API_KEY")))
+        buildConfigField("String", "OPENFDA_API_KEY", buildConfigString(apiKey("OPENFDA_API_KEY")))
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

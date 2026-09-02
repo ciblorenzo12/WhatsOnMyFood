@@ -21,6 +21,10 @@ import com.ciblorenzo.whatsonmyfood.utils.GlassMotion;
 import com.ciblorenzo.whatsonmyfood.utils.LinkHandler;
 import com.google.android.material.card.MaterialCardView;
 
+import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class FoodRecallActivity extends BaseActivity {
     public static final String EXTRA_DEBUG_STATE = "food_recall_debug_state";
     private static final String FDA_RECALLS_URL =
@@ -33,7 +37,18 @@ public class FoodRecallActivity extends BaseActivity {
     private ProgressBar stateProgress;
     private Button primaryAction;
     private Button officialSourceAction;
+    private View recallDetails;
+    private TextView recallNumber;
+    private TextView recallFirm;
+    private TextView recallClassification;
+    private TextView recallDescription;
+    private TextView recallReason;
+    private TextView recallCodes;
+    private TextView recallReportDate;
     private FoodRecallState currentState = FoodRecallState.READY;
+    private Product currentProduct;
+    private final ExecutorService recallExecutor = Executors.newSingleThreadExecutor();
+    private final FoodRecallRepository recallRepository = new FoodRecallRepository();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +70,14 @@ public class FoodRecallActivity extends BaseActivity {
         stateProgress = findViewById(R.id.food_recall_state_progress);
         primaryAction = findViewById(R.id.food_recall_primary_action);
         officialSourceAction = findViewById(R.id.food_recall_official_source_action);
+        recallDetails = findViewById(R.id.food_recall_details);
+        recallNumber = findViewById(R.id.food_recall_number);
+        recallFirm = findViewById(R.id.food_recall_firm);
+        recallClassification = findViewById(R.id.food_recall_classification);
+        recallDescription = findViewById(R.id.food_recall_description);
+        recallReason = findViewById(R.id.food_recall_reason);
+        recallCodes = findViewById(R.id.food_recall_codes);
+        recallReportDate = findViewById(R.id.food_recall_report_date);
         GlassMotion.attachPress(primaryAction);
         GlassMotion.attachPress(officialSourceAction);
 
@@ -65,7 +88,8 @@ public class FoodRecallActivity extends BaseActivity {
             return;
         }
 
-        bindProduct(productDetails.product, FoodRecallNavigation.readEntryPoint(getIntent()));
+        currentProduct = productDetails.product;
+        bindProduct(currentProduct, FoodRecallNavigation.readEntryPoint(getIntent()));
         if (BuildConfig.DEBUG) {
             currentState = FoodRecallState.fromName(getIntent().getStringExtra(EXTRA_DEBUG_STATE));
         }
@@ -95,11 +119,30 @@ public class FoodRecallActivity extends BaseActivity {
             return;
         }
         render(FoodRecallState.CHECKING);
-        stateCard.postDelayed(() -> {
-            if (!isFinishing() && !isDestroyed()) {
-                render(FoodRecallState.UNAVAILABLE);
+        recallExecutor.execute(() -> {
+            try {
+                FoodRecallCheckResult result = recallRepository.check(currentProduct);
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    render(result.state);
+                    bindRecallDetails(result);
+                });
+            } catch (FoodRecallServiceException error) {
+                showFailure(error.temporarilyUnavailable
+                        ? FoodRecallState.UNAVAILABLE
+                        : FoodRecallState.ERROR);
+            } catch (IOException | RuntimeException error) {
+                showFailure(FoodRecallState.ERROR);
             }
-        }, 450L);
+        });
+    }
+
+    private void showFailure(FoodRecallState state) {
+        runOnUiThread(() -> {
+            if (isFinishing() || isDestroyed()) return;
+            render(state);
+            bindRecallDetails(null);
+        });
     }
 
     private void openOfficialSource() {
@@ -127,6 +170,60 @@ public class FoodRecallActivity extends BaseActivity {
         if (model.showPrimaryAction) {
             primaryAction.setText(model.primaryActionText);
         }
+        if (currentState != FoodRecallState.POSSIBLE_MATCH
+                && currentState != FoodRecallState.CONFIRMED_MATCH) {
+            recallDetails.setVisibility(View.GONE);
+        }
+    }
+
+    private void bindRecallDetails(FoodRecallCheckResult result) {
+        FoodRecallRecord record = result == null ? null : result.record;
+        if (record == null) {
+            recallDetails.setVisibility(View.GONE);
+            return;
+        }
+        recallNumber.setText(getString(
+                R.string.food_recall_detail_number,
+                safeText(record.recallNumber, getString(R.string.food_recall_detail_not_provided))
+        ));
+        recallFirm.setText(getString(
+                R.string.food_recall_detail_firm,
+                safeText(record.recallingFirm, getString(R.string.food_recall_detail_not_provided))
+        ));
+        recallClassification.setText(getString(
+                R.string.food_recall_detail_classification,
+                safeText(record.classification, getString(R.string.food_recall_detail_not_provided))
+        ));
+        recallDescription.setText(getString(
+                R.string.food_recall_detail_product,
+                safeText(record.productDescription, getString(R.string.food_recall_detail_not_provided))
+        ));
+        recallReason.setText(getString(
+                R.string.food_recall_detail_reason,
+                safeText(record.reasonForRecall, getString(R.string.food_recall_detail_not_provided))
+        ));
+        recallCodes.setText(getString(
+                R.string.food_recall_detail_codes,
+                safeText(record.codeInfo, getString(R.string.food_recall_detail_not_provided))
+        ));
+        recallReportDate.setText(getString(
+                R.string.food_recall_detail_report_date,
+                formatDate(record.reportDate)
+        ));
+        recallDetails.setVisibility(View.VISIBLE);
+    }
+
+    private String formatDate(String value) {
+        if (value != null && value.matches("\\d{8}")) {
+            return value.substring(4, 6) + "/" + value.substring(6, 8) + "/" + value.substring(0, 4);
+        }
+        return safeText(value, getString(R.string.food_recall_detail_not_provided));
+    }
+
+    @Override
+    protected void onDestroy() {
+        recallExecutor.shutdownNow();
+        super.onDestroy();
     }
 
     private String safeText(String value, String fallback) {

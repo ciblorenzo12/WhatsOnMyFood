@@ -375,14 +375,22 @@
     <string name="food_recall_stale_title">A newer check is recommended</string>
     <string name="food_recall_stale_message">The last saved recall result is old. Reconnect and check again before relying on it.</string>
     <string name="food_recall_unavailable_badge">CHECK UNAVAILABLE</string>
-    <string name="food_recall_unavailable_title">Automatic matching is not connected yet</string>
-    <string name="food_recall_unavailable_message">Use the official FDA recall source below for current information while the automated source is being connected.</string>
+    <string name="food_recall_unavailable_title">The FDA source is temporarily unavailable</string>
+    <string name="food_recall_unavailable_message">The automatic check could not reach the official FDA source. Try again shortly or open the official recall page below.</string>
     <string name="food_recall_error_badge">CHECK FAILED</string>
     <string name="food_recall_error_title">The recall check could not finish</string>
     <string name="food_recall_error_message">Check the connection and try again. You can still open the official recall source.</string>
     <string name="food_recall_check_again">Check again</string>
     <string name="food_recall_view_notice">View official notice</string>
     <string name="food_recall_missing_product">This product does not have enough identifying information for a recall check.</string>
+    <string name="food_recall_detail_number">Recall number: %1$s</string>
+    <string name="food_recall_detail_firm">Recalling firm: %1$s</string>
+    <string name="food_recall_detail_classification">Classification: %1$s</string>
+    <string name="food_recall_detail_product">Product: %1$s</string>
+    <string name="food_recall_detail_reason">Reason: %1$s</string>
+    <string name="food_recall_detail_codes">Codes, lots, and dates: %1$s</string>
+    <string name="food_recall_detail_report_date">FDA report date: %1$s</string>
+    <string name="food_recall_detail_not_provided">Not provided in the FDA record</string>
     <string-array name="sort_options">
         <item>Cost (Lowest)</item>
         <item>Distance (Nearest)</item>

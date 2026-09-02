@@ -373,12 +373,20 @@
     <string name="food_recall_stale_title">Une nouvelle v&#233;rification est recommand&#233;e</string>
     <string name="food_recall_stale_message">Le dernier r&#233;sultat enregistr&#233; est ancien. Reconnectez-vous et v&#233;rifiez &#224; nouveau avant de vous y fier.</string>
     <string name="food_recall_unavailable_badge">V&#201;RIFICATION INDISPONIBLE</string>
-    <string name="food_recall_unavailable_title">La correspondance automatique n&#8217;est pas encore connect&#233;e</string>
-    <string name="food_recall_unavailable_message">Utilisez ci-dessous la source officielle de rappels de la FDA pour obtenir les informations actuelles pendant la connexion de la source automatique.</string>
+    <string name="food_recall_unavailable_title">La source de la FDA est temporairement indisponible</string>
+    <string name="food_recall_unavailable_message">La v&#233;rification automatique n&#8217;a pas pu joindre la source officielle de la FDA. R&#233;essayez bient&#244;t ou ouvrez la page officielle ci-dessous.</string>
     <string name="food_recall_error_badge">&#201;CHEC DE LA V&#201;RIFICATION</string>
     <string name="food_recall_error_title">La v&#233;rification n&#8217;a pas pu aboutir</string>
     <string name="food_recall_error_message">V&#233;rifiez la connexion et r&#233;essayez. Vous pouvez aussi ouvrir la source officielle des rappels.</string>
     <string name="food_recall_check_again">V&#233;rifier &#224; nouveau</string>
     <string name="food_recall_view_notice">Voir l&#8217;avis officiel</string>
     <string name="food_recall_missing_product">Ce produit ne contient pas assez d&#8217;informations d&#8217;identification pour v&#233;rifier les rappels.</string>
+    <string name="food_recall_detail_number">Num&#233;ro de rappel : %1$s</string>
+    <string name="food_recall_detail_firm">Entreprise responsable : %1$s</string>
+    <string name="food_recall_detail_classification">Classification : %1$s</string>
+    <string name="food_recall_detail_product">Produit : %1$s</string>
+    <string name="food_recall_detail_reason">Motif : %1$s</string>
+    <string name="food_recall_detail_codes">Codes, lots et dates : %1$s</string>
+    <string name="food_recall_detail_report_date">Date du rapport de la FDA : %1$s</string>
+    <string name="food_recall_detail_not_provided">Non indiqu&#233; dans le dossier de la FDA</string>
 </resources>

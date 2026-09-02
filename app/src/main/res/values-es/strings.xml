@@ -373,12 +373,20 @@
     <string name="food_recall_stale_title">Se recomienda una consulta nueva</string>
     <string name="food_recall_stale_message">El &#250;ltimo resultado guardado es antiguo. Vuelve a conectarte y consulta otra vez antes de confiar en &#233;l.</string>
     <string name="food_recall_unavailable_badge">CONSULTA NO DISPONIBLE</string>
-    <string name="food_recall_unavailable_title">La comparaci&#243;n autom&#225;tica a&#250;n no est&#225; conectada</string>
-    <string name="food_recall_unavailable_message">Mientras se conecta la fuente autom&#225;tica, usa abajo la fuente oficial de retiradas de la FDA para consultar informaci&#243;n actual.</string>
+    <string name="food_recall_unavailable_title">La fuente de la FDA no est&#225; disponible temporalmente</string>
+    <string name="food_recall_unavailable_message">La consulta autom&#225;tica no pudo conectarse con la fuente oficial de la FDA. Int&#233;ntalo de nuevo en breve o abre la p&#225;gina oficial.</string>
     <string name="food_recall_error_badge">FALLO EN LA CONSULTA</string>
     <string name="food_recall_error_title">No se pudo completar la consulta</string>
     <string name="food_recall_error_message">Comprueba la conexi&#243;n y vuelve a intentarlo. Tambi&#233;n puedes abrir la fuente oficial de retiradas.</string>
     <string name="food_recall_check_again">Consultar de nuevo</string>
     <string name="food_recall_view_notice">Ver el aviso oficial</string>
     <string name="food_recall_missing_product">Este producto no tiene suficiente informaci&#243;n de identificaci&#243;n para consultar retiradas.</string>
+    <string name="food_recall_detail_number">N&#250;mero de retirada: %1$s</string>
+    <string name="food_recall_detail_firm">Empresa responsable: %1$s</string>
+    <string name="food_recall_detail_classification">Clasificaci&#243;n: %1$s</string>
+    <string name="food_recall_detail_product">Producto: %1$s</string>
+    <string name="food_recall_detail_reason">Motivo: %1$s</string>
+    <string name="food_recall_detail_codes">C&#243;digos, lotes y fechas: %1$s</string>
+    <string name="food_recall_detail_report_date">Fecha del informe de la FDA: %1$s</string>
+    <string name="food_recall_detail_not_provided">No indicado en el registro de la FDA</string>
 </resources>
