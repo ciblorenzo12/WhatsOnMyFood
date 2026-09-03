@@ -34,6 +34,9 @@ public class FoodRecallActivity extends BaseActivity {
     private TextView stateBadge;
     private TextView stateTitle;
     private TextView stateMessage;
+    private View guidancePanel;
+    private TextView guidanceMessage;
+    private View fallbackPanel;
     private ProgressBar stateProgress;
     private Button primaryAction;
     private Button officialSourceAction;
@@ -41,10 +44,13 @@ public class FoodRecallActivity extends BaseActivity {
     private TextView recallNumber;
     private TextView recallFirm;
     private TextView recallClassification;
+    private TextView recallStatus;
+    private TextView recallMatchBasis;
     private TextView recallDescription;
     private TextView recallReason;
     private TextView recallCodes;
     private TextView recallReportDate;
+    private TextView recallSourceUpdated;
     private FoodRecallState currentState = FoodRecallState.READY;
     private Product currentProduct;
     private final ExecutorService recallExecutor = Executors.newSingleThreadExecutor();
@@ -67,6 +73,9 @@ public class FoodRecallActivity extends BaseActivity {
         stateBadge = findViewById(R.id.food_recall_state_badge);
         stateTitle = findViewById(R.id.food_recall_state_title);
         stateMessage = findViewById(R.id.food_recall_state_message);
+        guidancePanel = findViewById(R.id.food_recall_guidance);
+        guidanceMessage = findViewById(R.id.food_recall_guidance_message);
+        fallbackPanel = findViewById(R.id.food_recall_fallback);
         stateProgress = findViewById(R.id.food_recall_state_progress);
         primaryAction = findViewById(R.id.food_recall_primary_action);
         officialSourceAction = findViewById(R.id.food_recall_official_source_action);
@@ -74,10 +83,13 @@ public class FoodRecallActivity extends BaseActivity {
         recallNumber = findViewById(R.id.food_recall_number);
         recallFirm = findViewById(R.id.food_recall_firm);
         recallClassification = findViewById(R.id.food_recall_classification);
+        recallStatus = findViewById(R.id.food_recall_status);
+        recallMatchBasis = findViewById(R.id.food_recall_match_basis);
         recallDescription = findViewById(R.id.food_recall_description);
         recallReason = findViewById(R.id.food_recall_reason);
         recallCodes = findViewById(R.id.food_recall_codes);
         recallReportDate = findViewById(R.id.food_recall_report_date);
+        recallSourceUpdated = findViewById(R.id.food_recall_source_updated);
         GlassMotion.attachPress(primaryAction);
         GlassMotion.attachPress(officialSourceAction);
 
@@ -163,10 +175,18 @@ public class FoodRecallActivity extends BaseActivity {
         stateBadge.setBackgroundTintList(ColorStateList.valueOf(color));
         stateTitle.setText(model.titleText);
         stateMessage.setText(model.messageText);
+        guidancePanel.setVisibility(model.guidanceText == 0 ? View.GONE : View.VISIBLE);
+        if (model.guidanceText != 0) {
+            guidanceMessage.setText(model.guidanceText);
+        }
+        fallbackPanel.setVisibility(model.showFallbackPanel ? View.VISIBLE : View.GONE);
         stateProgress.setVisibility(model.showProgress ? View.VISIBLE : View.GONE);
         primaryAction.setVisibility(model.showPrimaryAction ? View.VISIBLE : View.GONE);
         officialSourceAction.setVisibility(model.showOfficialSource ? View.VISIBLE : View.GONE);
         stateCard.setStrokeColor(color);
+        stateCard.setAccessibilityLiveRegion(model.urgentAlert
+                ? View.ACCESSIBILITY_LIVE_REGION_ASSERTIVE
+                : View.ACCESSIBILITY_LIVE_REGION_POLITE);
         if (model.showPrimaryAction) {
             primaryAction.setText(model.primaryActionText);
         }
@@ -194,6 +214,13 @@ public class FoodRecallActivity extends BaseActivity {
                 R.string.food_recall_detail_classification,
                 safeText(record.classification, getString(R.string.food_recall_detail_not_provided))
         ));
+        recallStatus.setText(getString(
+                R.string.food_recall_detail_status,
+                safeText(record.status, getString(R.string.food_recall_detail_not_provided))
+        ));
+        recallMatchBasis.setText(result.state == FoodRecallState.CONFIRMED_MATCH
+                ? R.string.food_recall_detail_match_confirmed
+                : R.string.food_recall_detail_match_possible);
         recallDescription.setText(getString(
                 R.string.food_recall_detail_product,
                 safeText(record.productDescription, getString(R.string.food_recall_detail_not_provided))
@@ -210,7 +237,18 @@ public class FoodRecallActivity extends BaseActivity {
                 R.string.food_recall_detail_report_date,
                 formatDate(record.reportDate)
         ));
+        recallSourceUpdated.setText(getString(
+                R.string.food_recall_detail_source_updated,
+                formatSourceUpdatedAt(result.sourceUpdatedAt)
+        ));
         recallDetails.setVisibility(View.VISIBLE);
+    }
+
+    private String formatSourceUpdatedAt(String value) {
+        if (value != null && value.length() >= 10 && value.charAt(4) == '-' && value.charAt(7) == '-') {
+            return value.substring(5, 7) + "/" + value.substring(8, 10) + "/" + value.substring(0, 4);
+        }
+        return safeText(value, getString(R.string.food_recall_detail_not_provided));
     }
 
     private String formatDate(String value) {

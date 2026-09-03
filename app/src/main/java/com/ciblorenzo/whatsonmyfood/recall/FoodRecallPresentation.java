@@ -15,8 +15,11 @@ public final class FoodRecallPresentation {
                         R.string.food_recall_checking_title,
                         R.string.food_recall_checking_message,
                         0,
+                        0,
                         R.color.recall_neutral,
                         true,
+                        false,
+                        false,
                         false,
                         false
                 );
@@ -26,10 +29,13 @@ public final class FoodRecallPresentation {
                         R.string.food_recall_clear_title,
                         R.string.food_recall_clear_message,
                         R.string.food_recall_check_again,
+                        R.string.food_recall_guidance_clear,
                         R.color.recall_clear,
                         false,
                         true,
-                        true
+                        true,
+                        false,
+                        false
                 );
             case POSSIBLE_MATCH:
                 return model(
@@ -37,9 +43,12 @@ public final class FoodRecallPresentation {
                         R.string.food_recall_possible_title,
                         R.string.food_recall_possible_message,
                         R.string.food_recall_view_notice,
+                        R.string.food_recall_guidance_possible,
                         R.color.recall_caution,
                         false,
                         true,
+                        true,
+                        false,
                         true
                 );
             case CONFIRMED_MATCH:
@@ -48,9 +57,12 @@ public final class FoodRecallPresentation {
                         R.string.food_recall_confirmed_title,
                         R.string.food_recall_confirmed_message,
                         R.string.food_recall_view_notice,
+                        R.string.food_recall_guidance_confirmed,
                         R.color.recall_critical,
                         false,
                         true,
+                        true,
+                        false,
                         true
                 );
             case STALE:
@@ -59,10 +71,13 @@ public final class FoodRecallPresentation {
                         R.string.food_recall_stale_title,
                         R.string.food_recall_stale_message,
                         R.string.food_recall_check_again,
+                        R.string.food_recall_guidance_stale,
                         R.color.recall_caution,
                         false,
                         true,
-                        true
+                        true,
+                        true,
+                        false
                 );
             case UNAVAILABLE:
                 return model(
@@ -70,10 +85,13 @@ public final class FoodRecallPresentation {
                         R.string.food_recall_unavailable_title,
                         R.string.food_recall_unavailable_message,
                         R.string.food_recall_check_again,
+                        R.string.food_recall_guidance_unavailable,
                         R.color.recall_caution,
                         false,
                         true,
-                        true
+                        true,
+                        true,
+                        false
                 );
             case ERROR:
                 return model(
@@ -81,10 +99,13 @@ public final class FoodRecallPresentation {
                         R.string.food_recall_error_title,
                         R.string.food_recall_error_message,
                         R.string.food_recall_check_again,
+                        R.string.food_recall_guidance_error,
                         R.color.recall_critical,
                         false,
                         true,
-                        true
+                        true,
+                        true,
+                        false
                 );
             case READY:
             default:
@@ -93,10 +114,13 @@ public final class FoodRecallPresentation {
                         R.string.food_recall_ready_title,
                         R.string.food_recall_ready_message,
                         R.string.food_recall_action,
+                        R.string.food_recall_guidance_ready,
                         R.color.recall_neutral,
                         false,
                         true,
-                        true
+                        true,
+                        false,
+                        false
                 );
         }
     }
@@ -110,20 +134,26 @@ public final class FoodRecallPresentation {
             int title,
             int message,
             int action,
+            int guidance,
             int color,
             boolean progress,
             boolean primaryAction,
-            boolean officialSource
+            boolean officialSource,
+            boolean fallbackPanel,
+            boolean urgentAlert
     ) {
         return new FoodRecallUiModel(
                 badge,
                 title,
                 message,
                 action,
+                guidance,
                 color,
                 progress,
                 primaryAction,
-                officialSource
+                officialSource,
+                fallbackPanel,
+                urgentAlert
         );
     }
 }

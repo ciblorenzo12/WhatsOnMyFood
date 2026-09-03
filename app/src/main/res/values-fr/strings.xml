@@ -381,12 +381,27 @@
     <string name="food_recall_check_again">V&#233;rifier &#224; nouveau</string>
     <string name="food_recall_view_notice">Voir l&#8217;avis officiel</string>
     <string name="food_recall_missing_product">Ce produit ne contient pas assez d&#8217;informations d&#8217;identification pour v&#233;rifier les rappels.</string>
+    <string name="food_recall_guidance_title">Que faire ensuite</string>
+    <string name="food_recall_guidance_ready">Lancez la v&#233;rification, puis comparez tout r&#233;sultat avec l&#8217;emballage du produit.</string>
+    <string name="food_recall_guidance_clear">Conservez les d&#233;tails de l&#8217;emballage et v&#233;rifiez de nouveau si le produit change ou si de nouvelles informations paraissent.</string>
+    <string name="food_recall_guidance_possible">N&#8217;utilisez pas encore le produit. Comparez l&#8217;UPC, le lot, la date, le format et l&#8217;emballage avec l&#8217;avis officiel.</string>
+    <string name="food_recall_guidance_confirmed">N&#8217;utilisez pas le produit. Ouvrez l&#8217;avis officiel et suivez les instructions de retour, d&#8217;&#233;limination ou de contact.</string>
+    <string name="food_recall_guidance_stale">Reconnectez-vous et lancez une nouvelle v&#233;rification avant de vous fier au r&#233;sultat enregistr&#233;.</string>
+    <string name="food_recall_guidance_unavailable">R&#233;essayez bient&#244;t ou consultez maintenant la page officielle des rappels de la FDA.</string>
+    <string name="food_recall_guidance_error">V&#233;rifiez la connexion, r&#233;essayez ou utilisez la page officielle des rappels de la FDA.</string>
+    <string name="food_recall_fallback_title">V&#233;rification automatique indisponible ?</string>
+    <string name="food_recall_fallback_message">Vous pouvez toujours consulter la page officielle de la FDA. Recherchez avec le nom, la marque, l&#8217;UPC et les d&#233;tails de l&#8217;emballage.</string>
+    <string name="food_recall_details_title">Dossier officiel de rappel</string>
+    <string name="food_recall_detail_match_confirmed">Pourquoi il correspond : un identifiant ou une forte correspondance de produit et de marque a &#233;t&#233; trouv&#233;.</string>
+    <string name="food_recall_detail_match_possible">Pourquoi il peut correspondre : certains d&#233;tails du produit ou de la marque se ressemblent. Confirmez l&#8217;emballage avant d&#8217;agir.</string>
     <string name="food_recall_detail_number">Num&#233;ro de rappel : %1$s</string>
     <string name="food_recall_detail_firm">Entreprise responsable : %1$s</string>
     <string name="food_recall_detail_classification">Classification : %1$s</string>
+    <string name="food_recall_detail_status">Statut FDA : %1$s</string>
     <string name="food_recall_detail_product">Produit : %1$s</string>
     <string name="food_recall_detail_reason">Motif : %1$s</string>
     <string name="food_recall_detail_codes">Codes, lots et dates : %1$s</string>
     <string name="food_recall_detail_report_date">Date du rapport de la FDA : %1$s</string>
+    <string name="food_recall_detail_source_updated">Donn&#233;es FDA mises &#224; jour : %1$s</string>
     <string name="food_recall_detail_not_provided">Non indiqu&#233; dans le dossier de la FDA</string>
 </resources>

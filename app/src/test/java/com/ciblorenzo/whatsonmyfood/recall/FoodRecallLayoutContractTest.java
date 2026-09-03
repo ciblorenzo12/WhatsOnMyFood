@@ -23,10 +23,16 @@ public class FoodRecallLayoutContractTest {
                 "@+id/food_recall_state_badge",
                 "@+id/food_recall_state_title",
                 "@+id/food_recall_state_message",
+                "@+id/food_recall_guidance",
                 "@+id/food_recall_details",
+                "@+id/food_recall_details_title",
+                "@+id/food_recall_match_basis",
                 "@+id/food_recall_number",
+                "@+id/food_recall_status",
                 "@+id/food_recall_reason",
                 "@+id/food_recall_codes",
+                "@+id/food_recall_source_updated",
+                "@+id/food_recall_fallback",
                 "@+id/food_recall_primary_action",
                 "@+id/food_recall_official_source_action",
                 "@+id/food_recall_disclaimer"
@@ -51,6 +57,9 @@ public class FoodRecallLayoutContractTest {
         assertTrue(strings.contains("not a guarantee that a product is safe"));
         assertTrue(strings.contains("lot, date, and package details"));
         assertTrue(strings.contains("official FDA source"));
+        assertTrue(strings.contains("What to do next"));
+        assertTrue(strings.contains("Automatic check unavailable?"));
+        assertTrue(strings.contains("Official recall record"));
     }
 
     private static void assertOrdered(String source, String... values) {

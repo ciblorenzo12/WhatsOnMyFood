@@ -381,12 +381,27 @@
     <string name="food_recall_check_again">Consultar de nuevo</string>
     <string name="food_recall_view_notice">Ver el aviso oficial</string>
     <string name="food_recall_missing_product">Este producto no tiene suficiente informaci&#243;n de identificaci&#243;n para consultar retiradas.</string>
+    <string name="food_recall_guidance_title">Qu&#233; hacer ahora</string>
+    <string name="food_recall_guidance_ready">Inicia la consulta y compara cualquier resultado con el envase del producto.</string>
+    <string name="food_recall_guidance_clear">Conserva los datos del envase y vuelve a consultar si el producto cambia o se publica informaci&#243;n nueva.</string>
+    <string name="food_recall_guidance_possible">No uses el producto por ahora. Compara el UPC, lote, fecha, tama&#241;o y envase con el aviso oficial.</string>
+    <string name="food_recall_guidance_confirmed">No uses el producto. Abre el aviso oficial y sigue las instrucciones de devoluci&#243;n, eliminaci&#243;n o contacto.</string>
+    <string name="food_recall_guidance_stale">Vuelve a conectarte y realiza una consulta nueva antes de confiar en el resultado guardado.</string>
+    <string name="food_recall_guidance_unavailable">Intenta la consulta autom&#225;tica de nuevo en breve o revisa ahora la p&#225;gina oficial de la FDA.</string>
+    <string name="food_recall_guidance_error">Comprueba la conexi&#243;n, int&#233;ntalo de nuevo o usa la p&#225;gina oficial de la FDA.</string>
+    <string name="food_recall_fallback_title">&#191;Consulta autom&#225;tica no disponible?</string>
+    <string name="food_recall_fallback_message">A&#250;n puedes revisar la p&#225;gina oficial de la FDA. Busca por nombre, marca, UPC y datos del envase.</string>
+    <string name="food_recall_details_title">Registro oficial de retirada</string>
+    <string name="food_recall_detail_match_confirmed">Por qu&#233; coincide: se encontr&#243; un identificador o una coincidencia s&#243;lida de producto y marca.</string>
+    <string name="food_recall_detail_match_possible">Por qu&#233; puede coincidir: algunos datos del producto o la marca se parecen. Confirma el envase antes de actuar.</string>
     <string name="food_recall_detail_number">N&#250;mero de retirada: %1$s</string>
     <string name="food_recall_detail_firm">Empresa responsable: %1$s</string>
     <string name="food_recall_detail_classification">Clasificaci&#243;n: %1$s</string>
+    <string name="food_recall_detail_status">Estado de la FDA: %1$s</string>
     <string name="food_recall_detail_product">Producto: %1$s</string>
     <string name="food_recall_detail_reason">Motivo: %1$s</string>
     <string name="food_recall_detail_codes">C&#243;digos, lotes y fechas: %1$s</string>
     <string name="food_recall_detail_report_date">Fecha del informe de la FDA: %1$s</string>
+    <string name="food_recall_detail_source_updated">Datos de la FDA actualizados: %1$s</string>
     <string name="food_recall_detail_not_provided">No indicado en el registro de la FDA</string>
 </resources>
