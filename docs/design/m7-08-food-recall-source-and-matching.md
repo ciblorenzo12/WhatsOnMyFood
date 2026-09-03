@@ -10,7 +10,8 @@ M7-08 turns the M7-07 recall screen into a live check. The app now retrieves foo
 - Endpoint: `https://api.fda.gov/food/enforcement.json`
 - Transport: HTTPS only.
 - Update schedule: the FDA documents this dataset as updating weekly.
-- Authentication: an optional `OPENFDA_API_KEY` can be supplied through local properties, a Gradle property, or the environment. No key is stored in source control.
+- Authentication: `OPENFDA_API_KEY` is required in the hosted backend environment. It is never added to Android configuration, the APK, or source control.
+- Application boundary: Android sends the product identity to the protected backend endpoint using the existing application token. Only the backend calls openFDA and attaches the provider key.
 - Request boundary: each check requests at most 100 of the most recent records matching a narrow product-name or brand phrase.
 
 ## Matching rules
@@ -40,7 +41,7 @@ For possible and confirmed matches, the screen shows the FDA recall number, reca
 
 ## Definition of done
 
-- The recall action makes a real HTTPS request to the official FDA dataset.
+- The recall action makes a protected HTTPS request to the application backend, which makes the real HTTPS request to the official FDA dataset.
 - No API key or credential is committed.
 - Candidate retrieval is bounded and product-specific.
 - Barcode, name, brand, quantity, record status, and competing-match behavior are covered by deterministic tests.

@@ -10,6 +10,7 @@ test("reports a ready hosted environment without exposing secrets", () => {
     PUBLIC_BASE_URL: "https://staging.example.test/",
     GEMINI_API_KEY: secret,
     GEMINI_MODEL: "gemini-3.1-pro-preview",
+    OPENFDA_API_KEY: "openfda-private-value-never-return",
   };
   const readiness = readinessResult({
     env,
@@ -22,6 +23,7 @@ test("reports a ready hosted environment without exposing secrets", () => {
   assert.equal(readiness.body.publicBaseUrl, "https://staging.example.test");
   assert.equal(readiness.body.checks.aiProviderCredentialConfigured, true);
   assert.equal(readiness.body.checks.ragProviderConfigured, true);
+  assert.equal(readiness.body.checks.foodRecallCredentialConfigured, true);
   assert.doesNotMatch(JSON.stringify(readiness.body), new RegExp(secret));
 });
 
@@ -37,4 +39,6 @@ test("readiness fails when HTTPS or the provider credential is missing", () => {
   assert.equal(readiness.body.checks.publicHttpsConfigured, false);
   assert.equal(readiness.body.checks.aiProviderCredentialConfigured, false);
   assert.equal(healthPayload({}).bitwiseProvider, "local-fallback");
+  assert.equal(healthPayload({}).foodRecallKeyConfigured, false);
+  assert.equal(healthPayload({ OPENFDA_API_KEY: "   " }).foodRecallKeyConfigured, false);
 });

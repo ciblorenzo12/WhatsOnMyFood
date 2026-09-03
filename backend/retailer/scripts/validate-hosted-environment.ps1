@@ -84,6 +84,10 @@ if ($aiBaseUrl -ne $baseUrl -or $ragBaseUrl -ne $baseUrl) {
 if ([string]::IsNullOrWhiteSpace([string]$serverConfig.GEMINI_API_KEY)) {
     throw "GEMINI_API_KEY must be configured only in the ignored server environment file."
 }
+$openFdaApiKey = [string]$serverConfig.OPENFDA_API_KEY
+if ([string]::IsNullOrWhiteSpace($openFdaApiKey)) {
+    throw "OPENFDA_API_KEY must be configured only in the ignored server environment file."
+}
 $appToken = [string]$serverConfig.BITWISE_APP_TOKEN
 if ([string]::IsNullOrWhiteSpace($appToken)) {
     throw "BITWISE_APP_TOKEN must be configured in the ignored server environment file."
@@ -99,7 +103,7 @@ try {
         }
     }
 
-    $forbiddenAndroidNames = 'GEMINI_API_KEY|GOOGLE_API_KEY|GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY|WALMART_PRIVATE_KEY_PEM|AMAZON_SECRET_ACCESS_KEY'
+    $forbiddenAndroidNames = 'GEMINI_API_KEY|GOOGLE_API_KEY|OPENFDA_API_KEY|GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY|WALMART_PRIVATE_KEY_PEM|AMAZON_SECRET_ACCESS_KEY'
     $trackedProviderSecrets = & git grep -n -I -E $forbiddenAndroidNames -- app ':!app/build'
     if ($LASTEXITCODE -eq 0 -and $trackedProviderSecrets) {
         throw "A server-side provider credential name was found in tracked Android files.`n$trackedProviderSecrets"
@@ -110,6 +114,11 @@ try {
         throw "The configured Gemini credential was found in tracked repository content."
     }
 
+    $trackedRecallKey = & git grep -l -F -- $openFdaApiKey
+    if ($LASTEXITCODE -eq 0 -and $trackedRecallKey) {
+        throw "The configured openFDA credential was found in tracked repository content."
+    }
+
     $apkPath = Join-Path $repoRoot 'app\build\outputs\apk\debug\app-debug.apk'
     if (Test-Path -LiteralPath $apkPath) {
         Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -117,8 +126,10 @@ try {
         try {
             $forbiddenApkValues = @(
                 [string]$serverConfig.GEMINI_API_KEY,
+                $openFdaApiKey,
                 'GEMINI_API_KEY',
                 'GOOGLE_API_KEY',
+                'OPENFDA_API_KEY',
                 'GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY',
                 'WALMART_PRIVATE_KEY_PEM',
                 'AMAZON_SECRET_ACCESS_KEY'
@@ -154,8 +165,8 @@ finally {
 }
 
 $health = Invoke-RestMethod -Uri "$baseUrl/health" -TimeoutSec 20
-if (-not $health.ok -or $health.bitwiseProvider -ne 'google-gemini') {
-    throw "Hosted /health did not confirm the Google Gemini provider."
+if (-not $health.ok -or $health.bitwiseProvider -ne 'google-gemini' -or -not $health.foodRecallKeyConfigured) {
+    throw "Hosted /health did not confirm the Google Gemini and openFDA providers."
 }
 
 $ready = Invoke-RestMethod -Uri "$baseUrl/ready" -TimeoutSec 20
@@ -163,7 +174,8 @@ $requiredReadyChecks = @(
     $ready.checks.publicHttpsConfigured,
     $ready.checks.aiProviderCredentialConfigured,
     $ready.checks.appAuthenticationConfigured,
-    $ready.checks.ragProviderConfigured
+    $ready.checks.ragProviderConfigured,
+    $ready.checks.foodRecallCredentialConfigured
 )
 if (-not $ready.ok -or $requiredReadyChecks -contains $false) {
     throw "Hosted /ready did not confirm every required configuration check."
@@ -171,6 +183,15 @@ if (-not $ready.ok -or $requiredReadyChecks -contains $false) {
 
 Expect-Unauthorized -Method POST -Uri "$baseUrl/v1/bitwise/analyze" -Body '{"prompt":"configuration check"}'
 Expect-Unauthorized -Uri "$baseUrl/api/retail/products/0000000000000/ingredients/rag"
+Expect-Unauthorized -Uri "$baseUrl/v1/food-recalls?productName=Oat%20Cereal"
+
+$recallResponse = Invoke-RestMethod `
+    -Uri "$baseUrl/v1/food-recalls?productName=Oat%20Cereal&brand=Sample%20Foods" `
+    -Headers @{ 'X-APP-TOKEN' = $appToken } `
+    -TimeoutSec 25
+if ($null -eq $recallResponse.results) {
+    throw "Authenticated hosted recall check did not return the expected results collection."
+}
 
 $ragResponse = Invoke-RestMethod `
     -Uri "$baseUrl/api/retail/products/051500255162/ingredients/rag" `
@@ -185,7 +206,8 @@ if ($ragResponse.status -ne 1 -or -not $ragHasIngredients) {
 
 Write-Host "Hosted environment validation passed."
 Write-Host "Base URL: $baseUrl"
-Write-Host "Health: google-gemini"
-Write-Host "Readiness: HTTPS, provider credential, app authentication, and RAG provider confirmed"
+Write-Host "Health: google-gemini and openFDA"
+Write-Host "Readiness: HTTPS, provider credentials, app authentication, RAG, and recalls confirmed"
 Write-Host "RAG smoke: recovered ingredients from $($ragResponse.source)"
-Write-Host "Security: Gemini credential is absent from tracked files and the debug APK"
+Write-Host "Recall smoke: protected backend returned a valid results collection"
+Write-Host "Security: Gemini and openFDA credentials are absent from tracked files and the debug APK"

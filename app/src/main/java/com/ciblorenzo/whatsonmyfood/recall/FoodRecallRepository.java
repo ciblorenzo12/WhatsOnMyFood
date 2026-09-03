@@ -9,7 +9,7 @@ public final class FoodRecallRepository {
     private final FoodRecallMatcher matcher;
 
     public FoodRecallRepository() {
-        this(new OpenFdaRecallDataSource(), new FoodRecallMatcher());
+        this(new BackendFoodRecallDataSource(), new FoodRecallMatcher());
     }
 
     FoodRecallRepository(FoodRecallDataSource dataSource, FoodRecallMatcher matcher) {

@@ -40,6 +40,9 @@ function rateLimitBucketKey(clientKey, pathname) {
   if (path === "/v1/billing/google-play/verify") {
     return `${client}|billing`;
   }
+  if (path === "/v1/food-recalls") {
+    return `${client}|food-recalls`;
+  }
   return `${client}|bitwise-analysis`;
 }
 

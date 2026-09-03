@@ -25,6 +25,7 @@ const SAFE_OUTCOMES = new Set([
 function normalizeRoute(pathname) {
   if (pathname === "/v1/bitwise/analyze") return "/v1/bitwise/analyze";
   if (pathname === "/v1/chat/completions") return "/v1/chat/completions";
+  if (pathname === "/v1/food-recalls") return "/v1/food-recalls";
   if (/^\/api\/retail\/products\/[^/]+\/ingredients\/rag$/.test(pathname)) {
     return "/api/retail/products/:barcode/ingredients/rag";
   }

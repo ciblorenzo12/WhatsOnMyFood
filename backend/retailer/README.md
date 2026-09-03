@@ -9,6 +9,7 @@ The Android app should call backend endpoints like these instead of calling reta
 - `GET /api/retail/products/:barcode/alternatives`
 - `GET /api/retail/products/:barcode/ingredients/rag`
 - `POST /v1/bitwise/analyze`
+- `GET /v1/food-recalls?barcode=:barcode&productName=:name&brand=:brand`
 - `GET /health`
 - `GET /ready`
 - `POST /v1/billing/google-play/verify`
@@ -56,8 +57,25 @@ unsafe medical output. Android repeats the essential checks before displaying or
 the explanation.
 
 `/health` is a liveness check. `/ready` additionally verifies the hosted HTTPS URL,
-server-side AI credential, application authentication, and RAG provider without exposing
-credential values.
+server-side AI and food-recall credentials, application authentication, and RAG provider
+without exposing credential values.
+
+## Food recall service with openFDA
+
+The Android application calls the protected `GET /v1/food-recalls` endpoint. This
+backend builds the bounded product query and calls the official openFDA Food Enforcement
+API. The response is reduced to the FDA fields used by the app before it is returned.
+
+Set the provider key only in the backend environment:
+
+```text
+OPENFDA_API_KEY=your-openfda-api-key
+```
+
+The endpoint requires the same `X-APP-TOKEN` header as the other protected application
+services. The Android build contains the backend URL and application token, but it does
+not contain the openFDA provider key. If the backend key is missing, `/ready` fails and
+recall requests return a safe unavailable response instead of making an anonymous call.
 
 Run the mock server:
 
@@ -167,8 +185,9 @@ Copy-Item runpod.local.env.example runpod.local.env
 Edit `runpod.local.env` with the exact SSH command details from the pod's **Connect**
 tab and its HTTP proxy URL. For **SSH over exposed TCP**, use `root@HOST` as
 `RUNPOD_SSH_TARGET` and put the mapped port in `RUNPOD_SSH_PORT`. Keep
-`GEMINI_API_KEY` blank; the script requests it as a masked local prompt and sends it
-only to the RunPod server. The local file is ignored by Git.
+`GEMINI_API_KEY` and `OPENFDA_API_KEY` blank if desired; the script requests each one as
+a masked local prompt and sends it only to the RunPod server. The local file is ignored
+by Git.
 
 Deploy or update the backend with one command:
 
@@ -184,5 +203,5 @@ RETAILER_BACKEND_BASE_URL=https://YOUR-POD-ID-8000.proxy.runpod.net
 BITWISE_LLM_BASE_URL=https://YOUR-POD-ID-8000.proxy.runpod.net
 ```
 
-The Gemini key stays on the server. Do not put it in Android `local.properties`, source
-code, or a committed configuration file.
+The Gemini and openFDA keys stay on the server. Do not put them in Android
+`local.properties`, source code, or a committed configuration file.

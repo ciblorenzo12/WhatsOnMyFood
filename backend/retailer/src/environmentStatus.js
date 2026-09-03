@@ -4,6 +4,10 @@ function providerConfigured(env = process.env) {
   return Boolean(env.GEMINI_API_KEY || env.GOOGLE_API_KEY);
 }
 
+function foodRecallProviderConfigured(env = process.env) {
+  return Boolean(String(env.OPENFDA_API_KEY || "").trim());
+}
+
 function publicBaseUrl(env = process.env) {
   return String(env.PUBLIC_BASE_URL || "").trim().replace(/\/+$/, "");
 }
@@ -14,6 +18,8 @@ function healthPayload(env = process.env) {
     service: "retailer-backend",
     bitwiseProvider: providerConfigured(env) ? "google-gemini" : "local-fallback",
     model: env.GEMINI_MODEL || DEFAULT_MODEL,
+    foodRecallProvider: "openfda",
+    foodRecallKeyConfigured: foodRecallProviderConfigured(env),
   };
 }
 
@@ -29,6 +35,7 @@ function readinessResult({
     aiProviderCredentialConfigured: providerConfigured(env),
     appAuthenticationConfigured: Boolean(appTokenConfigured),
     ragProviderConfigured: ragProviderCount > 0,
+    foodRecallCredentialConfigured: foodRecallProviderConfigured(env),
   };
   const ok = Object.values(checks).every(Boolean);
 
@@ -47,6 +54,7 @@ function readinessResult({
         readiness: "/ready",
         aiAnalysis: "/v1/bitwise/analyze",
         ragIngredients: "/api/retail/products/:barcode/ingredients/rag",
+        foodRecalls: "/v1/food-recalls",
       },
     },
   };
@@ -54,6 +62,7 @@ function readinessResult({
 
 module.exports = {
   healthPayload,
+  foodRecallProviderConfigured,
   providerConfigured,
   publicBaseUrl,
   readinessResult,

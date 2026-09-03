@@ -119,6 +119,15 @@ if ([string]::IsNullOrWhiteSpace($geminiApiKey)) {
     throw "A Gemini API key is required to enable the AI service."
 }
 
+$openFdaApiKey = [string]$config.OPENFDA_API_KEY
+if ([string]::IsNullOrWhiteSpace($openFdaApiKey)) {
+    $enteredRecallKey = Read-Host "openFDA API key (kept only in memory for this deployment)" -AsSecureString
+    $openFdaApiKey = ConvertFrom-SecureString -Value $enteredRecallKey
+}
+if ([string]::IsNullOrWhiteSpace($openFdaApiKey)) {
+    throw "An openFDA API key is required to enable the food recall service."
+}
+
 $geminiModel = if ([string]::IsNullOrWhiteSpace([string]$config.GEMINI_MODEL)) { "gemini-3.1-pro-preview" } else { [string]$config.GEMINI_MODEL }
 $runtimeValues = [ordered]@{
     PORT = "$port"
@@ -126,6 +135,7 @@ $runtimeValues = [ordered]@{
     PUBLIC_BASE_URL = $publicUrl
     GEMINI_API_KEY = $geminiApiKey
     GEMINI_MODEL = $geminiModel
+    OPENFDA_API_KEY = $openFdaApiKey
 }
 if (-not [string]::IsNullOrWhiteSpace([string]$config.BITWISE_APP_TOKEN)) {
     $runtimeValues.BITWISE_APP_TOKEN = [string]$config.BITWISE_APP_TOKEN
@@ -279,8 +289,8 @@ echo
             Start-Sleep -Seconds 3
         }
     }
-    if (-not $health.ok -or $health.bitwiseProvider -ne "google-gemini") {
-        throw "The public health check did not confirm the Gemini provider."
+    if (-not $health.ok -or $health.bitwiseProvider -ne "google-gemini" -or -not $health.foodRecallKeyConfigured) {
+        throw "The public health check did not confirm the Gemini and openFDA providers."
     }
 
     $readiness = Invoke-RestMethod -Uri "$publicUrl/ready" -TimeoutSec 15
@@ -288,15 +298,17 @@ echo
         $readiness.checks.publicHttpsConfigured,
         $readiness.checks.aiProviderCredentialConfigured,
         $readiness.checks.appAuthenticationConfigured,
-        $readiness.checks.ragProviderConfigured
+        $readiness.checks.ragProviderConfigured,
+        $readiness.checks.foodRecallCredentialConfigured
     )
     if (-not $readiness.ok -or $requiredReadinessChecks -contains $false) {
-        throw "The public readiness check did not confirm the hosted AI and RAG configuration."
+        throw "The public readiness check did not confirm the hosted AI, RAG, and food recall configuration."
     }
 
-    Write-Host "Deployment complete. Hosted AI and RAG services are ready at $publicUrl"
+    Write-Host "Deployment complete. Hosted AI, RAG, and food recall services are ready at $publicUrl"
 }
 finally {
     Remove-Item -LiteralPath $archivePath, $runtimePath -Force -ErrorAction SilentlyContinue
     $geminiApiKey = $null
+    $openFdaApiKey = $null
 }

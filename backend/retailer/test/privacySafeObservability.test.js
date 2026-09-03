@@ -17,6 +17,10 @@ test("normalizes the RAG route without retaining the product barcode", () => {
   assert.equal(route.includes("012345678905"), false);
 });
 
+test("recognizes the protected food recall route", () => {
+  assert.equal(normalizeRoute("/v1/food-recalls"), "/v1/food-recalls");
+});
+
 test("prints only the allowlisted privacy-safe diagnostic fields", () => {
   const diagnostic = buildDiagnostic({
     correlationId: "test-request-123",

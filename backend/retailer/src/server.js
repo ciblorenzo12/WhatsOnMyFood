@@ -8,6 +8,7 @@ const { handleGooglePlayVerification } = require("./googlePlayBilling");
 const { createRateLimiter, rateLimitBucketKey } = require("./rateLimiter");
 const { healthPayload, readinessResult } = require("./environmentStatus");
 const { createRequestObserver } = require("./privacySafeObservability");
+const { handleFoodRecallCheck } = require("./foodRecallProxy");
 
 const DEFAULT_APP_TOKEN = "R7qK2mZ9vP4xT0aLN6cY1sD8wF3hJ5bG";
 
@@ -40,6 +41,7 @@ function isProtectedEndpoint(pathname) {
   return pathname === "/v1/bitwise/analyze"
     || pathname === "/v1/billing/google-play/verify"
     || pathname === "/v1/chat/completions"
+    || pathname === "/v1/food-recalls"
     || /^\/api\/retail\/products\/[^/]+\/(availability|alternatives)$/.test(pathname)
     || /^\/api\/retail\/products\/[^/]+\/ingredients\/rag$/.test(pathname);
 }
@@ -131,6 +133,23 @@ async function handleRequest(req, res) {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/v1/food-recalls") {
+      if (!hasValidAppToken(req)) {
+        diagnostic.setResult("failure", "authentication");
+        writeJson(res, 401, { error: "Unauthorized" });
+        return;
+      }
+      const result = await handleFoodRecallCheck(url);
+      if (result.status >= 400) {
+        diagnostic.setResult(
+          "failure",
+          result.status === 503 ? "provider_unavailable" : "invalid_response",
+        );
+      }
+      writeJson(res, result.status, result.body);
+      return;
+    }
+
     // Kept temporarily so older installed app versions still receive Bitwise responses.
     if (req.method === "POST" && url.pathname === "/v1/chat/completions") {
       const result = await handleBitwiseCompletion(req, writeJson);
@@ -181,6 +200,7 @@ async function handleRequest(req, res) {
         "/api/retail/products/:barcode/ingredients/rag",
         "/v1/bitwise/analyze",
         "/v1/billing/google-play/verify",
+        "/v1/food-recalls",
         "/health",
         "/ready",
       ],

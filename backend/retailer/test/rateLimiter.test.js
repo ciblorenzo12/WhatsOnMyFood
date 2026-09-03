@@ -17,7 +17,7 @@ test("limits requests per key and resets after the window", () => {
   assert.equal(limiter.check("client-a").allowed, true);
 });
 
-test("separates ingredient recovery from analysis and billing limits", () => {
+test("separates ingredient recovery, recalls, analysis, and billing limits", () => {
   const client = "203.0.113.10";
 
   assert.equal(
@@ -35,5 +35,9 @@ test("separates ingredient recovery from analysis and billing limits", () => {
   assert.equal(
     rateLimitBucketKey(client, "/v1/billing/google-play/verify"),
     `${client}|billing`,
+  );
+  assert.equal(
+    rateLimitBucketKey(client, "/v1/food-recalls"),
+    `${client}|food-recalls`,
   );
 });
