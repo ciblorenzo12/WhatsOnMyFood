@@ -1,0 +1,36 @@
+M7-12 RELEASE CANDIDATE RESULTS
+Candidate: RC 1.11.0
+Android versionName: 1.11.0
+Android versionCode: 14
+
+ANDROID PIPELINE
+Command: .\gradlew.bat clean testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest assembleRelease
+Result: PASS
+Unit tests: 232 passed
+Lint: passed without a blocking error
+Artifacts: debug APK, instrumentation-test APK, and signed release APK built
+
+BACKEND PIPELINE
+Command: npm test (backend/retailer)
+Result: PASS
+Tests: 43 passed
+
+HOSTED ENVIRONMENT
+Command: .\scripts\validate-hosted-environment.ps1
+Result: PASS
+Gemini health: ready
+openFDA health: ready
+RAG smoke check: passed
+Recall smoke check: passed
+Backend-only Gemini/openFDA packaging check: passed
+
+RELEASE ARTIFACT
+Path: app/build/outputs/apk/release/WhatsOnMyFood-RC-1.11.0.apk
+Size: 80,083,226 bytes
+SHA-256: BA37E1B91A064F1956D15555ABA25A96BA5755710E374AFAD409A74386374D05
+Signature verification: PASS (APK Signature Scheme v2, one signer)
+
+DEVICE STATUS
+No physical Android device or emulator was connected.
+The instrumentation-test APK compiled, but the device tests were not executed.
+RC 1.11.0 still needs installation and the documented study-device smoke test before M7-12 is marked Done.
