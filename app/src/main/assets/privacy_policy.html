@@ -5,8 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>What's On My Food Privacy Policy</title>
   <style>
-    body { font-family: sans-serif; line-height: 1.55; margin: 24px; color: #17211b; background: #fff; }
-    h1, h2 { color: #176b45; }
+    :root { color-scheme: light dark; }
+    body { font-family: sans-serif; line-height: 1.55; margin: 24px; color: #13151b; background: #f4f5f8; }
+    h1, h2, a { color: #3452cc; }
+    @media (prefers-color-scheme: dark) {
+      body { color: #f7f8fc; background: #1e2129; }
+      h1, h2, a { color: #a7b8ff; }
+    }
     h1 { font-size: 1.7rem; }
     h2 { font-size: 1.15rem; margin-top: 1.6rem; }
   </style>

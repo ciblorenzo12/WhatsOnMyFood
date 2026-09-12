@@ -9,6 +9,7 @@ import android.view.MenuItem;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.Toast;
 
@@ -20,6 +21,8 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.Toolbar;
 
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.button.MaterialButtonToggleGroup;
+import com.google.android.material.card.MaterialCardView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException;
 import com.google.firebase.auth.FirebaseUser;
@@ -42,6 +45,8 @@ public class ProfileActivity extends BaseActivity {
     private TextInputEditText nameEditText, emailEditText;
     private Spinner languageSpinner;
     private ImageView profileImageView;
+    private ProgressBar profileImageProgress;
+    private MaterialCardView profileImageCard;
     private FirebaseAuth mAuth;
     private FirebaseUser currentUser;
     private StorageReference storageReference;
@@ -72,7 +77,7 @@ public class ProfileActivity extends BaseActivity {
         storageReference = FirebaseStorage.getInstance().getReference();
 
         if (currentUser == null) {
-            Toast.makeText(this, "Not signed in!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.not_signed_in, Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
@@ -81,6 +86,8 @@ public class ProfileActivity extends BaseActivity {
         emailEditText = findViewById(R.id.email_edit_text_profile);
         languageSpinner = findViewById(R.id.language_spinner_profile);
         profileImageView = findViewById(R.id.profile_image);
+        profileImageProgress = findViewById(R.id.profile_image_progress);
+        profileImageCard = findViewById(R.id.profile_image_card);
 
         Button updateProfileButton = findViewById(R.id.update_profile_button);
         Button changePasswordButton = findViewById(R.id.change_password_button);
@@ -91,9 +98,10 @@ public class ProfileActivity extends BaseActivity {
         Button deleteAccountButton = findViewById(R.id.delete_account_button);
 
         setupLanguageSpinner();
+        setupThemeSelector();
         loadUserProfile();
 
-        profileImageView.setOnClickListener(v -> imagePickerLauncher.launch("image/*"));
+        profileImageCard.setOnClickListener(v -> imagePickerLauncher.launch("image/*"));
         updateProfileButton.setOnClickListener(v -> updateUserProfile());
         changePasswordButton.setOnClickListener(v -> sendPasswordReset());
         bitwisePlusButton.setOnClickListener(v -> startActivity(new Intent(this, SubscriptionActivity.class)));
@@ -106,6 +114,7 @@ public class ProfileActivity extends BaseActivity {
     private void loadUserProfile() {
         nameEditText.setText(currentUser.getDisplayName());
         emailEditText.setText(currentUser.getEmail());
+        profileImageView.setImageResource(android.R.drawable.ic_menu_myplaces);
 
         // Check local cache first for faster loading
         File localFile = new File(getFilesDir(), "profile_cache_" + currentUser.getUid() + ".jpg");
@@ -152,8 +161,7 @@ public class ProfileActivity extends BaseActivity {
         final String path = "profile_images/" + currentUser.getUid() + ".jpg";
         final StorageReference profileImageRef = storageReference.child(path);
 
-        // Save locally immediately for offline access
-        saveImageLocally(imageUri);
+        setProfileImageBusy(true);
 
         Log.d(TAG, "Uploading to: " + path);
         profileImageRef.putFile(imageUri)
@@ -173,22 +181,23 @@ public class ProfileActivity extends BaseActivity {
                     if (task.isSuccessful()) {
                         Uri downloadUri = task.getResult();
                         Log.d(TAG, "Download URL obtained: " + downloadUri);
-                        updateUserProfilePhoto(downloadUri);
+                        updateUserProfilePhoto(downloadUri, imageUri);
                     } else {
+                        setProfileImageBusy(false);
                         Exception e = task.getException();
                         String errorMsg = e != null ? e.getMessage() : "Unknown error";
                         Log.e(TAG, "Final step failed: " + errorMsg, e);
                         
-                        String helpfulMsg = "Upload failed: " + errorMsg;
-                        if (errorMsg != null && errorMsg.contains("Object does not exist")) {
-                            helpfulMsg = "Error: Storage object not found. Please ensure Firebase Storage is enabled in the console and rules allow writes.";
-                        }
-                        Toast.makeText(ProfileActivity.this, helpfulMsg, Toast.LENGTH_LONG).show();
+                        Toast.makeText(
+                                ProfileActivity.this,
+                                R.string.profile_photo_update_failed,
+                                Toast.LENGTH_LONG
+                        ).show();
                     }
                 });
     }
 
-    private void updateUserProfilePhoto(Uri photoUrl) {
+    private void updateUserProfilePhoto(Uri photoUrl, Uri localImageUri) {
         UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
                 .setPhotoUri(photoUrl)
                 .build();
@@ -196,12 +205,35 @@ public class ProfileActivity extends BaseActivity {
         currentUser.updateProfile(profileUpdates)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        Toast.makeText(ProfileActivity.this, "Profile picture updated.", Toast.LENGTH_SHORT).show();
+                        saveImageLocally(localImageUri);
+                        Toast.makeText(ProfileActivity.this, R.string.profile_photo_updated, Toast.LENGTH_SHORT).show();
                         loadUserProfile(); // Reload to show the new image
                     } else {
-                        Toast.makeText(ProfileActivity.this, "Failed to update profile picture.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ProfileActivity.this, R.string.profile_photo_update_failed, Toast.LENGTH_SHORT).show();
                     }
+                    setProfileImageBusy(false);
                 });
+    }
+
+    private void setProfileImageBusy(boolean busy) {
+        profileImageCard.setEnabled(!busy);
+        profileImageView.setAlpha(busy ? 0.55f : 1f);
+        profileImageProgress.setVisibility(busy ? android.view.View.VISIBLE : android.view.View.GONE);
+    }
+
+    private void setupThemeSelector() {
+        MaterialButtonToggleGroup themeToggleGroup = findViewById(R.id.theme_toggle_group);
+        int selectedId = ThemeManager.isDarkMode(this)
+                ? R.id.theme_dark_button
+                : R.id.theme_light_button;
+        themeToggleGroup.check(selectedId);
+        themeToggleGroup.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (!isChecked) return;
+            boolean darkMode = checkedId == R.id.theme_dark_button;
+            if (darkMode != ThemeManager.isDarkMode(ProfileActivity.this)) {
+                ThemeManager.setDarkMode(ProfileActivity.this, darkMode);
+            }
+        });
     }
 
     private void setupLanguageSpinner() {
@@ -236,7 +268,7 @@ public class ProfileActivity extends BaseActivity {
         LanguageItem selectedLanguage = (LanguageItem) languageSpinner.getSelectedItem();
 
         if (TextUtils.isEmpty(displayName)) {
-            nameEditText.setError("Display name cannot be empty.");
+            nameEditText.setError(getString(R.string.display_name_required));
             return;
         }
 
@@ -260,20 +292,26 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void sendPasswordReset() {
+        String email = currentUser.getEmail();
+        if (TextUtils.isEmpty(email)) {
+            Toast.makeText(this, R.string.password_reset_email_unavailable, Toast.LENGTH_LONG).show();
+            return;
+        }
+
         new AlertDialog.Builder(this)
-                .setTitle("Change Password")
-                .setMessage("A password reset link will be sent to your email address. Proceed?")
-                .setPositiveButton("Send", (dialog, which) -> {
-                    mAuth.sendPasswordResetEmail(currentUser.getEmail())
+                .setTitle(R.string.change_password)
+                .setMessage(getString(R.string.password_reset_confirmation, email))
+                .setPositiveButton(R.string.send, (dialog, which) -> {
+                    mAuth.sendPasswordResetEmail(email)
                             .addOnCompleteListener(task -> {
                                 if (task.isSuccessful()) {
-                                    Toast.makeText(this, "Password reset email sent.", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(this, R.string.password_reset_sent, Toast.LENGTH_SHORT).show();
                                 } else {
-                                    Toast.makeText(this, "Failed to send reset email.", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(this, R.string.password_reset_failed, Toast.LENGTH_SHORT).show();
                                 }
                             });
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(android.R.string.cancel, null)
                 .show();
     }
 

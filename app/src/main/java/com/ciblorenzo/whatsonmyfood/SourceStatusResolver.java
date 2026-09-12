@@ -2,11 +2,25 @@ package com.ciblorenzo.whatsonmyfood;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /** Maps product lookup outcomes to the status messages shown to the shopper. */
 public final class SourceStatusResolver {
 
     private SourceStatusResolver() {
+    }
+
+    /** Preserve the same provenance in both product-detail AI requests. */
+    public static String forAiContext(Iterable<ProductRepository.SourceStatus> statuses) {
+        StringBuilder value = new StringBuilder();
+        if (statuses != null) {
+            for (ProductRepository.SourceStatus status : statuses) {
+                if (status == null) continue;
+                if (value.length() > 0) value.append(", ");
+                value.append(status.name().toLowerCase(Locale.US));
+            }
+        }
+        return value.length() == 0 ? "unknown" : value.toString();
     }
 
     public static List<ProductRepository.SourceStatus> forCachedResult(boolean isStale) {

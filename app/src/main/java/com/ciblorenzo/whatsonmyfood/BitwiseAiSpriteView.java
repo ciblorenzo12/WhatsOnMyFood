@@ -72,7 +72,7 @@ public class BitwiseAiSpriteView extends View {
                 cx,
                 cy,
                 radius * 2.7f,
-                new int[]{0x9957D8FF, 0x55D7B8FF, 0x00FFFFFF},
+                new int[]{0x999BAEFF, 0x55D7B8FF, 0x00FFFFFF},
                 new float[]{0f, 0.58f, 1f},
                 Shader.TileMode.CLAMP
         );
@@ -85,9 +85,9 @@ public class BitwiseAiSpriteView extends View {
                 cy + radius,
                 new int[]{
                         Color.parseColor("#F7FBFF"),
-                        Color.parseColor("#A9E7FF"),
-                        Color.parseColor("#8D7CFF"),
-                        Color.parseColor("#FF9DDA")
+                        Color.parseColor("#B8C7FF"),
+                        Color.parseColor("#6681E8"),
+                        Color.parseColor("#D8E0FF")
                 },
                 new float[]{0f, 0.34f, 0.7f, 1f},
                 Shader.TileMode.CLAMP
@@ -108,11 +108,11 @@ public class BitwiseAiSpriteView extends View {
                 cx,
                 cy,
                 new int[]{
-                        Color.parseColor("#8EA2FF"),
-                        Color.parseColor("#57D8FF"),
-                        Color.parseColor("#F7C4FF"),
-                        Color.parseColor("#FFD7A8"),
-                        Color.parseColor("#8EA2FF")
+                        Color.parseColor("#6681E8"),
+                        Color.parseColor("#9BAEFF"),
+                        Color.parseColor("#D8E0FF"),
+                        Color.parseColor("#DDE5FF"),
+                        Color.parseColor("#6681E8")
                 },
                 null
         );
@@ -145,7 +145,8 @@ public class BitwiseAiSpriteView extends View {
         float cx = width / 2f;
         float cy = height / 2f;
         float radius = Math.min(width, height) * 0.22f;
-        float elapsed = (SystemClock.uptimeMillis() - startTimeMs) / 1000f;
+        float elapsed = android.animation.ValueAnimator.areAnimatorsEnabled()
+                ? (SystemClock.uptimeMillis() - startTimeMs) / 1000f : 0f;
         float pulse = 0.5f + 0.5f * (float) Math.sin(elapsed * 2.85f);
         float rotation = (elapsed * 50f) % 360f;
         float breath = 1f + pulse * 0.08f;
@@ -168,7 +169,7 @@ public class BitwiseAiSpriteView extends View {
         glintPaint.setColor(0xCCFFFFFF);
         canvas.drawCircle(cx + radius * 0.48f, cy - radius * 0.45f, radius * (0.09f + pulse * 0.025f), glintPaint);
 
-        if (isShown()) {
+        if (isShown() && android.animation.ValueAnimator.areAnimatorsEnabled()) {
             postInvalidateOnAnimation();
         }
     }

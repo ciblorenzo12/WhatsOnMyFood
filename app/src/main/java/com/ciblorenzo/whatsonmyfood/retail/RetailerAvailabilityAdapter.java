@@ -65,8 +65,12 @@ public class RetailerAvailabilityAdapter extends RecyclerView.Adapter<RetailerAv
         holder.logoTile.setContentDescription(item.retailerName + " logo");
         holder.retailerName.setText(item.retailerName);
         holder.status.setText(item.availabilityStatus);
-        holder.status.setTextColor(item.available ? Color.parseColor("#057A45") : Color.parseColor("#6B7280"));
-        holder.status.setBackground(makeRoundRect(item.available ? Color.parseColor("#E8F8EF") : Color.parseColor("#F3F4F6"), 999f));
+        holder.status.setTextColor(holder.itemView.getContext().getColor(item.available
+                ? com.ciblorenzo.whatsonmyfood.R.color.status_success_text
+                : com.ciblorenzo.whatsonmyfood.R.color.text_secondary));
+        holder.status.setBackground(makeRoundRect(holder.itemView.getContext().getColor(item.available
+                ? com.ciblorenzo.whatsonmyfood.R.color.status_success_background
+                : com.ciblorenzo.whatsonmyfood.R.color.glass_panel_soft), 999f));
         holder.meta.setText(buildMeta(item));
         boolean hasNote = item.note != null && !item.note.trim().isEmpty();
         holder.note.setText(hasNote ? item.note.trim() : "");

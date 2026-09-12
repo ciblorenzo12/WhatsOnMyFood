@@ -46,7 +46,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/email_layout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/ModernInput"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -64,7 +64,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/password_layout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/ModernInput"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -103,7 +103,7 @@
 
         <Button
             android:id="@+id/register_button"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
+            style="@style/ModernTextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/create_account"
@@ -115,7 +115,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/forgot_password"
-            android:textColor="@color/purple_700"
+            android:textColor="@color/colorPrimary"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@+id/register_button"
             app:layout_constraintBottom_toBottomOf="@+id/register_button"/>

@@ -13,10 +13,10 @@
         android:id="@+id/loading_glow"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:alpha="0.55" />
+        android:alpha="0" android:visibility="gone" />
 
     <com.ciblorenzo.whatsonmyfood.BitwiseAiSpriteView
-        android:id="@+id/loading_planet"
+        android:id="@+id/loading_planet" android:visibility="invisible"
         android:layout_width="120dp"
         android:layout_height="120dp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -25,6 +25,12 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.4" />
 
+    <com.ciblorenzo.whatsonmyfood.ui.LoadingSkeleton
+        android:layout_width="0dp" android:layout_height="140dp"
+        android:layout_marginHorizontal="24dp"
+        app:layout_constraintWidth_max="440dp"
+        app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/loading_planet" />
     <TextView
         android:id="@+id/loading_status_text"
         android:layout_width="wrap_content"

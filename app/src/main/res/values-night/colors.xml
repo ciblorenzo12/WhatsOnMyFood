@@ -1,8 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bottom_sheet_background">#121212</color>
-    <color name="text_primary">#FFFFFF</color>
-    <color name="text_secondary">#B3FFFFFF</color>
+    <color name="status_success_text">#A2E6C2</color>
+    <color name="status_success_background">#20352C</color>
+    <color name="surface">#272A33</color>
+    <color name="background_light">#1E2129</color>
+    <color name="card_background">#272A33</color>
+    <color name="bottom_sheet_background">#272A33</color>
+    <color name="text_primary">#F7F8FC</color>
+    <color name="text_secondary">#BEC2D0</color>
+    <color name="text_muted">#BEC2D0</color>
+    <color name="divider">#434856</color>
+    <color name="glass_panel">#272A33</color>
+    <color name="glass_panel_soft">#222630</color>
+    <color name="glass_stroke">#434856</color>
+    <color name="glass_stroke_strong">#6172A5</color>
+    <color name="glass_shadow">#22000000</color>
+    <color name="glass_chip">#303B60</color>
+    <color name="destructive_action">#FF8A80</color>
 
     <!-- Score Colors -->
     <color name="nutriscore_a">#2ECC71</color>
@@ -17,4 +31,18 @@
     <color name="nova_4">#F44336</color>
     
     <color name="score_unknown">#424242</color>
+    <color name="colorPrimary">#A7B8FF</color>
+    <color name="colorPrimaryDark">#243B99</color>
+    <color name="colorAccent">#A7B8FF</color>
+    <color name="ai_accent">#A7B8FF</color>
+    <color name="recall_neutral">#A7B8FF</color>
+    <color name="ui_success">#82D8AF</color>
+    <color name="ui_warning">#EDBE60</color>
+    <color name="ui_alert">#F3A09A</color>
+    <color name="ui_information">#A7B8FF</color>
+    <color name="ui_selected">#303B60</color>
+    <color name="ui_warning_text">#EDBE60</color>
+    <color name="ui_warning_surface">#3A301D</color>
+    <color name="ui_alert_text">#F3A09A</color>
+    <color name="ui_alert_surface">#412728</color>
 </resources>

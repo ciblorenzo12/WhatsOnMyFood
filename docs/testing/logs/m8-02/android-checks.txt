@@ -1,0 +1,159 @@
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by net.rubygrapefruit.platform.internal.NativeLibraryLoader in an unnamed module (file:/C:/Users/ciblo/.gradle/wrapper/dists/gradle-9.5.0-bin/bvnork1r7n8i6kp5cnkibsc9q/gradle-9.5.0/lib/native-platform-0.22-milestone-29.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+
+> Configure project :
+WARNING: The option setting 'android.sdk.defaultTargetSdkToCompileSdkIfUnset=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+Add android.sync.suppressAgpWarnings=UNSUPPORTED_PROJECT_OPTION_USE to the gradle.properties file to suppress this warning.
+WARNING: The option setting 'android.builtInKotlin=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+Add android.sync.suppressAgpWarnings=UNSUPPORTED_PROJECT_OPTION_USE to the gradle.properties file to suppress this warning.
+WARNING: The option setting 'android.newDsl=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+Add android.sync.suppressAgpWarnings=UNSUPPORTED_PROJECT_OPTION_USE to the gradle.properties file to suppress this warning.
+WARNING: The option setting 'android.r8.optimizedResourceShrinking=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+Add android.sync.suppressAgpWarnings=UNSUPPORTED_PROJECT_OPTION_USE to the gradle.properties file to suppress this warning.
+WARNING: The option setting 'android.defaults.buildfeatures.resvalues=true' is deprecated.
+The current default is 'false'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+Add android.sync.suppressAgpWarnings=UNSUPPORTED_PROJECT_OPTION_USE to the gradle.properties file to suppress this warning.
+WARNING: The option setting 'android.enableJetifier=true' is deprecated.
+The current default is 'false'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+Add android.sync.suppressAgpWarnings=UNSUPPORTED_PROJECT_OPTION_USE to the gradle.properties file to suppress this warning.
+WARNING: The property android.dependency.excludeLibraryComponentsFromConstraints improves project import performance for very large projects. It should be enabled to improve performance.
+To suppress this warning, add android.generateSyncIssueWhenLibraryConstraintsAreEnabled=false to gradle.properties
+Add android.sync.suppressAgpWarnings=LIBRARY_CONSTRAINTS_SHOULD_BE_DISABLED to the gradle.properties file to suppress this warning.
+WARNING: The property android.dependency.excludeLibraryComponentsFromConstraints improves project import performance for very large projects. It should be enabled to improve performance.
+To suppress this warning, add android.generateSyncIssueWhenLibraryConstraintsAreEnabled=false to gradle.properties
+Add android.sync.suppressAgpWarnings=LIBRARY_CONSTRAINTS_SHOULD_BE_DISABLED to the gradle.properties file to suppress this warning.
+WARNING: The property android.dependency.excludeLibraryComponentsFromConstraints improves project import performance for very large projects. It should be enabled to improve performance.
+To suppress this warning, add android.generateSyncIssueWhenLibraryConstraintsAreEnabled=false to gradle.properties
+Add android.sync.suppressAgpWarnings=LIBRARY_CONSTRAINTS_SHOULD_BE_DISABLED to the gradle.properties file to suppress this warning.
+WARNING: The property android.dependency.excludeLibraryComponentsFromConstraints improves project import performance for very large projects. It should be enabled to improve performance.
+To suppress this warning, add android.generateSyncIssueWhenLibraryConstraintsAreEnabled=false to gradle.properties
+Add android.sync.suppressAgpWarnings=LIBRARY_CONSTRAINTS_SHOULD_BE_DISABLED to the gradle.properties file to suppress this warning.
+
+> Task :preBuild UP-TO-DATE
+> Task :preDebugBuild UP-TO-DATE
+> Task :generateDebugBuildConfig UP-TO-DATE
+> Task :generateDebugResValues UP-TO-DATE
+> Task :generateDebugResources UP-TO-DATE
+> Task :processDebugGoogleServices UP-TO-DATE
+> Task :packageDebugResources UP-TO-DATE
+> Task :processDebugNavigationResources UP-TO-DATE
+> Task :parseDebugLocalResources UP-TO-DATE
+> Task :generateDebugRFile UP-TO-DATE
+> Task :javaPreCompileDebug UP-TO-DATE
+
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+> Task :compileDebugJavaWithJavac
+
+> Task :checkDebugAarMetadata UP-TO-DATE
+> Task :mapDebugSourceSetPaths UP-TO-DATE
+> Task :compileDebugNavigationResources UP-TO-DATE
+> Task :mergeDebugResources UP-TO-DATE
+> Task :createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :extractDeepLinksDebug UP-TO-DATE
+> Task :processDebugMainManifest UP-TO-DATE
+> Task :processDebugManifest UP-TO-DATE
+> Task :processDebugManifestForPackage UP-TO-DATE
+> Task :processDebugResources UP-TO-DATE
+> Task :preDebugUnitTestBuild UP-TO-DATE
+> Task :javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :processDebugJavaRes UP-TO-DATE
+> Task :processDebugUnitTestJavaRes UP-TO-DATE
+> Task :mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :generateDebugAssets UP-TO-DATE
+> Task :mergeDebugAssets UP-TO-DATE
+> Task :compressDebugAssets UP-TO-DATE
+> Task :generateDebugGlobalSynthetics UP-TO-DATE
+> Task :mergeDebugJavaResource UP-TO-DATE
+> Task :checkDebugDuplicateClasses UP-TO-DATE
+> Task :desugarDebugFileDependencies UP-TO-DATE
+> Task :mergeExtDexDebug UP-TO-DATE
+> Task :mergeLibDexDebug UP-TO-DATE
+> Task :bundleDebugClassesToRuntimeJar
+> Task :bundleDebugClassesToCompileJar
+> Task :dexBuilderDebug
+> Task :compileDebugUnitTestJavaWithJavac
+> Task :testDebugUnitTest
+> Task :mergeDebugJniLibFolders UP-TO-DATE
+> Task :mergeDebugNativeLibs UP-TO-DATE
+> Task :stripDebugDebugSymbols UP-TO-DATE
+> Task :validateSigningDebug UP-TO-DATE
+> Task :writeDebugAppMetadata UP-TO-DATE
+> Task :writeDebugSigningConfigVersions UP-TO-DATE
+> Task :preDebugAndroidTestBuild SKIPPED
+> Task :mergeDebugAndroidTestManifest UP-TO-DATE
+> Task :processDebugAndroidTestManifest UP-TO-DATE
+> Task :generateDebugAndroidTestBuildConfig UP-TO-DATE
+> Task :generateDebugAndroidTestResValues UP-TO-DATE
+> Task :generateDebugAndroidTestResources UP-TO-DATE
+> Task :packageDebugAndroidTestResources UP-TO-DATE
+> Task :processDebugAndroidTestNavigationResources UP-TO-DATE
+> Task :parseDebugAndroidTestLocalResources UP-TO-DATE
+> Task :generateDebugAndroidTestRFile UP-TO-DATE
+> Task :javaPreCompileDebugAndroidTest UP-TO-DATE
+> Task :mergeProjectDexDebug
+
+> Task :compileDebugAndroidTestJavaWithJavac
+Note: C:\Users\ciblo\OneDrive\Desktop\Class\1.8 Project P1 Start Implementation and goal settings\YourHealtyPantry\app\src\androidTest\java\com\ciblorenzo\whatsonmyfood\BarcodeProductDetailsNavigationTest.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :generateDebugAndroidTestAssets UP-TO-DATE
+> Task :mergeDebugAndroidTestAssets UP-TO-DATE
+> Task :compressDebugAndroidTestAssets UP-TO-DATE
+> Task :generateDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :processDebugAndroidTestJavaRes NO-SOURCE
+> Task :mergeDebugAndroidTestJavaResource UP-TO-DATE
+> Task :checkDebugAndroidTestDuplicateClasses UP-TO-DATE
+> Task :desugarDebugAndroidTestFileDependencies UP-TO-DATE
+> Task :mergeExtDexDebugAndroidTest UP-TO-DATE
+> Task :mergeLibDexDebugAndroidTest UP-TO-DATE
+> Task :checkDebugAndroidTestAarMetadata UP-TO-DATE
+> Task :mapDebugAndroidTestSourceSetPaths UP-TO-DATE
+> Task :compileDebugAndroidTestNavigationResources UP-TO-DATE
+> Task :mergeDebugAndroidTestResources UP-TO-DATE
+> Task :processDebugAndroidTestResources UP-TO-DATE
+> Task :dexBuilderDebugAndroidTest UP-TO-DATE
+> Task :mergeProjectDexDebugAndroidTest UP-TO-DATE
+> Task :mergeDebugAndroidTestJniLibFolders UP-TO-DATE
+> Task :mergeDebugAndroidTestNativeLibs NO-SOURCE
+> Task :stripDebugAndroidTestDebugSymbols NO-SOURCE
+> Task :validateSigningDebugAndroidTest UP-TO-DATE
+> Task :writeDebugAndroidTestSigningConfigVersions UP-TO-DATE
+> Task :packageDebugAndroidTest UP-TO-DATE
+> Task :createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+> Task :assembleDebugAndroidTest UP-TO-DATE
+> Task :generateDebugAndroidTestLintModel
+> Task :extractProguardFiles UP-TO-DATE
+> Task :generateDebugLintReportModel
+> Task :generateDebugUnitTestLintModel
+> Task :packageDebug
+> Task :createDebugApkListingFileRedirect UP-TO-DATE
+> Task :assembleDebug
+> Task :lintAnalyzeDebugAndroidTest
+> Task :lintAnalyzeDebugUnitTest
+> Task :lintAnalyzeDebug
+
+> Task :lintReportDebug
+Wrote HTML report to file:///C:/Users/ciblo/OneDrive/Desktop/Class/1.8%20Project%20P1%20Start%20Implementation%20and%20goal%20settings/YourHealtyPantry/app/build/reports/lint-results-debug.html
+Wrote SARIF report to file:///C:/Users/ciblo/OneDrive/Desktop/Class/1.8%20Project%20P1%20Start%20Implementation%20and%20goal%20settings/YourHealtyPantry/app/build/reports/lint-results-debug.sarif
+
+> Task :lintDebug
+
+[Incubating] Problems report is available at: file:///C:/Users/ciblo/OneDrive/Desktop/Class/1.8%20Project%20P1%20Start%20Implementation%20and%20goal%20settings/YourHealtyPantry/app/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 24s
+85 actionable tasks: 17 executed, 68 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.5.0/userguide/configuration_cache_enabling.html

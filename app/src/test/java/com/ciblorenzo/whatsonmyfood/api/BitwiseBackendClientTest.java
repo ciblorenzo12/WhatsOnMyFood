@@ -3,6 +3,7 @@ package com.ciblorenzo.whatsonmyfood.api;
 import org.junit.Test;
 
 import com.google.gson.JsonObject;
+import com.ciblorenzo.whatsonmyfood.SourceStatusResolver;
 
 import java.util.Arrays;
 import java.net.SocketTimeoutException;
@@ -12,6 +13,39 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class BitwiseBackendClientTest {
+
+    @Test
+    public void offlineProductProvenanceReachesTheRequestWithFreshnessCaution() {
+        JsonObject context = requestForStatuses(SourceStatusResolver.forAiContext(
+                SourceStatusResolver.forSavedOfflineResult()));
+        assertEquals("saved_offline_result, information_may_be_outdated",
+                context.get("sourceStatus").getAsString());
+        assertTrue(context.get("uncertainty").getAsString().contains("avoid a confident verdict"));
+        assertEquals("oats", context.getAsJsonArray("normalizedIngredients").get(0).getAsString());
+    }
+
+    @Test
+    public void fallbackProductProvenanceRequiresAttributionInBothDetailScreens() {
+        JsonObject context = requestForStatuses(SourceStatusResolver.forAiContext(
+                SourceStatusResolver.forUpdatedDatabaseResult(true, true)));
+        assertEquals("updated_from_product_database, fallback_product_source, "
+                        + "ingredients_recovered_from_label_or_supporting_service",
+                context.get("sourceStatus").getAsString());
+        assertTrue(context.get("uncertainty").getAsString().contains("Attribute that source"));
+    }
+
+    @Test
+    public void missingProvenanceMustNotBecomeAnUnqualifiedProductRecord() {
+        JsonObject context = requestForStatuses(SourceStatusResolver.forAiContext(null));
+        assertEquals("unknown", context.get("sourceStatus").getAsString());
+        assertTrue(context.get("uncertainty").getAsString().contains("avoid a confident verdict"));
+    }
+
+    private static JsonObject requestForStatuses(String statuses) {
+        return BitwiseBackendClient.buildRequestBody("Explain the label",
+                "Source status: " + statuses + "\nIngredients: oats, sugar, salt",
+                Arrays.asList("Preserve deterministic findings")).getAsJsonObject("productContext");
+    }
 
     @Test
     public void interactiveAnalysisAllowsAColdStartRecoveryWindow() {

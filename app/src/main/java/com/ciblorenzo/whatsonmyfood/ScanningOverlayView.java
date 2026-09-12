@@ -28,8 +28,8 @@ public class ScanningOverlayView extends View {
         INGREDIENTS
     }
 
-    private static final int BARCODE_GREEN = Color.rgb(46, 255, 90);
-    private static final int INGREDIENT_PURPLE = Color.rgb(197, 82, 255);
+    private static final int BARCODE_GREEN = Color.rgb(155, 174, 255);
+    private static final int INGREDIENT_PURPLE = Color.rgb(102, 129, 232);
     private static final int INGREDIENT_BLUE = Color.rgb(79, 178, 255);
 
     private final Paint dimPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -100,7 +100,7 @@ public class ScanningOverlayView extends View {
             updateParticles();
             invalidate();
         });
-        animator.start();
+        if (ValueAnimator.areAnimatorsEnabled()) animator.start();
     }
 
     public void setMode(OverlayMode mode) {
@@ -161,7 +161,7 @@ public class ScanningOverlayView extends View {
 
     public void startScanning() {
         setVisibility(VISIBLE);
-        if (animator != null && !animator.isStarted()) {
+        if (animator != null && !animator.isStarted() && ValueAnimator.areAnimatorsEnabled()) {
             animator.start();
         }
     }

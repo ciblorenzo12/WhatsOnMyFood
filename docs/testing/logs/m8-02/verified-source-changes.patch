@@ -1,0 +1,190 @@
+diff --git a/app/src/main/java/com/ciblorenzo/whatsonmyfood/ProductDetailsActivity.java b/app/src/main/java/com/ciblorenzo/whatsonmyfood/ProductDetailsActivity.java
+index 0ba7037..692af50 100644
+--- a/app/src/main/java/com/ciblorenzo/whatsonmyfood/ProductDetailsActivity.java
++++ b/app/src/main/java/com/ciblorenzo/whatsonmyfood/ProductDetailsActivity.java
+@@ -223,8 +223,8 @@ public class ProductDetailsActivity extends BaseActivity {
+                 runOnUiThread(() -> {
+                     if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
+                     if (result != null && result.productWithDetails != null) {
+-                        displayProductDetails(result.productWithDetails);
+                         displaySourceStatuses(result.sourceStatuses);
++                        displayProductDetails(result.productWithDetails);
+                     } else {
+                         showErrorState("Product not found for barcode: " + barcode, barcode);
+                     }
+@@ -284,8 +284,8 @@ public class ProductDetailsActivity extends BaseActivity {
+                     if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
+                     if (updateProductButton != null) updateProductButton.setEnabled(true);
+                     if (result != null && result.productWithDetails != null) {
+-                        displayProductDetails(result.productWithDetails);
+                         displaySourceStatuses(result.sourceStatuses);
++                        displayProductDetails(result.productWithDetails);
+                         Toast.makeText(ProductDetailsActivity.this, R.string.product_updated, Toast.LENGTH_SHORT).show();
+                         setResult(RESULT_OK, new Intent().putExtra(PantryActivity.RESULT_DATA_CHANGED, true));
+                     } else {
+@@ -435,7 +435,7 @@ public class ProductDetailsActivity extends BaseActivity {
+             return;
+         }
+ 
+-        if (allowAiInsight && hasListedIngredients(productDetails)
++        if (allowAiInsight && aiEnabled && hasListedIngredients(productDetails)
+                 && translateListedIngredientsIfNeeded(productDetails)) {
+             return;
+         }
+@@ -448,6 +448,7 @@ public class ProductDetailsActivity extends BaseActivity {
+     }
+ 
+     private void performAiReasoning(ProductWithDetails product) {
++        if (!aiEnabled) return;
+         if (aiSummaryContainer == null) return;
+         if (!hasListedIngredients(product)) {
+             showMissingIngredientReviewPrompt(product);
+@@ -475,6 +476,7 @@ public class ProductDetailsActivity extends BaseActivity {
+         productData.append("Brand: ").append(product.product.brands).append("\n");
+         productData.append("Categories: ").append(product.product.categories).append("\n");
+         productData.append("Quantity: ").append(product.product.quantity).append("\n");
++        productData.append("Source status: ").append(SourceStatusResolver.forAiContext(displayedSourceStatuses)).append("\n");
+         productData.append("Ingredients: ").append(formatIngredientsForAi(product)).append("\n");
+         if (product.nutriments != null) {
+             productData.append("\nNutrition Facts (per 100g): ").append(product.nutriments.toString());
+diff --git a/app/src/main/java/com/ciblorenzo/whatsonmyfood/ProductDetailsFragment.java b/app/src/main/java/com/ciblorenzo/whatsonmyfood/ProductDetailsFragment.java
+index c0662fa..227c223 100644
+--- a/app/src/main/java/com/ciblorenzo/whatsonmyfood/ProductDetailsFragment.java
++++ b/app/src/main/java/com/ciblorenzo/whatsonmyfood/ProductDetailsFragment.java
+@@ -280,8 +280,8 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
+                 getActivity().runOnUiThread(() -> {
+                     if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
+                     if (result != null && result.productWithDetails != null) {
+-                        displayProductDetails(result.productWithDetails);
+                         displaySourceStatuses(result.sourceStatuses);
++                        displayProductDetails(result.productWithDetails);
+                     } else {
+                         scanFailureLogger.record("repository_lookup", barcode, "product_not_found", "No product returned by repository");
+                         showAddProductDialog(barcode);
+@@ -347,8 +347,8 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
+                     if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
+                     if (updateProductButton != null) updateProductButton.setEnabled(true);
+                     if (result != null && result.productWithDetails != null) {
+-                        displayProductDetails(result.productWithDetails);
+                         displaySourceStatuses(result.sourceStatuses);
++                        displayProductDetails(result.productWithDetails);
+                         Toast.makeText(getContext(), R.string.product_updated, Toast.LENGTH_SHORT).show();
+                     } else {
+                         Toast.makeText(getContext(), R.string.product_update_failed, Toast.LENGTH_SHORT).show();
+@@ -516,7 +516,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
+             return;
+         }
+ 
+-        if (allowAiInsight && hasListedIngredients(productDetails)
++        if (allowAiInsight && isAiEnabled() && hasListedIngredients(productDetails)
+                 && translateListedIngredientsIfNeeded(productDetails)) {
+             return;
+         }
+@@ -541,6 +541,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
+     }
+ 
+     private void fetchAiInsight(ProductWithDetails productDetails) {
++        if (!isAiEnabled()) return;
+         if (aiSummaryContainer == null) return;
+         if (!hasListedIngredients(productDetails)) {
+             showMissingIngredientReviewPrompt(productDetails);
+@@ -1022,14 +1023,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
+     }
+ 
+     private String formatSourceStatusesForAi() {
+-        if (displayedSourceStatuses.isEmpty()) return "unknown";
+-        StringBuilder value = new StringBuilder();
+-        for (ProductRepository.SourceStatus status : displayedSourceStatuses) {
+-            if (status == null) continue;
+-            if (value.length() > 0) value.append(", ");
+-            value.append(status.name().toLowerCase(java.util.Locale.US));
+-        }
+-        return value.length() == 0 ? "unknown" : value.toString();
++        return SourceStatusResolver.forAiContext(displayedSourceStatuses);
+     }
+ 
+     private List<Ingredient> buildIngredientList(String barcode, String ingredientText) {
+diff --git a/app/src/main/java/com/ciblorenzo/whatsonmyfood/SourceStatusResolver.java b/app/src/main/java/com/ciblorenzo/whatsonmyfood/SourceStatusResolver.java
+index 44ef3ec..696d688 100644
+--- a/app/src/main/java/com/ciblorenzo/whatsonmyfood/SourceStatusResolver.java
++++ b/app/src/main/java/com/ciblorenzo/whatsonmyfood/SourceStatusResolver.java
+@@ -2,6 +2,7 @@ package com.ciblorenzo.whatsonmyfood;
+ 
+ import java.util.ArrayList;
+ import java.util.List;
++import java.util.Locale;
+ 
+ /** Maps product lookup outcomes to the status messages shown to the shopper. */
+ public final class SourceStatusResolver {
+@@ -9,6 +10,19 @@ public final class SourceStatusResolver {
+     private SourceStatusResolver() {
+     }
+ 
++    /** Preserve the same provenance in both product-detail AI requests. */
++    public static String forAiContext(Iterable<ProductRepository.SourceStatus> statuses) {
++        StringBuilder value = new StringBuilder();
++        if (statuses != null) {
++            for (ProductRepository.SourceStatus status : statuses) {
++                if (status == null) continue;
++                if (value.length() > 0) value.append(", ");
++                value.append(status.name().toLowerCase(Locale.US));
++            }
++        }
++        return value.length() == 0 ? "unknown" : value.toString();
++    }
++
+     public static List<ProductRepository.SourceStatus> forCachedResult(boolean isStale) {
+         List<ProductRepository.SourceStatus> statuses = new ArrayList<>();
+         statuses.add(isStale
+diff --git a/app/src/test/java/com/ciblorenzo/whatsonmyfood/api/BitwiseBackendClientTest.java b/app/src/test/java/com/ciblorenzo/whatsonmyfood/api/BitwiseBackendClientTest.java
+index baaf6f9..238b092 100644
+--- a/app/src/test/java/com/ciblorenzo/whatsonmyfood/api/BitwiseBackendClientTest.java
++++ b/app/src/test/java/com/ciblorenzo/whatsonmyfood/api/BitwiseBackendClientTest.java
+@@ -3,6 +3,7 @@ package com.ciblorenzo.whatsonmyfood.api;
+ import org.junit.Test;
+ 
+ import com.google.gson.JsonObject;
++import com.ciblorenzo.whatsonmyfood.SourceStatusResolver;
+ 
+ import java.util.Arrays;
+ import java.net.SocketTimeoutException;
+@@ -13,6 +14,39 @@ import static org.junit.Assert.assertTrue;
+ 
+ public class BitwiseBackendClientTest {
+ 
++    @Test
++    public void offlineProductProvenanceReachesTheRequestWithFreshnessCaution() {
++        JsonObject context = requestForStatuses(SourceStatusResolver.forAiContext(
++                SourceStatusResolver.forSavedOfflineResult()));
++        assertEquals("saved_offline_result, information_may_be_outdated",
++                context.get("sourceStatus").getAsString());
++        assertTrue(context.get("uncertainty").getAsString().contains("avoid a confident verdict"));
++        assertEquals("oats", context.getAsJsonArray("normalizedIngredients").get(0).getAsString());
++    }
++
++    @Test
++    public void fallbackProductProvenanceRequiresAttributionInBothDetailScreens() {
++        JsonObject context = requestForStatuses(SourceStatusResolver.forAiContext(
++                SourceStatusResolver.forUpdatedDatabaseResult(true, true)));
++        assertEquals("updated_from_product_database, fallback_product_source, "
++                        + "ingredients_recovered_from_label_or_supporting_service",
++                context.get("sourceStatus").getAsString());
++        assertTrue(context.get("uncertainty").getAsString().contains("Attribute that source"));
++    }
++
++    @Test
++    public void missingProvenanceMustNotBecomeAnUnqualifiedProductRecord() {
++        JsonObject context = requestForStatuses(SourceStatusResolver.forAiContext(null));
++        assertEquals("unknown", context.get("sourceStatus").getAsString());
++        assertTrue(context.get("uncertainty").getAsString().contains("avoid a confident verdict"));
++    }
++
++    private static JsonObject requestForStatuses(String statuses) {
++        return BitwiseBackendClient.buildRequestBody("Explain the label",
++                "Source status: " + statuses + "\nIngredients: oats, sugar, salt",
++                Arrays.asList("Preserve deterministic findings")).getAsJsonObject("productContext");
++    }
++
+     @Test
+     public void interactiveAnalysisAllowsAColdStartRecoveryWindow() {
+         assertEquals(2, BitwiseBackendClient.MAX_TRANSIENT_RETRIES);

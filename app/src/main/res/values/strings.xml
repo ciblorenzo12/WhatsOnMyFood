@@ -46,6 +46,23 @@
     <string name="profile">Profile</string>
     <string name="display_name">Display Name</string>
     <string name="language">Language</string>
+    <string name="preferences">Preferences</string>
+    <string name="appearance">Appearance</string>
+    <string name="light_mode">Light</string>
+    <string name="dark_mode">Dark</string>
+    <string name="account_information">Account information</string>
+    <string name="account_and_privacy">Account and privacy</string>
+    <string name="session">Session</string>
+    <string name="change_profile_photo">Change profile photo</string>
+    <string name="not_signed_in">You are not signed in.</string>
+    <string name="display_name_required">Enter a display name.</string>
+    <string name="profile_photo_updated">Profile photo updated.</string>
+    <string name="profile_photo_update_failed">The profile photo could not be updated. Check your connection and try again.</string>
+    <string name="password_reset_confirmation">Send a password reset link to %1$s?</string>
+    <string name="password_reset_email_unavailable">This account does not have an email address for password recovery.</string>
+    <string name="password_reset_sent">Password reset email sent.</string>
+    <string name="password_reset_failed">The password reset email could not be sent. Try again.</string>
+    <string name="send">Send</string>
     <string name="update_profile">Update Profile</string>
     <string name="change_password">Change Password</string>
     <string name="log_out">Log Out</string>
@@ -75,7 +92,7 @@
     <string name="pantry_empty_title">Your pantry is ready</string>
     <string name="pantry_empty_message">Save a product from its detail screen and it will appear here for quick review.</string>
     <string name="open_product_details">Open details for %1$s</string>
-    <string name="scan_me">Scan Me!!</string>
+    <string name="scan_me">Scan</string>
     <string name="export_csv">Export to CSV</string>
     <string name="export_json">Export to JSON</string>
     <string name="pantry_risk_insights">Pantry Risk Insights</string>
@@ -278,9 +295,25 @@
     <string name="bitwise_retry_explanation">Bitwise’s detailed explanation is temporarily unavailable. The product rating and rule findings remain visible. Tap here to try again.</string>
     <string name="analyzing">Analyzing...</string>
     <string name="identifying_ingredients">Identifying ingredients...</string>
-    <string name="home_title">Your healthy pantry starts here</string>
+    <string name="home_title">Good food.\nClear answers.</string>
     <string name="home_subtitle">Scan labels, review your pantry, and look up ingredients before they end up in your cart.</string>
     <string name="daily_health_tip">Daily Health Insight</string>
+    <string-array name="daily_health_tips">
+        <item>Compare the ingredient list with the serving size before choosing a product.</item>
+        <item>Whole foods usually have shorter ingredient lists than highly processed alternatives.</item>
+        <item>Added sugars can appear under several names, including syrups and fruit juice concentrates.</item>
+        <item>Rinsing canned foods can reduce some of their sodium.</item>
+        <item>Compare fiber and added sugar when choosing cereals and grain products.</item>
+        <item>Water is a simple drink choice that adds no sugar or sodium.</item>
+    </string-array>
+    <string-array name="daily_health_tip_sources">
+        <item>FDA Nutrition Facts guidance</item>
+        <item>WHO healthy diet guidance</item>
+        <item>FDA added sugars guidance</item>
+        <item>USDA food preparation guidance</item>
+        <item>Dietary Guidelines for Americans</item>
+        <item>CDC healthy hydration guidance</item>
+    </string-array>
     <string name="recommended_swaps">Healthy Swaps for You</string>
     <string name="quick_actions">Quick Access</string>
     <string name="view_all">View All</string>

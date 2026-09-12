@@ -24,7 +24,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/off_ingredients_layout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/ModernInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/off_original_ingredients">
@@ -56,7 +56,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/off_english_ingredients_layout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/ModernInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/off_english_ingredients">
@@ -72,7 +72,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/off_username_layout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/ModernInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
@@ -88,7 +88,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/off_password_layout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/ModernInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"

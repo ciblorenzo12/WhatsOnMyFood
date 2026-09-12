@@ -162,6 +162,8 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                 behavior.setFitToContents(false);
                 behavior.setPeekHeight(getResources().getDisplayMetrics().heightPixels / 2);
                 behavior.setHideable(true);
+                behavior.setMaxWidth(Math.round(1120 * getResources().getDisplayMetrics().density));
+                behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
             }
         }
     }
@@ -280,8 +282,8 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                 getActivity().runOnUiThread(() -> {
                     if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
                     if (result != null && result.productWithDetails != null) {
-                        displayProductDetails(result.productWithDetails);
                         displaySourceStatuses(result.sourceStatuses);
+                        displayProductDetails(result.productWithDetails);
                     } else {
                         scanFailureLogger.record("repository_lookup", barcode, "product_not_found", "No product returned by repository");
                         showAddProductDialog(barcode);
@@ -347,8 +349,8 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                     if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
                     if (updateProductButton != null) updateProductButton.setEnabled(true);
                     if (result != null && result.productWithDetails != null) {
-                        displayProductDetails(result.productWithDetails);
                         displaySourceStatuses(result.sourceStatuses);
+                        displayProductDetails(result.productWithDetails);
                         Toast.makeText(getContext(), R.string.product_updated, Toast.LENGTH_SHORT).show();
                     } else {
                         Toast.makeText(getContext(), R.string.product_update_failed, Toast.LENGTH_SHORT).show();
@@ -451,6 +453,12 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     }
 
     private void displayProductDetails(ProductWithDetails productDetails, boolean allowAiInsight) {
+        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.adapt(getView());
+        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.score(getView(), null);
+        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.drivers(getView(), productDetails);
+        if (productDetails != null && productDetails.product != null && isAdded()) {
+            com.ciblorenzo.whatsonmyfood.ui.ScanHistory.record(requireContext(), productDetails.product);
+        }
         // Repository refreshes can finish after the bottom sheet has been dismissed.
         // Avoid touching views or requireContext() once the fragment is detached.
         if (!isAdded() || getContext() == null || getView() == null) return;
@@ -516,7 +524,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
             return;
         }
 
-        if (allowAiInsight && hasListedIngredients(productDetails)
+        if (allowAiInsight && isAiEnabled() && hasListedIngredients(productDetails)
                 && translateListedIngredientsIfNeeded(productDetails)) {
             return;
         }
@@ -541,6 +549,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     }
 
     private void fetchAiInsight(ProductWithDetails productDetails) {
+        if (!isAiEnabled()) return;
         if (aiSummaryContainer == null) return;
         if (!hasListedIngredients(productDetails)) {
             showMissingIngredientReviewPrompt(productDetails);
@@ -765,6 +774,8 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         }
         latestVerdict = HealthVerdict.fromAiVerdict(aiVerdict, aiVerdictReason, results, getIngredientCount(product));
         healthScoreTextView.setText(latestVerdict.getLabel());
+        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.score(getView(), report == null ? null : report.getOverallScore());
+        com.ciblorenzo.whatsonmyfood.ui.ScanHistory.record(requireContext(), product.product);
         healthScoreTextView.setTextColor(getVerdictColor(latestVerdict));
     }
 
@@ -1022,14 +1033,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     }
 
     private String formatSourceStatusesForAi() {
-        if (displayedSourceStatuses.isEmpty()) return "unknown";
-        StringBuilder value = new StringBuilder();
-        for (ProductRepository.SourceStatus status : displayedSourceStatuses) {
-            if (status == null) continue;
-            if (value.length() > 0) value.append(", ");
-            value.append(status.name().toLowerCase(java.util.Locale.US));
-        }
-        return value.length() == 0 ? "unknown" : value.toString();
+        return SourceStatusResolver.forAiContext(displayedSourceStatuses);
     }
 
     private List<Ingredient> buildIngredientList(String barcode, String ingredientText) {

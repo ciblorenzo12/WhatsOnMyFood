@@ -12,7 +12,7 @@
         android:layout_height="?attr/actionBarSize"
         android:background="@drawable/glass_toolbar"
         app:title="@string/source_article"
-        app:titleTextColor="@android:color/white" />
+        app:titleTextColor="@color/text_primary" />
 
     <ProgressBar
         android:id="@+id/source_progress_bar"

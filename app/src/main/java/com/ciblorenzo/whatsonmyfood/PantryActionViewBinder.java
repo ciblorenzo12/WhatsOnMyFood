@@ -19,6 +19,8 @@ public final class PantryActionViewBinder {
 
     public static void bind(Button addButton, Button removeButton, State state) {
         if (addButton == null || removeButton == null || state == null) return;
+        boolean justSaved = state == State.SAVED && addButton.getVisibility() == View.VISIBLE
+                && !addButton.isEnabled();
 
         addButton.setVisibility(View.GONE);
         removeButton.setVisibility(View.GONE);
@@ -38,6 +40,7 @@ public final class PantryActionViewBinder {
                 break;
             case SAVED:
                 removeButton.setVisibility(View.VISIBLE);
+                if (justSaved) com.ciblorenzo.whatsonmyfood.utils.GlassMotion.enter(removeButton);
                 break;
             case REMOVING:
                 removeButton.setVisibility(View.VISIBLE);

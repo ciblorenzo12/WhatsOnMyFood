@@ -1,602 +1,117 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/bottom_sheet"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:background="@drawable/bottom_sheet_background"
-    android:orientation="vertical"
-    app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
-
-    <View
-        android:id="@+id/drag_handle"
-        android:layout_width="48dp"
-        android:layout_height="4dp"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/glass_drag_handle" />
-
-    <androidx.core.widget.NestedScrollView
-        android:id="@+id/nested_scroll_view"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:fillViewport="true">
-
-        <LinearLayout
-            android:id="@+id/details_layout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingStart="@dimen/product_detail_content_padding"
-            android:paddingTop="16dp"
-            android:paddingEnd="@dimen/product_detail_content_padding"
-            android:paddingBottom="32dp">
-
-            <ImageView
-                android:id="@+id/product_image_view"
-                android:layout_width="match_parent"
-                android:layout_height="@dimen/product_detail_fragment_image_height"
-                android:layout_marginBottom="18dp"
-                android:background="@drawable/glass_hero_gradient"
-                android:contentDescription="@string/product_image"
-                android:padding="@dimen/product_detail_image_padding"
-                android:scaleType="centerInside"
-                tools:src="@drawable/ic_launcher_foreground" />
-
-            <TextView
-                android:id="@+id/product_name_text_view"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/text_primary"
-                android:textSize="26sp"
-                android:textStyle="bold"
-                tools:text="Whole Grain Oat Cereal" />
-
-            <TextView
-                android:id="@+id/product_brand_text_view"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="14dp"
-                android:textColor="@color/text_secondary"
-                android:textSize="16sp"
-                tools:text="Sample Market Foods" />
-
-            <LinearLayout
-                android:id="@+id/source_status_container"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="22dp"
-                android:background="@drawable/glass_panel"
-                android:orientation="vertical"
-                android:padding="14dp"
-                android:visibility="gone"
-                tools:visibility="visible">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/product_data_status"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/source_status_indicator_text_view"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/source_status_indicator_background"
-                    android:paddingStart="10dp"
-                    android:paddingTop="5dp"
-                    android:paddingEnd="10dp"
-                    android:paddingBottom="5dp"
-                    android:textColor="@color/colorPrimaryDark"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    tools:text="PRODUCT DATABASE  •  RECOVERED INGREDIENTS" />
-
-                <TextView
-                    android:id="@+id/source_status_text_view"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:lineSpacingExtra="2dp"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    tools:text="Updated from product database. Ingredients verified from the package label." />
-
-                <TextView
-                    android:id="@+id/source_status_interpretation_text_view"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="7dp"
-                    android:lineSpacingExtra="2dp"
-                    android:textColor="@color/text_muted"
-                    android:textSize="12sp"
-                    tools:text="Context note: Completeness depends on the information supplied by the product source." />
+<?xml version='1.0' encoding='utf-8'?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools" android:id="@+id/bottom_sheet" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/bottom_sheet_background" android:orientation="vertical" app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+    <View android:id="@+id/drag_handle" android:layout_width="48dp" android:layout_height="4dp" android:layout_gravity="center_horizontal" android:layout_marginTop="8dp" android:background="@drawable/glass_drag_handle" />
+    <androidx.core.widget.NestedScrollView android:id="@+id/nested_scroll_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:fillViewport="true">
+        <LinearLayout android:id="@+id/details_layout" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingStart="@dimen/product_detail_content_padding" android:paddingTop="16dp" android:paddingEnd="@dimen/product_detail_content_padding" android:paddingBottom="32dp">
+            <ImageView android:id="@+id/product_image_view" android:layout_width="match_parent" android:layout_height="@dimen/product_detail_fragment_image_height" android:layout_marginBottom="18dp" android:background="@drawable/glass_hero_gradient" android:contentDescription="@string/product_image" android:padding="@dimen/product_detail_image_padding" android:scaleType="centerInside" tools:src="@drawable/ic_launcher_foreground" />
+            <TextView android:id="@+id/product_name_text_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="26sp" android:textStyle="bold" tools:text="Whole Grain Oat Cereal" />
+            <TextView android:id="@+id/product_brand_text_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:layout_marginBottom="14dp" android:textColor="@color/text_secondary" android:textSize="16sp" tools:text="Sample Market Foods" />
+            <com.ciblorenzo.whatsonmyfood.ui.ScoreRing android:id="@+id/ui_product_score" android:layout_width="128dp" android:layout_height="128dp" android:layout_gravity="center_horizontal" android:layout_marginTop="8dp" android:layout_marginBottom="8dp" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/ui_rule_score" android:gravity="center" android:textColor="@color/text_secondary" android:layout_marginBottom="8dp" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/ui_score_context" android:textColor="@color/text_secondary" android:textSize="12sp" android:layout_marginBottom="16dp" />
+            <LinearLayout android:id="@+id/source_status_container" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="22dp" android:background="@drawable/glass_panel" android:orientation="vertical" android:padding="14dp" android:visibility="gone" tools:visibility="visible">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/product_data_status" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" />
+                <TextView android:id="@+id/source_status_indicator_text_view" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:background="@drawable/source_status_indicator_background" android:paddingStart="10dp" android:paddingTop="5dp" android:paddingEnd="10dp" android:paddingBottom="5dp" android:textColor="@color/colorPrimaryDark" android:textSize="11sp" android:textStyle="bold" tools:text="PRODUCT DATABASE  •  RECOVERED INGREDIENTS" />
+                <TextView android:id="@+id/source_status_text_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:lineSpacingExtra="2dp" android:textColor="@color/text_secondary" android:textSize="13sp" tools:text="Updated from product database. Ingredients verified from the package label." />
+                <TextView android:id="@+id/source_status_interpretation_text_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:lineSpacingExtra="2dp" android:textColor="@color/text_muted" android:textSize="12sp" tools:text="Context note: Completeness depends on the information supplied by the product source." />
             </LinearLayout>
-
-            <TextView
-                android:id="@+id/at_a_glance_label"
-                style="@style/TextAppearance.AppCompat.Title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/at_a_glance"
-                android:textColor="@color/text_primary" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="10dp"
-                android:text="@string/at_a_glance_hint"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/health_findings_card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"
-                app:cardBackgroundColor="#FBFAFF"
-                app:cardCornerRadius="22dp"
-                app:cardElevation="0dp"
-                app:strokeColor="#E7E5FF"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="18dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/overall_result"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/health_score_text_view"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center_horizontal"
-                        android:layout_marginTop="6dp"
-                        android:layout_marginBottom="14dp"
-                        android:textSize="28sp"
-                        android:textStyle="bold"
-                        tools:text="Good choice" />
-
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:id="@+id/scores_layout"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp">
-
-                        <TextView
-                            android:id="@+id/nutriscore_text_view"
-                            style="@style/ScoreTextView"
-                            android:background="@drawable/score_background"
-                            app:layout_constraintEnd_toStartOf="@+id/nova_text_view"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent"
-                            tools:text="Nutri-Score: B" />
-
-                        <TextView
-                            android:id="@+id/nova_text_view"
-                            style="@style/ScoreTextView"
-                            android:background="@drawable/score_background"
-                            app:layout_constraintEnd_toStartOf="@+id/ecoscore_text_view"
-                            app:layout_constraintStart_toEndOf="@+id/nutriscore_text_view"
-                            app:layout_constraintTop_toTopOf="parent"
-                            tools:text="NOVA: 2" />
-
-                        <TextView
-                            android:id="@+id/ecoscore_text_view"
-                            style="@style/ScoreTextView"
-                            android:background="@drawable/score_background"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toEndOf="@+id/nova_text_view"
-                            app:layout_constraintTop_toTopOf="parent"
-                            tools:text="Eco-Score: B" />
+            <TextView android:id="@+id/at_a_glance_label" style="@style/TextAppearance.AppCompat.Title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/ui_why_score" android:textColor="@color/text_primary" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:layout_marginBottom="10dp" android:text="@string/at_a_glance_hint" android:textColor="@color/text_secondary" android:textSize="13sp" />
+            <com.google.android.material.card.MaterialCardView android:id="@+id/health_findings_card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="20dp" app:cardBackgroundColor="@color/card_background" app:cardCornerRadius="16dp" app:cardElevation="0dp" app:strokeColor="@color/glass_stroke" app:strokeWidth="1dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="18dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/overall_result" android:textColor="@color/text_secondary" android:textSize="12sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/health_score_text_view" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:layout_marginTop="6dp" android:layout_marginBottom="14dp" android:textSize="28sp" android:textStyle="bold" tools:text="Good choice" />
+                    <GridLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:columnCount="2" android:layout_marginVertical="16dp">
+                        <TextView android:id="@+id/ui_driver_sugar" android:layout_width="0dp" android:layout_columnWeight="1" android:layout_height="wrap_content" android:padding="12dp" android:minHeight="64dp" android:textColor="@color/text_primary" android:background="@drawable/ui_badge" android:layout_margin="4dp" />
+                        <TextView android:id="@+id/ui_driver_sodium" android:layout_width="0dp" android:layout_columnWeight="1" android:layout_height="wrap_content" android:padding="12dp" android:minHeight="64dp" android:textColor="@color/text_primary" android:background="@drawable/ui_badge" android:layout_margin="4dp" />
+                        <TextView android:id="@+id/ui_driver_processing" android:layout_width="0dp" android:layout_columnWeight="1" android:layout_height="wrap_content" android:padding="12dp" android:minHeight="64dp" android:textColor="@color/text_primary" android:background="@drawable/ui_badge" android:layout_margin="4dp" />
+                        <TextView android:id="@+id/ui_driver_additives" android:layout_width="0dp" android:layout_columnWeight="1" android:layout_height="wrap_content" android:padding="12dp" android:minHeight="64dp" android:textColor="@color/text_primary" android:background="@drawable/ui_badge" android:layout_margin="4dp" />
+                    </GridLayout>
+                    <androidx.constraintlayout.widget.ConstraintLayout android:id="@+id/scores_layout" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp">
+                        <TextView android:id="@+id/nutriscore_text_view" style="@style/ScoreTextView" android:background="@drawable/score_background" app:layout_constraintEnd_toStartOf="@+id/nova_text_view" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" tools:text="Nutri-Score: B" />
+                        <TextView android:id="@+id/nova_text_view" style="@style/ScoreTextView" android:background="@drawable/score_background" app:layout_constraintEnd_toStartOf="@+id/ecoscore_text_view" app:layout_constraintStart_toEndOf="@+id/nutriscore_text_view" app:layout_constraintTop_toTopOf="parent" tools:text="NOVA: 2" />
+                        <TextView android:id="@+id/ecoscore_text_view" style="@style/ScoreTextView" android:background="@drawable/score_background" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toEndOf="@+id/nova_text_view" app:layout_constraintTop_toTopOf="parent" tools:text="Eco-Score: B" />
                     </androidx.constraintlayout.widget.ConstraintLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/key_findings"
-                        android:textColor="@color/text_primary"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:layout_marginBottom="8dp"
-                        android:text="@string/key_findings_hint"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/analysis_recycler_view"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:nestedScrollingEnabled="false" />
-
-                    <TextView
-                        android:id="@+id/findings_empty_state_text_view"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/glass_panel_compact"
-                        android:gravity="center"
-                        android:lineSpacingExtra="3dp"
-                        android:padding="16dp"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp"
-                        android:visibility="gone"
-                        tools:text="No specific warnings or positive findings were identified."
-                        tools:visibility="visible" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/key_findings" android:textColor="@color/text_primary" android:textSize="16sp" android:textStyle="bold" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:layout_marginBottom="8dp" android:text="@string/key_findings_hint" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                    <androidx.recyclerview.widget.RecyclerView android:id="@+id/analysis_recycler_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:nestedScrollingEnabled="false" />
+                    <TextView android:id="@+id/findings_empty_state_text_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/glass_panel_compact" android:gravity="center" android:lineSpacingExtra="3dp" android:padding="16dp" android:textColor="@color/text_secondary" android:textSize="14sp" android:visibility="gone" tools:text="No specific warnings or positive findings were identified." tools:visibility="visible" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-
-            <FrameLayout
-                android:id="@+id/ai_summary_container"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"
-                android:visibility="gone"
-                tools:visibility="visible">
-
-                <com.ciblorenzo.whatsonmyfood.AiGlowView
-                    android:id="@+id/ai_card_glow"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_margin="4dp" />
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/ai_summary_layout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="8dp"
-                    app:cardBackgroundColor="#FBFAFF"
-                    app:cardCornerRadius="22dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="#E7E5FF"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="18dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
-                            <com.ciblorenzo.whatsonmyfood.BitwiseAiSpriteView
-                                android:layout_width="56dp"
-                                android:layout_height="56dp"
-                                android:layout_marginEnd="10dp" />
-
-                            <LinearLayout
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:orientation="vertical">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/bitwise_ai"
-                                    android:textColor="@color/colorPrimary"
-                                    android:textSize="18sp"
-                                    android:textStyle="bold" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/explanation_label"
-                                    android:textColor="@color/text_secondary"
-                                    android:textSize="12sp" />
+            <FrameLayout android:id="@+id/ai_summary_container" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="20dp" android:visibility="gone" tools:visibility="visible">
+                <com.ciblorenzo.whatsonmyfood.AiGlowView android:id="@+id/ai_card_glow" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_margin="4dp" android:visibility="gone" />
+                <com.ciblorenzo.whatsonmyfood.ui.ExpandableSection android:id="@+id/ui_expand_ai" android:layout_width="match_parent" android:layout_height="wrap_content">
+                    <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/ui_ai_explanation" android:gravity="start|center_vertical" style="@style/SecondaryButton" />
+                    <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+                        <com.google.android.material.card.MaterialCardView android:id="@+id/ai_summary_layout" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="8dp" app:cardBackgroundColor="@color/card_background" app:cardCornerRadius="16dp" app:cardElevation="0dp" app:strokeColor="@color/glass_stroke" app:strokeWidth="1dp">
+                            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="18dp">
+                                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/ui_ai_context" android:textColor="@color/text_secondary" android:textSize="14sp" android:layout_marginBottom="12dp" />
+                                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+                                    <com.ciblorenzo.whatsonmyfood.BitwiseAiSpriteView android:layout_width="56dp" android:layout_height="56dp" android:layout_marginEnd="10dp" />
+                                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/bitwise_ai" android:textColor="@color/colorPrimary" android:textSize="18sp" android:textStyle="bold" />
+                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/explanation_label" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                                    </LinearLayout>
+                                </LinearLayout>
+                                <TextView android:id="@+id/ai_summary_text_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:lineSpacingExtra="5dp" android:textColor="@color/text_primary" android:textSize="16sp" tools:text="A concise explanation grounded in the product data and findings." />
+                                <View android:id="@+id/ai_sources_divider" android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="16dp" android:background="@color/divider" android:visibility="gone" tools:visibility="visible" />
+                                <TextView android:id="@+id/ai_sources_label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="@string/scientific_sources" android:textColor="@color/colorPrimary" android:textSize="11sp" android:textStyle="bold" android:visibility="gone" tools:visibility="visible" />
+                                <com.ciblorenzo.whatsonmyfood.ui.ExpandableSection android:id="@+id/ui_expand_sources" android:layout_width="match_parent" android:layout_height="wrap_content">
+                                    <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/ui_sources" android:gravity="start|center_vertical" style="@style/SecondaryButton" />
+                                    <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+                                        <TextView android:id="@+id/ai_sources_text_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:fontFamily="sans-serif-light" android:textColor="@color/text_secondary" android:textSize="13sp" android:visibility="gone" tools:text="• FDA Nutrition Facts guidance&#10;• WHO healthy diet guidance" tools:visibility="visible" />
+                                    </FrameLayout>
+                                </com.ciblorenzo.whatsonmyfood.ui.ExpandableSection>
                             </LinearLayout>
-                        </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/ai_summary_text_view"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:lineSpacingExtra="5dp"
-                            android:textColor="@color/text_primary"
-                            android:textSize="16sp"
-                            tools:text="A concise explanation grounded in the product data and findings." />
-
-                        <View
-                            android:id="@+id/ai_sources_divider"
-                            android:layout_width="match_parent"
-                            android:layout_height="1dp"
-                            android:layout_marginTop="16dp"
-                            android:background="#E0E0E0"
-                            android:visibility="gone"
-                            tools:visibility="visible" />
-
-                        <TextView
-                            android:id="@+id/ai_sources_label"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:text="@string/scientific_sources"
-                            android:textColor="@color/colorPrimary"
-                            android:textSize="11sp"
-                            android:textStyle="bold"
-                            android:visibility="gone"
-                            tools:visibility="visible" />
-
-                        <TextView
-                            android:id="@+id/ai_sources_text_view"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:fontFamily="sans-serif-light"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="13sp"
-                            android:visibility="gone"
-                            tools:text="• FDA Nutrition Facts guidance&#10;• WHO healthy diet guidance"
-                            tools:visibility="visible" />
+                        </com.google.android.material.card.MaterialCardView>
+                    </FrameLayout>
+                </com.ciblorenzo.whatsonmyfood.ui.ExpandableSection>
+            </FrameLayout>
+            <HorizontalScrollView android:id="@+id/certificate_badges_scroll_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="18dp" android:clipToPadding="false" android:overScrollMode="never" android:scrollbars="none" android:visibility="gone" tools:visibility="visible">
+                <LinearLayout android:id="@+id/certificate_badges_container" android:layout_width="wrap_content" android:layout_height="92dp" android:gravity="center_vertical" android:orientation="horizontal" />
+            </HorizontalScrollView>
+            <com.ciblorenzo.whatsonmyfood.ui.ExpandableSection android:id="@+id/ui_expand_ingredients_card" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <Button android:id="@+id/ingredients_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/ui_ingredients_notice" android:gravity="start|center_vertical" android:minHeight="48dp" style="@style/SecondaryButton" />
+                <com.google.android.material.card.MaterialCardView android:id="@+id/ingredients_card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="20dp" app:cardBackgroundColor="@color/card_background" app:cardCornerRadius="16dp" app:cardElevation="0dp" app:strokeColor="@color/glass_stroke" app:strokeWidth="1dp">
+                    <TextView android:id="@+id/ingredients_text_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:lineSpacingExtra="5dp" android:padding="18dp" android:textColor="@color/text_secondary" android:textSize="15sp" tools:text="Whole grain oats&#10;Corn starch&#10;Sugar&#10;Salt" />
+                </com.google.android.material.card.MaterialCardView>
+            </com.ciblorenzo.whatsonmyfood.ui.ExpandableSection>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:layout_marginBottom="10dp" android:text="@string/ingredients_hint" android:textColor="@color/text_secondary" android:textSize="13sp" />
+            <include layout="@layout/layout_food_recall_entry" />
+            <include layout="@layout/layout_retailer_commerce" />
+            <com.ciblorenzo.whatsonmyfood.ui.ExpandableSection android:id="@+id/ui_expand_nutrition_details_card" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <Button android:id="@+id/nutrition_details_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/ui_nutrition" android:gravity="start|center_vertical" android:minHeight="48dp" style="@style/SecondaryButton" />
+                <com.google.android.material.card.MaterialCardView android:id="@+id/nutrition_details_card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="20dp" app:cardBackgroundColor="@color/card_background" app:cardCornerRadius="16dp" app:cardElevation="0dp" app:strokeColor="@color/glass_stroke" app:strokeWidth="1dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="18dp">
+                        <TextView android:id="@+id/serving_size_label" style="@style/TextAppearance.AppCompat.Title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/serving_size" />
+                        <TextView android:id="@+id/serving_size_text_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:layout_marginBottom="16dp" android:textColor="@color/text_secondary" tools:text="1 cup (36 g)" />
+                        <TextView style="@style/TextAppearance.AppCompat.Title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/nutrition_facts" />
+                        <TableLayout android:id="@+id/nutrition_facts_table" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:layout_marginBottom="16dp" />
+                        <TextView android:id="@+id/categories_label" style="@style/TextAppearance.AppCompat.Title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/categories" />
+                        <TextView android:id="@+id/categories_text_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:layout_marginBottom="16dp" android:textColor="@color/text_secondary" />
+                        <TextView android:id="@+id/packaging_label" style="@style/TextAppearance.AppCompat.Title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/packaging" />
+                        <TextView android:id="@+id/packaging_text_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:layout_marginBottom="16dp" android:textColor="@color/text_secondary" />
+                        <TextView android:id="@+id/labels_label" style="@style/TextAppearance.AppCompat.Title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/labels_certifications_awards" />
+                        <TextView android:id="@+id/labels_text_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textColor="@color/text_secondary" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
-            </FrameLayout>
-
-            <HorizontalScrollView
-                android:id="@+id/certificate_badges_scroll_view"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="18dp"
-                android:clipToPadding="false"
-                android:overScrollMode="never"
-                android:scrollbars="none"
-                android:visibility="gone"
-                tools:visibility="visible">
-
-                <LinearLayout
-                    android:id="@+id/certificate_badges_container"
-                    android:layout_width="wrap_content"
-                    android:layout_height="92dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal" />
-            </HorizontalScrollView>
-
-            <TextView
-                android:id="@+id/ingredients_label"
-                style="@style/TextAppearance.AppCompat.Title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/ingredients"
-                android:textColor="@color/text_primary" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="10dp"
-                android:text="@string/ingredients_hint"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/ingredients_card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"
-                app:cardBackgroundColor="#FBFAFF"
-                app:cardCornerRadius="22dp"
-                app:cardElevation="0dp"
-                app:strokeColor="#E7E5FF"
-                app:strokeWidth="1dp">
-
-                <TextView
-                    android:id="@+id/ingredients_text_view"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:lineSpacingExtra="5dp"
-                    android:padding="18dp"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="15sp"
-                    tools:text="Whole grain oats&#10;Corn starch&#10;Sugar&#10;Salt" />
-            </com.google.android.material.card.MaterialCardView>
-
-            <include layout="@layout/layout_food_recall_entry" />
-
-            <include layout="@layout/layout_retailer_commerce" />
-
-            <TextView
-                android:id="@+id/nutrition_details_label"
-                style="@style/TextAppearance.AppCompat.Title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:text="@string/nutrition_and_product_details"
-                android:textColor="@color/text_primary" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="10dp"
-                android:text="@string/nutrition_and_product_details_hint"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/nutrition_details_card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"
-                app:cardBackgroundColor="#FBFAFF"
-                app:cardCornerRadius="22dp"
-                app:cardElevation="0dp"
-                app:strokeColor="#E7E5FF"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="18dp">
-
-                    <TextView
-                        android:id="@+id/serving_size_label"
-                        style="@style/TextAppearance.AppCompat.Title"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/serving_size" />
-
-                    <TextView
-                        android:id="@+id/serving_size_text_view"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:layout_marginBottom="16dp"
-                        android:textColor="@color/text_secondary"
-                        tools:text="1 cup (36 g)" />
-
-                    <TextView
-                        style="@style/TextAppearance.AppCompat.Title"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/nutrition_facts" />
-
-                    <TableLayout
-                        android:id="@+id/nutrition_facts_table"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:layout_marginBottom="16dp" />
-
-                    <TextView
-                        android:id="@+id/categories_label"
-                        style="@style/TextAppearance.AppCompat.Title"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/categories" />
-
-                    <TextView
-                        android:id="@+id/categories_text_view"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:layout_marginBottom="16dp"
-                        android:textColor="@color/text_secondary" />
-
-                    <TextView
-                        android:id="@+id/packaging_label"
-                        style="@style/TextAppearance.AppCompat.Title"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/packaging" />
-
-                    <TextView
-                        android:id="@+id/packaging_text_view"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:layout_marginBottom="16dp"
-                        android:textColor="@color/text_secondary" />
-
-                    <TextView
-                        android:id="@+id/labels_label"
-                        style="@style/TextAppearance.AppCompat.Title"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/labels_certifications_awards" />
-
-                    <TextView
-                        android:id="@+id/labels_text_view"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:textColor="@color/text_secondary" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <TextView
-                android:id="@+id/product_actions_label"
-                style="@style/TextAppearance.AppCompat.Title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/product_actions"
-                android:textColor="@color/text_primary" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="10dp"
-                android:text="@string/product_actions_hint"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/product_actions_card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardBackgroundColor="#FBFAFF"
-                app:cardCornerRadius="22dp"
-                app:cardElevation="0dp"
-                app:strokeColor="#E7E5FF"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <Button
-                        android:id="@+id/update_product_button"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:minHeight="48dp"
-                        android:text="@string/update_product" />
-
-                    <Button
-                        android:id="@+id/contribute_ingredients_button"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:minHeight="48dp"
-                        android:text="@string/off_add_missing_ingredients"
-                        android:visibility="gone" />
-
-                    <Button
-                        android:id="@+id/add_to_pantry_button"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:minHeight="48dp"
-                        android:text="@string/add_to_pantry"
-                        android:visibility="gone" />
-
-                    <Button
-                        android:id="@+id/remove_from_pantry_button"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:minHeight="48dp"
-                        android:text="@string/remove_from_pantry"
-                        android:visibility="gone" />
+            </com.ciblorenzo.whatsonmyfood.ui.ExpandableSection>
+            <com.ciblorenzo.whatsonmyfood.ui.ExpandableSection android:id="@+id/ui_expand_additives" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/ui_additives" android:gravity="start|center_vertical" style="@style/SecondaryButton" />
+                <LinearLayout android:id="@+id/ui_additive_matches" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp" />
+            </com.ciblorenzo.whatsonmyfood.ui.ExpandableSection>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:layout_marginBottom="10dp" android:text="@string/nutrition_and_product_details_hint" android:textColor="@color/text_secondary" android:textSize="13sp" />
+            <TextView android:id="@+id/product_actions_label" style="@style/TextAppearance.AppCompat.Title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/product_actions" android:textColor="@color/text_primary" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:layout_marginBottom="10dp" android:text="@string/product_actions_hint" android:textColor="@color/text_secondary" android:textSize="13sp" />
+            <com.google.android.material.card.MaterialCardView android:id="@+id/product_actions_card" android:layout_width="match_parent" android:layout_height="wrap_content" app:cardBackgroundColor="@color/card_background" app:cardCornerRadius="16dp" app:cardElevation="0dp" app:strokeColor="@color/glass_stroke" app:strokeWidth="1dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+                    <Button android:id="@+id/update_product_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/update_product" />
+                    <Button android:id="@+id/contribute_ingredients_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:minHeight="48dp" android:text="@string/off_add_missing_ingredients" android:visibility="gone" />
+                    <Button android:id="@+id/add_to_pantry_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:minHeight="48dp" android:text="@string/add_to_pantry" android:visibility="gone" />
+                    <Button android:id="@+id/remove_from_pantry_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:minHeight="48dp" android:text="@string/remove_from_pantry" android:visibility="gone" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
-
     <include layout="@layout/layout_loading_overlay" />
 </LinearLayout>

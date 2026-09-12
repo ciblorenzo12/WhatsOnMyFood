@@ -38,6 +38,8 @@ public class AdditiveDatabaseActivity extends BaseActivity {
     private final Handler searchHandler = new Handler(Looper.getMainLooper());
     private Runnable searchRunnable;
     private AdditiveDao additiveDao;
+    private String currentQuery="", categoryFilter="all", selectedName="";
+    private com.ciblorenzo.whatsonmyfood.ui.IngredientDetailsView detailPane;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +70,14 @@ public class AdditiveDatabaseActivity extends BaseActivity {
         GlassMotion.enter(findViewById(R.id.additive_intro_panel), 0L);
         GlassMotion.enter(recyclerView, 80L);
         
+        detailPane=findViewById(R.id.ui_ingredient_detail);
+        if(savedInstanceState!=null)selectedName=savedInstanceState.getString("selected_ingredient","");
+        if(detailPane!=null)adapter.setOnSelect(entry->{selectedName=entry.name;detailPane.bind(entry);adapter.setSelected(entry.name);});
+        ((com.google.android.material.chip.ChipGroup)findViewById(R.id.ui_ingredient_filters)).setOnCheckedStateChangeListener((group,ids)->{
+            int id=ids.isEmpty()?R.id.ui_category_all:ids.get(0);
+            categoryFilter=id==R.id.ui_category_preservatives?"preservatives":id==R.id.ui_category_colorants?"colorants":id==R.id.ui_category_emulsifiers?"emulsifiers":id==R.id.ui_category_sweeteners?"sweeteners":id==R.id.ui_category_other?"other":"all";
+            filterEntries(currentQuery);
+        });
         loadInitialData();
 
         searchEditText.addTextChangedListener(new TextWatcher() {
@@ -78,6 +88,7 @@ public class AdditiveDatabaseActivity extends BaseActivity {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 String query = s != null ? s.toString().trim() : "";
+                currentQuery=query;
                 
                 searchHandler.removeCallbacks(searchRunnable);
                 
@@ -113,7 +124,7 @@ public class AdditiveDatabaseActivity extends BaseActivity {
                 for (AdditiveEntry entry : finalData) {
                     if (entry != null && entry.isValid()) allEntries.add(entry);
                 }
-                updateResults(allEntries);
+                filterEntries(currentQuery);
             });
         });
     }
@@ -190,7 +201,7 @@ public class AdditiveDatabaseActivity extends BaseActivity {
                         if (!alreadyPresent) {
                             allEntries.add(0, aiEntry); // Also add to local master list
                             current.add(0, aiEntry);
-                            updateResults(current);
+                            filterEntries(currentQuery);
                         }
                     });
                 } catch (Exception e) {
@@ -217,7 +228,7 @@ public class AdditiveDatabaseActivity extends BaseActivity {
     private void filterEntries(String query) {
         List<AdditiveEntry> filteredEntries = new ArrayList<>();
         for (AdditiveEntry entry : allEntries) {
-            if (entry.matches(query)) {
+            if (entry.matches(query) && (categoryFilter.equals("all") || categoryFilter.equals(com.ciblorenzo.whatsonmyfood.ui.IngredientPresentation.categoryKey(entry.category)))) {
                 filteredEntries.add(entry);
             }
         }
@@ -225,7 +236,16 @@ public class AdditiveDatabaseActivity extends BaseActivity {
     }
 
     private void updateResults(List<AdditiveEntry> entries) {
+        if(isFinishing()||isDestroyed())return;
         adapter.updateEntries(entries);
+        if(detailPane!=null){
+            AdditiveEntry selected=null;
+            for(AdditiveEntry entry:entries)if(entry.name.equals(selectedName))selected=entry;
+            if(selected==null&&!entries.isEmpty())selected=entries.get(0);
+            if(selected!=null)selectedName=selected.name;
+            detailPane.bind(selected);
+            adapter.setSelected(selected==null?"":selected.name);
+        }
         int count = adapter.getItemCount();
         resultCountTextView.setText(getString(R.string.additive_result_count, count));
         emptyStateTextView.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
@@ -254,6 +274,9 @@ public class AdditiveDatabaseActivity extends BaseActivity {
             Toast.makeText(this, R.string.not_a_valid_additive, Toast.LENGTH_SHORT).show();
         });
     }
+
+    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("selected_ingredient",selectedName);}
+    @Override protected void onDestroy(){searchHandler.removeCallbacksAndMessages(null);super.onDestroy();}
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {

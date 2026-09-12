@@ -2,15 +2,15 @@
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_pressed="true">
         <shape android:shape="oval">
-            <solid android:color="#B800E5FF" />
+            <solid android:color="#3452CC" />
         </shape>
     </item>
     <item>
         <shape android:shape="oval">
             <gradient
                 android:angle="0"
-                android:endColor="#B900E5FF"
-                android:startColor="#D27C4DFF"
+                android:endColor="#3452CC"
+                android:startColor="#3452CC"
                 android:type="linear" />
         </shape>
     </item>

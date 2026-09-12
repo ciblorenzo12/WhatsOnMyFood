@@ -13,11 +13,11 @@
         android:layout_height="?attr/actionBarSize"
         android:background="@drawable/glass_toolbar"
         app:layout_constraintTop_toTopOf="parent"
-        app:titleTextColor="@android:color/white" />
+        app:titleTextColor="@color/text_primary" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/search_layout"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        style="@style/ModernInput"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"

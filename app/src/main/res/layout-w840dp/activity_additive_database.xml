@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='utf-8'?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/glass_activity_background" tools:context=".AdditiveDatabaseActivity">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="20dp">
+        <androidx.appcompat.widget.Toolbar android:id="@+id/additive_database_toolbar" android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" app:title="@string/ui_ingredient_title" />
+        <LinearLayout android:id="@+id/additive_intro_panel" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:background="@drawable/glass_panel" android:orientation="vertical" android:padding="16dp">
+            <com.google.android.material.textfield.TextInputLayout android:id="@+id/additive_search_layout" style="@style/ModernInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" app:startIconDrawable="@android:drawable/ic_menu_search">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/additive_search_edit_text" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/ui_ingredient_search" android:inputType="text" android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <TextView android:id="@+id/additive_result_count_text_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:textColor="@color/text_muted" android:textSize="12sp" tools:text="22 entries" />
+        </LinearLayout>
+        <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content" android:scrollbars="none">
+            <com.google.android.material.chip.ChipGroup android:id="@+id/ui_ingredient_filters" android:layout_width="wrap_content" android:layout_height="wrap_content" app:singleSelection="true" app:selectionRequired="true" app:singleLine="true">
+                <com.google.android.material.chip.Chip android:id="@+id/ui_category_all" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/ui_all" android:checked="true" style="@style/FilterChip" />
+                <com.google.android.material.chip.Chip android:id="@+id/ui_category_preservatives" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/ui_preservatives" android:checked="false" style="@style/FilterChip" />
+                <com.google.android.material.chip.Chip android:id="@+id/ui_category_colorants" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/ui_colorants" android:checked="false" style="@style/FilterChip" />
+                <com.google.android.material.chip.Chip android:id="@+id/ui_category_emulsifiers" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/ui_emulsifiers" android:checked="false" style="@style/FilterChip" />
+                <com.google.android.material.chip.Chip android:id="@+id/ui_category_sweeteners" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/ui_sweeteners" android:checked="false" style="@style/FilterChip" />
+                <com.google.android.material.chip.Chip android:id="@+id/ui_category_other" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/ui_other" android:checked="false" style="@style/FilterChip" />
+            </com.google.android.material.chip.ChipGroup>
+        </HorizontalScrollView>
+        <TextView android:id="@+id/additive_empty_state_text_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="18dp" android:gravity="center" android:padding="16dp" android:text="@string/no_additives_found" android:textColor="@color/text_secondary" android:visibility="gone" tools:visibility="visible" />
+        <LinearLayout android:id="@+id/additive_loading_layout" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="18dp" android:gravity="center" android:orientation="vertical" android:visibility="gone" tools:visibility="visible">
+            <ProgressBar style="?android:attr/progressBarStyleSmall" android:layout_width="wrap_content" android:layout_height="wrap_content" android:indeterminateTint="@color/colorPrimary" />
+            <TextView android:id="@+id/additive_loading_text_view" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/ui_loading" android:textColor="@color/text_secondary" android:textSize="14sp" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="horizontal">
+            <androidx.recyclerview.widget.RecyclerView android:id="@+id/additive_recycler_view" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginTop="14dp" android:layout_weight="1" android:clipToPadding="false" android:paddingBottom="12dp" tools:listitem="@layout/additive_database_item" />
+            <com.ciblorenzo.whatsonmyfood.ui.IngredientDetailsView android:id="@+id/ui_ingredient_detail" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:layout_marginStart="24dp" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

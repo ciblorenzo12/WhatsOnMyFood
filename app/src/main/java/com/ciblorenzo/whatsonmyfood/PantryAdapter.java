@@ -101,11 +101,13 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
                 riskRatingChangeListener.onRiskRatingChanged(product, score);
             });
 
-            if (product.healthScore != null) {
-                aiVerifiedBadge.setVisibility(View.VISIBLE);
-            } else {
-                aiVerifiedBadge.setVisibility(View.GONE);
-            }
+            aiVerifiedBadge.setVisibility(View.VISIBLE);
+            aiVerifiedBadge.setText(product.healthScore == null ? itemView.getContext().getString(R.string.ui_score_unknown)
+                    : itemView.getContext().getString(R.string.ui_score_out_of,product.healthScore));
+            aiVerifiedBadge.setTextColor(itemView.getContext().getColor(R.color.colorPrimary));
+            aiVerifiedBadge.setBackgroundResource(R.drawable.ui_badge);
+            productQuantityTextView.setText(com.ciblorenzo.whatsonmyfood.ui.PantryPresentation.needsReview(product)
+                    ? itemView.getContext().getString(R.string.ui_caution) : product.quantity);
 
             if (product.imageUrl != null && !product.imageUrl.isEmpty()) {
                 Picasso.get()

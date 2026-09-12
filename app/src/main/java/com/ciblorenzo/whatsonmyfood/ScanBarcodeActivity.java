@@ -271,6 +271,9 @@ public class ScanBarcodeActivity extends BaseActivity {
             showSupplementalScanPrompt();
         } else if (!uiTestMode) {
             prepareCameraAccess();
+            if (getIntent().getBooleanExtra("ui_start_ingredients", false)) {
+                modeToggleButton.performClick();
+            }
             launchHandler.postDelayed(this::showModeToggleHintIfNeeded, 900);
         }
     }

@@ -223,8 +223,8 @@ public class ProductDetailsActivity extends BaseActivity {
                 runOnUiThread(() -> {
                     if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
                     if (result != null && result.productWithDetails != null) {
-                        displayProductDetails(result.productWithDetails);
                         displaySourceStatuses(result.sourceStatuses);
+                        displayProductDetails(result.productWithDetails);
                     } else {
                         showErrorState("Product not found for barcode: " + barcode, barcode);
                     }
@@ -284,8 +284,8 @@ public class ProductDetailsActivity extends BaseActivity {
                     if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
                     if (updateProductButton != null) updateProductButton.setEnabled(true);
                     if (result != null && result.productWithDetails != null) {
-                        displayProductDetails(result.productWithDetails);
                         displaySourceStatuses(result.sourceStatuses);
+                        displayProductDetails(result.productWithDetails);
                         Toast.makeText(ProductDetailsActivity.this, R.string.product_updated, Toast.LENGTH_SHORT).show();
                         setResult(RESULT_OK, new Intent().putExtra(PantryActivity.RESULT_DATA_CHANGED, true));
                     } else {
@@ -375,6 +375,9 @@ public class ProductDetailsActivity extends BaseActivity {
     }
 
     private void displayProductDetails(ProductWithDetails productDetails, boolean allowAiInsight) {
+        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.adapt(findViewById(android.R.id.content));
+        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.score(findViewById(android.R.id.content), null);
+        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.drivers(findViewById(android.R.id.content), productDetails);
         IngredientListSanitizer.sanitize(productDetails);
         currentProductDetails = productDetails;
         collapsingToolbarLayout.setTitle(" ");
@@ -435,7 +438,7 @@ public class ProductDetailsActivity extends BaseActivity {
             return;
         }
 
-        if (allowAiInsight && hasListedIngredients(productDetails)
+        if (allowAiInsight && aiEnabled && hasListedIngredients(productDetails)
                 && translateListedIngredientsIfNeeded(productDetails)) {
             return;
         }
@@ -448,6 +451,7 @@ public class ProductDetailsActivity extends BaseActivity {
     }
 
     private void performAiReasoning(ProductWithDetails product) {
+        if (!aiEnabled) return;
         if (aiSummaryContainer == null) return;
         if (!hasListedIngredients(product)) {
             showMissingIngredientReviewPrompt(product);
@@ -475,6 +479,7 @@ public class ProductDetailsActivity extends BaseActivity {
         productData.append("Brand: ").append(product.product.brands).append("\n");
         productData.append("Categories: ").append(product.product.categories).append("\n");
         productData.append("Quantity: ").append(product.product.quantity).append("\n");
+        productData.append("Source status: ").append(SourceStatusResolver.forAiContext(displayedSourceStatuses)).append("\n");
         productData.append("Ingredients: ").append(formatIngredientsForAi(product)).append("\n");
         if (product.nutriments != null) {
             productData.append("\nNutrition Facts (per 100g): ").append(product.nutriments.toString());
@@ -666,6 +671,7 @@ public class ProductDetailsActivity extends BaseActivity {
 
         latestVerdict = HealthVerdict.fromAiVerdict(aiVerdict, aiVerdictReason, results, getIngredientCount(product));
         healthScoreTextView.setText(latestVerdict.getLabel());
+        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.score(findViewById(android.R.id.content), report == null ? null : report.getOverallScore());
         healthScoreTextView.setTextColor(getVerdictColor(latestVerdict));
     }
 

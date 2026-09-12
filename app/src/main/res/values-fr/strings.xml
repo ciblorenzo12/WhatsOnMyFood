@@ -46,6 +46,23 @@
     <string name="profile">Profil</string>
     <string name="display_name">Nom affiche</string>
     <string name="language">Langue</string>
+    <string name="preferences">Préférences</string>
+    <string name="appearance">Apparence</string>
+    <string name="light_mode">Clair</string>
+    <string name="dark_mode">Sombre</string>
+    <string name="account_information">Informations du compte</string>
+    <string name="account_and_privacy">Compte et confidentialité</string>
+    <string name="session">Session</string>
+    <string name="change_profile_photo">Changer la photo de profil</string>
+    <string name="not_signed_in">Vous n’êtes pas connecté.</string>
+    <string name="display_name_required">Saisissez un nom affiché.</string>
+    <string name="profile_photo_updated">Photo de profil mise à jour.</string>
+    <string name="profile_photo_update_failed">La photo de profil n’a pas pu être mise à jour. Vérifiez votre connexion et réessayez.</string>
+    <string name="password_reset_confirmation">Envoyer un lien de réinitialisation du mot de passe à %1$s ?</string>
+    <string name="password_reset_email_unavailable">Ce compte ne possède pas d’adresse e-mail pour récupérer le mot de passe.</string>
+    <string name="password_reset_sent">E-mail de réinitialisation envoyé.</string>
+    <string name="password_reset_failed">L’e-mail de réinitialisation n’a pas pu être envoyé. Réessayez.</string>
+    <string name="send">Envoyer</string>
     <string name="update_profile">Mettre a jour le profil</string>
     <string name="change_password">Changer le mot de passe</string>
     <string name="log_out">Se deconnecter</string>
@@ -210,9 +227,25 @@
     <string name="bitwise_retry_explanation">L’explication détaillée de Bitwise est temporairement indisponible. L’évaluation et les résultats des règles restent visibles. Touchez ici pour réessayer.</string>
     <string name="analyzing">Analyse...</string>
     <string name="identifying_ingredients">Identification des ingredients...</string>
-    <string name="home_title">Votre garde-manger sain commence ici</string>
+    <string name="home_title">Bien manger.\nY voir clair.</string>
     <string name="home_subtitle">Scannez les etiquettes, consultez votre garde-manger et recherchez les ingredients avant achat.</string>
     <string name="daily_health_tip">Conseil santé du jour</string>
+    <string-array name="daily_health_tips">
+        <item>Comparez la liste des ingrédients avec la taille de la portion avant de choisir un produit.</item>
+        <item>Les aliments entiers ont généralement une liste d’ingrédients plus courte que les produits très transformés.</item>
+        <item>Les sucres ajoutés peuvent apparaître sous plusieurs noms, notamment les sirops et les concentrés de jus.</item>
+        <item>Rincer les aliments en conserve peut réduire une partie de leur sodium.</item>
+        <item>Comparez les fibres et les sucres ajoutés lors du choix de céréales et de produits à base de grains.</item>
+        <item>L’eau est une boisson simple qui n’ajoute ni sucre ni sodium.</item>
+    </string-array>
+    <string-array name="daily_health_tip_sources">
+        <item>Guide de la FDA sur la valeur nutritive</item>
+        <item>Guide de l’OMS sur l’alimentation saine</item>
+        <item>Guide de la FDA sur les sucres ajoutés</item>
+        <item>Guide de l’USDA sur la préparation des aliments</item>
+        <item>Recommandations alimentaires américaines</item>
+        <item>Guide des CDC sur une bonne hydratation</item>
+    </string-array>
     <string name="recommended_swaps">Alternatives saines pour vous</string>
     <string name="quick_actions">Accès rapide</string>
     <string name="view_all">Voir tout</string>

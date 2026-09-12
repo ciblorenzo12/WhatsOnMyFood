@@ -1,0 +1,202 @@
+[
+  {
+    "id": "P01",
+    "product": "Cheerios Original",
+    "category": "Breakfast cereal",
+    "coverage": "Baseline grain product",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  },
+  {
+    "id": "P02",
+    "product": "Honey Nut Cheerios",
+    "category": "Breakfast cereal",
+    "coverage": "Added sugar / flavoring",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  },
+  {
+    "id": "P03",
+    "product": "Kellogg's Frosted Flakes",
+    "category": "Breakfast cereal",
+    "coverage": "Higher added sugar",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  },
+  {
+    "id": "P04",
+    "product": "Quaker Instant Oatmeal Original",
+    "category": "Hot cereal",
+    "coverage": "Short ingredient list",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  },
+  {
+    "id": "P05",
+    "product": "Coca-Cola Original Taste",
+    "category": "Beverage",
+    "coverage": "Sugar-sweetened beverage",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  },
+  {
+    "id": "P06",
+    "product": "Diet Coke",
+    "category": "Beverage",
+    "coverage": "Non-sugar sweeteners",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  },
+  {
+    "id": "P07",
+    "product": "Gatorade Lemon-Lime",
+    "category": "Sports drink",
+    "coverage": "Color / electrolytes",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  },
+  {
+    "id": "P08",
+    "product": "Chobani Plain Non-Fat Greek Yogurt",
+    "category": "Dairy",
+    "coverage": "Protein-focused product",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  },
+  {
+    "id": "P09",
+    "product": "Yoplait Original Strawberry Yogurt",
+    "category": "Dairy",
+    "coverage": "Added sugar / flavoring",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  },
+  {
+    "id": "P10",
+    "product": "Jif Creamy Peanut Butter",
+    "category": "Spread",
+    "coverage": "Added ingredients",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  },
+  {
+    "id": "P11",
+    "product": "Skippy Creamy Peanut Butter",
+    "category": "Spread",
+    "coverage": "Cross-brand comparison",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  },
+  {
+    "id": "P12",
+    "product": "Lay's Classic Potato Chips",
+    "category": "Snack",
+    "coverage": "Sodium / simple formulation",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  },
+  {
+    "id": "P13",
+    "product": "Doritos Nacho Cheese",
+    "category": "Snack",
+    "coverage": "Complex ingredient list",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  },
+  {
+    "id": "P14",
+    "product": "Campbell's Condensed Chicken Noodle Soup",
+    "category": "Soup",
+    "coverage": "Higher sodium",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  },
+  {
+    "id": "P15",
+    "product": "Kraft Original Macaroni & Cheese",
+    "category": "Meal",
+    "coverage": "Prepared food / additives",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  },
+  {
+    "id": "P16",
+    "product": "Nature Valley Oats 'n Honey Bars",
+    "category": "Snack bar",
+    "coverage": "Added sugar / whole grain",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  },
+  {
+    "id": "P17",
+    "product": "KIND Dark Chocolate Nuts & Sea Salt Bar",
+    "category": "Snack bar",
+    "coverage": "Nuts / sweetener",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  },
+  {
+    "id": "P18",
+    "product": "Oreo Original Cookies",
+    "category": "Cookie",
+    "coverage": "Processed snack",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  },
+  {
+    "id": "P19",
+    "product": "Almond Breeze Unsweetened Original Almondmilk",
+    "category": "Plant beverage",
+    "coverage": "Fortification / additives",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  },
+  {
+    "id": "P20",
+    "product": "Impossible Burger Plant-Based Patties",
+    "category": "Meat alternative",
+    "coverage": "Long formulation / protein",
+    "protocol_upc": "Record before study",
+    "verified_upc": null,
+    "package_size": null,
+    "verification": "BLOCKED: exact package and UPC not recorded in procedure"
+  }
+]

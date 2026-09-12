@@ -28,12 +28,12 @@ public class AiGlowView extends View {
     private boolean screenBorder;
 
     private final int[] colors = {
-            0xFF7C8CFF,
-            0xFF5EE6FF,
-            0xFFE8D7FF,
-            0xFFFF8FD8,
-            0xFFFFD3A5,
-            0xFF7C8CFF
+            0xFF6681E8,
+            0xFF9BAEFF,
+            0xFFD8E0FF,
+            0xFFB8C7FF,
+            0xFFDDE5FF,
+            0xFF6681E8
     };
 
     public AiGlowView(Context context) {
@@ -105,7 +105,8 @@ public class AiGlowView extends View {
         super.onDraw(canvas);
         if (gradient == null) return;
 
-        float elapsed = (System.currentTimeMillis() - startTime) / 1000f;
+        float elapsed = android.animation.ValueAnimator.areAnimatorsEnabled()
+                ? (System.currentTimeMillis() - startTime) / 1000f : 0f;
         float width = getWidth();
         float height = getHeight();
         if (width <= 0f || height <= 0f) return;
@@ -135,7 +136,7 @@ public class AiGlowView extends View {
 
         drawTravelingSheen(canvas, elapsed, bounds, radius, fullScreen);
 
-        if (isShown()) {
+        if (isShown() && android.animation.ValueAnimator.areAnimatorsEnabled()) {
             postInvalidateOnAnimation();
         }
     }

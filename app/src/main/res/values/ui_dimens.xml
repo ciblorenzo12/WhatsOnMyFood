@@ -1,0 +1,1 @@
+<resources><dimen name="ui_space_xs">4dp</dimen><dimen name="ui_space_s">8dp</dimen><dimen name="ui_space_m">12dp</dimen><dimen name="ui_space_l">16dp</dimen><dimen name="ui_space_xl">24dp</dimen><dimen name="ui_space_2xl">32dp</dimen><dimen name="ui_touch_target">48dp</dimen><bool name="ui_two_pane">false</bool></resources>

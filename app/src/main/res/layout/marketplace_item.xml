@@ -176,7 +176,7 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/retailer_action_button"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            style="@style/ModernOutlinedButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"

@@ -67,8 +67,8 @@ public final class LanguageManager {
     public static List<LanguageItem> getSupportedLanguages() {
         List<LanguageItem> languageList = new ArrayList<>();
         languageList.add(new LanguageItem("English", "en", android.R.drawable.ic_dialog_map));
-        languageList.add(new LanguageItem("Espanol", "es", android.R.drawable.ic_dialog_map));
-        languageList.add(new LanguageItem("Francais", "fr", android.R.drawable.ic_dialog_map));
+        languageList.add(new LanguageItem("Español", "es", android.R.drawable.ic_dialog_map));
+        languageList.add(new LanguageItem("Français", "fr", android.R.drawable.ic_dialog_map));
         return languageList;
     }
 

@@ -97,7 +97,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 app:cardBackgroundColor="@color/glass_panel"
-                app:cardCornerRadius="20dp"
+                app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 android:accessibilityLiveRegion="polite"
                 app:strokeColor="@color/recall_neutral"
@@ -329,7 +329,7 @@
 
                     <Button
                         android:id="@+id/food_recall_official_source_action"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/ModernOutlinedButton"
                         android:layout_width="match_parent"
                         android:layout_height="54dp"
                         android:layout_marginTop="10dp"

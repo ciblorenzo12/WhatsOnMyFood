@@ -52,7 +52,7 @@
                     android:background="@drawable/alternative_health_chip_background"
                     android:gravity="center"
                     android:includeFontPadding="false"
-                    android:textColor="#057A45"
+                    android:textColor="@color/status_success_text"
                     android:textSize="18sp"
                     android:textStyle="bold"
                     tools:text="RX" />
@@ -85,7 +85,7 @@
                 android:paddingTop="3dp"
                 android:paddingEnd="8dp"
                 android:paddingBottom="3dp"
-                android:textColor="#057A45"
+                android:textColor="@color/status_success_text"
                 android:textSize="11sp"
                 android:textStyle="bold"
                 tools:text="Healthy option" />
@@ -100,7 +100,7 @@
                 android:paddingTop="3dp"
                 android:paddingEnd="8dp"
                 android:paddingBottom="3dp"
-                android:textColor="#5B21B6"
+                android:textColor="@color/ai_accent"
                 android:textSize="11sp"
                 android:textStyle="bold"
                 tools:text="Same type" />

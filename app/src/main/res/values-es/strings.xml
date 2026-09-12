@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="title_activity_scan_barcode">Escanear codigo</string>
+    <string name="title_activity_scan_barcode">Escanear código</string>
     <string name="bitwise_ai">Bitwise AI</string>
     <string name="bitwise_plus">Bitwise Plus</string>
-    <string name="bitwise_plus_headline">Decisiones alimentarias mas claras</string>
+    <string name="bitwise_plus_headline">Decisiones alimentarias más claras</string>
     <string name="bitwise_plus_subtitle">Obt&#233;n explicaciones ampliadas, orientaci&#243;n diaria para tu despensa y un an&#225;lisis m&#225;s profundo.</string>
     <string name="bitwise_plus_benefits">- Explicaciones ilimitadas de productos\n- An&#225;lisis m&#225;s profundo de ingredientes y nutrici&#243;n\n- Acceso prioritario a la orientaci&#243;n de Bitwise\n- Uso y estado de compra en un solo lugar</string>
     <string name="subscribe_bitwise_plus">Suscribirse con Google Play</string>
@@ -36,19 +36,36 @@
     <string name="action_print">Imprimir</string>
     <string name="app_display_name">What\'s On My Food</string>
     <string name="welcome">Bienvenido</string>
-    <string name="email_username">Correo electronico (usuario)</string>
-    <string name="email">Correo electronico</string>
-    <string name="password">Contrasena</string>
-    <string name="sign_in">Iniciar sesion</string>
+    <string name="email_username">Correo electrónico (usuario)</string>
+    <string name="email">Correo electrónico</string>
+    <string name="password">Contraseña</string>
+    <string name="sign_in">Iniciar sesión</string>
     <string name="create_account">Crear cuenta</string>
-    <string name="forgot_password">Olvidaste tu contrasena?</string>
+    <string name="forgot_password">¿Olvidaste tu contraseña?</string>
     <string name="or">O</string>
     <string name="profile">Perfil</string>
     <string name="display_name">Nombre visible</string>
     <string name="language">Idioma</string>
+    <string name="preferences">Preferencias</string>
+    <string name="appearance">Apariencia</string>
+    <string name="light_mode">Claro</string>
+    <string name="dark_mode">Oscuro</string>
+    <string name="account_information">Información de la cuenta</string>
+    <string name="account_and_privacy">Cuenta y privacidad</string>
+    <string name="session">Sesión</string>
+    <string name="change_profile_photo">Cambiar foto de perfil</string>
+    <string name="not_signed_in">No has iniciado sesión.</string>
+    <string name="display_name_required">Escribe un nombre visible.</string>
+    <string name="profile_photo_updated">Foto de perfil actualizada.</string>
+    <string name="profile_photo_update_failed">No se pudo actualizar la foto de perfil. Comprueba tu conexión e inténtalo de nuevo.</string>
+    <string name="password_reset_confirmation">¿Enviar un enlace para restablecer la contraseña a %1$s?</string>
+    <string name="password_reset_email_unavailable">Esta cuenta no tiene una dirección de correo para recuperar la contraseña.</string>
+    <string name="password_reset_sent">Se envió el correo para restablecer la contraseña.</string>
+    <string name="password_reset_failed">No se pudo enviar el correo. Inténtalo de nuevo.</string>
+    <string name="send">Enviar</string>
     <string name="update_profile">Actualizar perfil</string>
-    <string name="change_password">Cambiar contrasena</string>
-    <string name="log_out">Cerrar sesion</string>
+    <string name="change_password">Cambiar contraseña</string>
+    <string name="log_out">Cerrar sesión</string>
     <string name="privacy_policy">Pol&#237;tica de privacidad</string>
     <string name="health_disclaimer">La informaci&#243;n sobre alimentos e ingredientes es solo informativa. No es consejo m&#233;dico ni debe usarse para diagnosticar, tratar o prevenir una afecci&#243;n. Consulta a un profesional sanitario sobre alergias, dietas m&#233;dicas o inquietudes personales.</string>
     <string name="delete_account">Eliminar cuenta</string>
@@ -86,7 +103,7 @@
     <string name="user_risk_score">Riesgo del usuario: %1$d</string>
     <string name="no_pantry_scores">Califica productos o ejecuta el an&#225;lisis de IA para crear este gr&#225;fico.</string>
     <string name="camera_permission_ar">Se necesita permiso de c&#225;mara para los gr&#225;ficos de RA.</string>
-    <string name="barcode">Codigo de barras</string>
+    <string name="barcode">Código de barras</string>
     <string name="add_new_product">Agregar producto nuevo</string>
     <string name="product_name">Nombre del producto</string>
     <string name="brand">Marca</string>
@@ -97,8 +114,8 @@
     <string name="product_saved_locally">Producto guardado localmente.</string>
     <string name="failed_to_save_product">No se pudo guardar el producto.</string>
     <string name="manually_added">Agregado manualmente</string>
-    <string name="analysis_results">Resultados del analisis</string>
-    <string name="ingredient_analysis">Analisis de ingredientes</string>
+    <string name="analysis_results">Resultados del análisis</string>
+    <string name="ingredient_analysis">Análisis de ingredientes</string>
     <string name="identifying_product">Identificando producto...</string>
     <string name="ai_vision_active">Vision de IA activa</string>
     <string name="score">PUNTAJE</string>
@@ -115,8 +132,8 @@
     <string name="pantry_removed">Eliminado de la despensa</string>
     <string name="pantry_already_removed">Este producto ya no está en tu despensa.</string>
     <string name="ingredients">Ingredientes</string>
-    <string name="serving_size">Tamano de porcion</string>
-    <string name="nutrition_facts">Informacion nutricional</string>
+    <string name="serving_size">Tamaño de porción</string>
+    <string name="nutrition_facts">Información nutricional</string>
     <string name="categories">Categorias</string>
     <string name="packaging">Empaque</string>
     <string name="labels_certifications_awards">Etiquetas, certificaciones y premios</string>
@@ -126,14 +143,14 @@
     <string name="product_update_failed_with_reason">No se pudo actualizar el producto: %1$s</string>
     <string name="remove_from_pantry">Quitar de la despensa</string>
     <string name="commerce_title">Donde puedo comprar esto?</string>
-    <string name="commerce_subtitle">Revisa mercados cercanos para este producto y compara opciones mas saludables de la misma categoria.</string>
+    <string name="commerce_subtitle">Revisa mercados cercanos para este producto y compara opciones más saludables de la misma categoría.</string>
     <string name="where_to_buy">Donde comprar</string>
     <string name="better_alternatives">Mejores alternativas</string>
     <string name="available_near_you">Disponible cerca de ti</string>
     <string name="google_maps_preview">Vista previa de Google Maps de una tienda cercana</string>
     <string name="better_alternatives_title">Mejores alternativas</string>
     <string name="checking_retailers">Revisando mercados cercanos...</string>
-    <string name="finding_better_alternatives">Buscando productos relacionados mas limpios...</string>
+    <string name="finding_better_alternatives">Buscando productos relacionados más limpios…</string>
     <string name="no_retailers_found">Aun no se encontraron tiendas.</string>
     <string name="no_alternatives_found">Aun no se encontraron alternativas.</string>
     <string name="retailer_lookup_failed">No se pudo consultar tiendas. Intentalo de nuevo.</string>
@@ -169,9 +186,9 @@
     <string name="source_interpretation_stale">Nota de contexto: Esta información guardada puede ser anterior a la del envase actual. Actualízala cuando tengas conexión.</string>
     <string name="source_interpretation_offline">Nota de contexto: La aplicación no puede confirmar la actualidad de los datos sin conexión. Actualiza antes de depender de detalles que puedan cambiar.</string>
     <string name="source_interpretation_ai_unavailable">Nota de contexto: La calificación del producto y los hallazgos determinísticos permanecen disponibles sin una explicación de IA.</string>
-    <string name="point_camera_barcode">Apunta la camara al codigo</string>
+    <string name="point_camera_barcode">Apunta la cámara al código</string>
     <string name="point_camera_ingredients">Llena el encuadre con la lista de ingredientes. Mantén la etiqueta plana y firme.</string>
-    <string name="barcode_mode">Modo codigo de barras</string>
+    <string name="barcode_mode">Modo código de barras</string>
     <string name="ingredient_mode">Modo ingredientes</string>
     <string name="product_name_scan_mode">Escaneo del nombre</string>
     <string name="point_camera_product_name">Llena el encuadre con el nombre y la marca en la parte frontal del envase.</string>
@@ -201,18 +218,34 @@
     <string name="scientific_source">Fuente cientifica</string>
     <string name="back">Atras</string>
     <string name="import_image">Importar imagen</string>
-    <string name="bitwise_analyzing">Bitwise esta analizando</string>
+    <string name="bitwise_analyzing">Bitwise está analizando</string>
     <string name="reading_ingredients_sources">Leyendo ingredientes y revisando fuentes...</string>
     <string name="rule_scored">Puntaje por reglas</string>
     <string name="health_score_rule_based">Veredicto: %1$s (por reglas)</string>
-    <string name="bitwise_reasoning">Bitwise AI esta razonando...</string>
+    <string name="bitwise_reasoning">Bitwise AI está razonando…</string>
     <string name="bitwise_reasoning_background">La puntuación y los hallazgos de ingredientes están listos. Bitwise está añadiendo la explicación completa…</string>
     <string name="bitwise_retry_explanation">La explicación detallada de Bitwise no está disponible temporalmente. La calificación y los hallazgos de las reglas permanecen visibles. Toca aquí para intentarlo de nuevo.</string>
     <string name="analyzing">Analizando...</string>
     <string name="identifying_ingredients">Identificando ingredientes...</string>
-    <string name="home_title">Tu despensa saludable empieza aqui</string>
+    <string name="home_title">Buena comida.\nRespuestas claras.</string>
     <string name="home_subtitle">Escanea etiquetas, revisa tu despensa y busca ingredientes antes de comprarlos.</string>
     <string name="daily_health_tip">Información de salud diaria</string>
+    <string-array name="daily_health_tips">
+        <item>Compara la lista de ingredientes con el tamaño de la porción antes de elegir un producto.</item>
+        <item>Los alimentos integrales suelen tener listas de ingredientes más cortas que las alternativas muy procesadas.</item>
+        <item>Los azúcares añadidos pueden aparecer con varios nombres, incluidos jarabes y concentrados de jugo.</item>
+        <item>Enjuagar los alimentos enlatados puede reducir parte de su sodio.</item>
+        <item>Compara la fibra y el azúcar añadido al elegir cereales y productos de grano.</item>
+        <item>El agua es una opción sencilla que no añade azúcar ni sodio.</item>
+    </string-array>
+    <string-array name="daily_health_tip_sources">
+        <item>Guía de información nutricional de la FDA</item>
+        <item>Guía de alimentación saludable de la OMS</item>
+        <item>Guía de azúcares añadidos de la FDA</item>
+        <item>Guía de preparación de alimentos del USDA</item>
+        <item>Guías alimentarias para estadounidenses</item>
+        <item>Guía de hidratación saludable de los CDC</item>
+    </string-array>
     <string name="recommended_swaps">Cambios saludables para ti</string>
     <string name="quick_actions">Acceso rápido</string>
     <string name="view_all">Ver todo</string>
@@ -257,7 +290,7 @@
     <string name="source_prefix">Fuente: %1$s</string>
     <string name="health_note">Nota de salud:</string>
     <string name="not_a_valid_additive">No es un aditivo o ingrediente alimentario reconocido.</string>
-    <string name="bitwise_searching_for">Bitwise esta buscando %1$s...</string>
+    <string name="bitwise_searching_for">Bitwise está buscando %1$s…</string>
     <string name="off_add_missing_ingredients">Agregar ingredientes faltantes</string>
     <string name="off_contribute_title">Actualizar Open Food Facts</string>
     <string name="off_contribution_explanation">Compara este borrador con la etiqueta del envase. La lista confirmada ser&#225; una contribuci&#243;n p&#250;blica a Open Food Facts. Las sugerencias de IA nunca se env&#237;an autom&#225;ticamente.</string>

@@ -18,6 +18,11 @@ import java.util.List;
 public class AdditiveDatabaseAdapter extends RecyclerView.Adapter<AdditiveDatabaseAdapter.ViewHolder> {
     private final List<AdditiveEntry> entries = new ArrayList<>();
 
+    private java.util.function.Consumer<AdditiveEntry> onSelect;
+    private String selectedName = "";
+    public void setSelected(String name) { selectedName=name; notifyDataSetChanged(); }
+    public void setOnSelect(java.util.function.Consumer<AdditiveEntry> listener){onSelect=listener;}
+
     public AdditiveDatabaseAdapter(List<AdditiveEntry> initialEntries) {
         updateEntries(initialEntries);
     }
@@ -46,29 +51,27 @@ public class AdditiveDatabaseAdapter extends RecyclerView.Adapter<AdditiveDataba
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         AdditiveEntry entry = entries.get(position);
+        boolean selected=entry.name.equals(selectedName);
+        holder.itemView.setSelected(selected);
+        ((com.google.android.material.card.MaterialCardView)holder.itemView).setStrokeColor(
+                holder.itemView.getContext().getColor(selected?R.color.colorPrimary:R.color.divider));
         holder.nameTextView.setText(entry.name);
         holder.categoryTextView.setText(entry.category);
         holder.aliasTextView.setText(entry.aliases);
         holder.functionTextView.setText(entry.function);
         holder.explanationTextView.setText(entry.explanation);
-        holder.noteTextView.setText(entry.note);
-        holder.sourceButton.setOnClickListener(v -> LinkHandler.openLink(v.getContext(), entry.sourceUrl, entry.sourceTitle, entry.function));
-        
-        // Apply color based on health status
-        int statusColor;
-        switch (entry.status) {
-            case RECOMMENDED:
-                statusColor = 0xFF2ECC71; // Green
-                break;
-            case NOT_RECOMMENDED:
-                statusColor = 0xFFE74C3C; // Red
-                break;
-            case MODERATE:
-            default:
-                statusColor = 0xFFF39C12; // Orange/Yellow
-                break;
-        }
-        holder.categoryTextView.getBackground().setTint(statusColor);
+        int status = entry.status == AdditiveEntry.HealthStatus.NOT_RECOMMENDED ? R.string.ui_caution
+                : entry.status == AdditiveEntry.HealthStatus.RECOMMENDED ? R.string.ui_general_context : R.string.ui_usual_use;
+        holder.noteTextView.setText(status);
+        holder.noteTextView.setTextColor(holder.itemView.getContext().getColor(
+                entry.status == AdditiveEntry.HealthStatus.NOT_RECOMMENDED ? R.color.ui_alert_text : R.color.text_secondary));
+        holder.sourceButton.setText(R.string.ui_details);
+        android.view.View.OnClickListener open = v -> { if(onSelect!=null)onSelect.accept(entry);else {
+            com.ciblorenzo.whatsonmyfood.ui.IngredientDetailsView detail=new com.ciblorenzo.whatsonmyfood.ui.IngredientDetailsView(v.getContext(),null);
+            detail.bind(entry);
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(v.getContext()).setView(detail).setPositiveButton(R.string.ui_close,null).show();
+        }};
+        holder.sourceButton.setOnClickListener(open);holder.itemView.setOnClickListener(open);
 
         GlassMotion.enter(holder.itemView, Math.min(position * 25L, 160L));
     }

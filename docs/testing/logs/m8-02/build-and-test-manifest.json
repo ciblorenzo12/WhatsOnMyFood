@@ -1,0 +1,491 @@
+{
+  "recorded_at_utc": "2026-09-09T01:17:43.382206+00:00",
+  "baseline_commit": "acb3ea1c643818f76b7d693e5c5750866be940d5",
+  "revision": "Baseline plus uncommitted M8-02 changes; not the published RC APK",
+  "version_name": "1.11.0",
+  "version_code": 14,
+  "variant": "debug",
+  "application_id": "com.ciblorenzo.whatsonmyfood",
+  "protocol_sha256": "f319b1c45cf53ad7104ccb9b9f6be6eafe167e6ecdaf300f1c688d8934666059",
+  "hashes": {
+    "app/src/main/java/com/ciblorenzo/whatsonmyfood/ProductDetailsActivity.java": "7eeaa4eb8532536fec266ee2bd4e6d2a949bb369832d92021356e2847193f422",
+    "app/src/main/java/com/ciblorenzo/whatsonmyfood/ProductDetailsFragment.java": "dfce3d9b3b0ebf29b469312433514c8d1fb1c8f7ad3199f8b207a999c2548525",
+    "app/src/main/java/com/ciblorenzo/whatsonmyfood/SourceStatusResolver.java": "7c47a657da31d394a4e7d06095a6b64d855d77a406e74a87e029e99248642c78",
+    "app/src/test/java/com/ciblorenzo/whatsonmyfood/api/BitwiseBackendClientTest.java": "9de11e74fc27ce19728df6914d1b012334b2b0ec2c52b5c373e33fdd963437d6",
+    "app/build/outputs/apk/debug/app-debug.apk": "346d93aee1057ead20ab30123f0631c951ffcc2c4957b3271942419a9cf63a7d",
+    "app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk": "3f7eea0ab7dd7648bb8c127287baf488fe7631dfc7a03862fc3e1b96db3d51d5"
+  },
+  "android_unit_totals": {
+    "tests": 235,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "android_unit_suites": [
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.AdditiveEntryTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.407Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.AiInsightCacheTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.415Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.analysis.AiExplanationResponseValidatorTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.528Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.analysis.AiIngredientRecoveryTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.534Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.analysis.AnalysisResultDeduplicatorTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.539Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.analysis.BitwiseAnalysisServiceTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.545Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.analysis.HealthVerdictExplanationBuilderTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.546Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.analysis.HealthVerdictTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.548Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.analysis.IngredientNormalizerTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.551Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.analysis.IngredientParserDatasetTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.553Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.analysis.IngredientReviewGateTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.585Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.analysis.IngredientTextParserTest",
+      "tests": "16",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.588Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.analysis.ProductFindingsDisplayTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.595Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.analysis.rules.AddedSugarRuleTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.603Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.analysis.rules.ArtificialFlavorRuleTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.605Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.analysis.rules.NaturalFlavorRuleTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.606Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.analysis.rules.RuleEngineTest",
+      "tests": "17",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.607Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.analysis.rules.SugarAsMainIngredientRuleTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.619Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.api.BitwiseBackendClientTest",
+      "tests": "12",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.620Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.api.PrivacySafeRequestDiagnosticsTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.633Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.api.ResilientRequestPolicyTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.635Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.BarcodeScanGateTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.434Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.BitwiseEntitlementManagerTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.436Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.BitwiseUsagePolicyTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.439Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.IngredientLabelValidatorTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.442Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.IngredientListSanitizerTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.463Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.IngredientOcrHeuristicsTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.467Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.IngredientScoringInputTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.471Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.OpenFoodFactsContributionValidatorTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.476Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.PantryOperationResultTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.481Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.PantrySortOptionTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.484Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.ProductCertificateParserTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.486Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.ProductDetailLayoutContractTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.497Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.ProductLookupDispatcherTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.502Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.ProductNameOcrValidatorTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.504Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.ProductRepositoryCacheBehaviorTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.508Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.ProductRepositoryRefreshPolicyTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.512Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.RagIngredientLookupClientTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.515Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.RagIngredientRecoveryTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.516Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.recall.BackendFoodRecallDataSourceTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.636Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.recall.FoodRecallLayoutContractTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.749Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.recall.FoodRecallMatcherTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.753Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.recall.FoodRecallNavigationContractTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.757Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.recall.FoodRecallPresentationTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.764Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.recall.FoodRecallQueryBuilderTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.766Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.recall.FoodRecallRepositoryTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.767Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.recall.FoodRecallScannedSavedProductTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.768Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.ReleaseIdentityTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.520Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.retail.MarketplaceItemLayoutContractTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.770Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.retail.MarketplaceLayoutContractTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.773Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.retail.MarketplaceNavigationContractTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.774Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.retail.MarketplacePresentationTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.775Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.retail.MarketplaceStateResolverTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.777Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.retail.RetailerBackendContractTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.778Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.SourceReliabilityEvaluatorTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.521Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.SourceStatusPresentationTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.524Z"
+    },
+    {
+      "name": "com.ciblorenzo.whatsonmyfood.SourceStatusResolverTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-09-09T01:16:24.526Z"
+    }
+  ],
+  "backend_tests": {
+    "tests": 43,
+    "passed": 43,
+    "failed": 0
+  },
+  "lint": "passed",
+  "device_execution": "not run: no connected device and no configured AVD",
+  "live_ai_execution": "not run against the unfrozen product set",
+  "study_signoff": "BLOCKED: exact UPC/package freeze, mode procedure, and device verification outstanding"
+}

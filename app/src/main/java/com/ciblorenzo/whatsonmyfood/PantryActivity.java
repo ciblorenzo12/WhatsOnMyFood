@@ -49,6 +49,7 @@ public class PantryActivity extends BaseActivity {
     private FirebaseUser currentUser;
     private View loadingOverlay;
     private View emptyState;
+    private String uiQuery = "", uiFilter = "all";
     private PantrySortOption currentSort = PantrySortOption.RECENT;
 
     private final ActivityResultLauncher<Intent> detailsActivityLauncher = registerForActivityResult(
@@ -114,8 +115,25 @@ public class PantryActivity extends BaseActivity {
             startActivity(new Intent(PantryActivity.this, PantryInsightsActivity.class));
         });
 
-        loadPantryItems();
+        ((android.widget.EditText)findViewById(R.id.ui_pantry_search)).addTextChangedListener(new android.text.TextWatcher() {
+            public void beforeTextChanged(CharSequence s,int start,int count,int after){}
+            public void onTextChanged(CharSequence s,int start,int before,int count){uiQuery=s.toString();applyPresentation();}
+            public void afterTextChanged(android.text.Editable s){}
+        });
+        ((com.google.android.material.chip.ChipGroup)findViewById(R.id.ui_pantry_filters)).setOnCheckedStateChangeListener((group, ids) -> {
+            int id=ids.isEmpty()?R.id.ui_filter_all:ids.get(0);
+            uiFilter=id==R.id.ui_filter_review?"review":id==R.id.ui_filter_good?"good":id==R.id.ui_filter_recent?"recent":"all";
+            if("recent".equals(uiFilter))selectSortOption(PantrySortOption.RECENT);else applyPresentation();
+        });
+        findViewById(R.id.ui_pantry_scan).setOnClickListener(v->startActivity(new Intent(this,ScanBarcodeActivity.class)));
         setupSwipeToDelete(recyclerView);
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        // Scans reached through shared navigation may save products without using
+        // this Activity's detail-result launcher.
+        if (db != null && executorService != null && !executorService.isShutdown()) loadPantryItems();
     }
 
     @Override
@@ -184,8 +202,10 @@ public class PantryActivity extends BaseActivity {
         if (currentUser == null) return;
         if (loadingOverlay != null) loadingOverlay.setVisibility(View.VISIBLE);
         executorService.execute(() -> {
+            try {
             pantryProducts = getSortedPantryProducts(currentUser.getUid());
             runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) return;
                 if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
                 PantryListStateViewBinder.bind(
                         recyclerView,
@@ -203,10 +223,31 @@ public class PantryActivity extends BaseActivity {
                     recyclerView.setAdapter(adapter);
                     GlassMotion.enter(recyclerView, 80L);
                 } else {
-                    adapter.updateList(pantryProducts);
+                    adapter.updateList(new java.util.ArrayList<>(pantryProducts));
                 }
+                applyPresentation();
             });
+            } catch (RuntimeException error) {
+                runOnUiThread(() -> {
+                    if(isFinishing()||isDestroyed())return;
+                    loadingOverlay.setVisibility(View.GONE);
+                    com.ciblorenzo.whatsonmyfood.ui.ContentStateView state=findViewById(R.id.ui_pantry_error);
+                    state.show(R.string.ui_error,false);state.action(R.string.ui_retry,v->loadPantryItems());
+                });
+            }
         });
+    }
+
+    private void applyPresentation() {
+        if(adapter==null||pantryProducts==null)return;
+        java.util.List<Product> visible=com.ciblorenzo.whatsonmyfood.ui.PantryPresentation.filter(pantryProducts,uiQuery,uiFilter);
+        adapter.updateList(visible);
+        PantryListStateViewBinder.bind(recyclerView,emptyState,visible.size());
+        ((android.widget.TextView)findViewById(R.id.ui_pantry_empty_text)).setText(pantryProducts.isEmpty()?R.string.pantry_empty_message:R.string.ui_no_results);
+        String summary=getString(R.string.ui_pantry_summary,pantryProducts.size(),com.ciblorenzo.whatsonmyfood.ui.PantryPresentation.reviewCount(pantryProducts));
+        ((android.widget.TextView)findViewById(R.id.ui_pantry_summary)).setText(summary);
+        ((android.widget.TextView)findViewById(R.id.ui_pantry_insights_summary)).setText(summary+"\n\n"+getString(R.string.ui_pantry_insights_body));
+        findViewById(R.id.ui_pantry_error).setVisibility(View.GONE);
     }
 
     private List<Product> getSortedPantryProducts(String userId) {
@@ -232,6 +273,7 @@ public class PantryActivity extends BaseActivity {
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 if (currentUser == null) return;
                 int position = viewHolder.getAdapterPosition();
+                if(position==RecyclerView.NO_POSITION || position>=adapter.getItemCount())return;
                 Product product = adapter.getProductAt(position);
 
                 executorService.execute(() -> {

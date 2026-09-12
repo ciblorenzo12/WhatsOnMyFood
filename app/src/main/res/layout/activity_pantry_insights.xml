@@ -14,7 +14,7 @@
         android:background="@drawable/glass_toolbar"
         app:layout_constraintTop_toTopOf="parent"
         app:title="@string/pantry_risk_insights"
-        app:titleTextColor="@android:color/white" />
+        app:titleTextColor="@color/text_primary" />
 
     <ScrollView
         android:layout_width="0dp"
