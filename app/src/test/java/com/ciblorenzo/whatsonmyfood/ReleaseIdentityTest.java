@@ -8,8 +8,9 @@ import org.junit.Test;
 public class ReleaseIdentityTest {
 
     @Test
-    public void milestoneSevenCandidateUsesTheRequestedRcVersionName() {
-        assertEquals("1.11.0", BuildConfig.VERSION_NAME);
+    public void candidateUsesTheRequestedRcVersionIdentity() {
+        assertEquals("1.19-rc-1", BuildConfig.VERSION_NAME);
+        assertEquals(15, BuildConfig.VERSION_CODE);
     }
 
     @Test
