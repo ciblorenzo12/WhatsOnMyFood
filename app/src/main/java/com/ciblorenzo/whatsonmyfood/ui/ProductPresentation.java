@@ -5,6 +5,11 @@ import com.ciblorenzo.whatsonmyfood.R;
 
 public final class ProductPresentation {
     private ProductPresentation() {}
+    public static void explain(View root, com.ciblorenzo.whatsonmyfood.analysis.ProductAnalysisReport report) {
+        if (root == null) return;
+        android.widget.TextView text = root.findViewById(R.id.ui_score_calculation);
+        if (text != null) text.setText(report == null ? root.getContext().getString(R.string.ui_score_context) : report.getScoreExplanation());
+    }
     public static void score(View root,Integer value){
         if(root==null)return; ScoreRing ring=root.findViewById(R.id.ui_product_score);
         if(ring!=null)ring.setScore(value);

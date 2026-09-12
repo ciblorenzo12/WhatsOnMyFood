@@ -128,6 +128,17 @@ public final class HealthVerdict {
         return status;
     }
 
+    public static HealthVerdict fromReport(ProductAnalysisReport report, int ingredientCount) {
+        HealthVerdict verdict = fromResults(report == null ? null : report.getResults(), ingredientCount);
+        if (report == null || ingredientCount <= 0) {
+            return new HealthVerdict(Status.REVIEW, "Needs Review", "A complete rule analysis is unavailable.");
+        }
+        if (report.getOverallScore() < 70 && verdict.getStatus() == Status.HEALTHY) {
+            return new HealthVerdict(Status.NOT_HEALTHY, "Not Healthy", "Rule adjustments place the score below the Good range (70-100).");
+        }
+        return verdict;
+    }
+
     public String getLabel() {
         return label;
     }

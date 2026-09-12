@@ -17,7 +17,9 @@ public class ProductAnalysisReport {
     public ProductAnalysisReport(int startingScore, int rawScore, int overallScore, List<AnalysisResult> results) {
         this.startingScore = startingScore;
         this.rawScore = rawScore;
-        this.overallScore = overallScore;
+        // Blocking findings stay below the pantry Good band, despite positive offsets.
+        this.overallScore = HealthVerdict.fromResults(results, 1).getStatus() == HealthVerdict.Status.NOT_HEALTHY
+                ? Math.min(69, overallScore) : overallScore;
         this.results = results;
     }
 
@@ -62,7 +64,11 @@ public class ProductAnalysisReport {
                 .append(", subtracts ").append(penalties).append(" penalty points")
                 .append(", and restores ").append(positiveAdjustments).append(" positive-adjustment points")
                 .append(". Raw score: ").append(rawScore).append(".");
-        if (rawScore != overallScore) {
+        if (HealthVerdict.fromResults(results, 1).getStatus() == HealthVerdict.Status.NOT_HEALTHY
+                && rawScore > 69) {
+            explanation.append(" Blocking rule findings limit the score to 69, below the Good range (70-100). Final score: ")
+                    .append(overallScore).append(".");
+        } else if (rawScore != overallScore) {
             explanation.append(" The final score is limited to 0-100, so it is ")
                     .append(overallScore).append(".");
         } else {

@@ -26,7 +26,7 @@ public class ScoreRing extends View {
         RectF bounds = new RectF(left, top, left + size - stroke * 2, top + size - stroke * 2);
         paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(stroke); paint.setStrokeCap(Paint.Cap.ROUND);
         paint.setColor(getContext().getColor(R.color.divider)); canvas.drawArc(bounds, 0, 360, false, paint);
-        paint.setColor(getContext().getColor(R.color.colorPrimary));
+        paint.setColor(getContext().getColor(score == null ? R.color.score_unknown : score >= 70 ? R.color.nutriscore_a : R.color.nutriscore_e));
         if (score != null) canvas.drawArc(bounds, -90, score * 3.6f, false, paint);
         paint.setStyle(Paint.Style.FILL); paint.setColor(getContext().getColor(R.color.text_primary));
         paint.setTextAlign(Paint.Align.CENTER); paint.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);

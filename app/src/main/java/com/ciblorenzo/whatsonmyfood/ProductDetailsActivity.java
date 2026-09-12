@@ -669,9 +669,10 @@ public class ProductDetailsActivity extends BaseActivity {
             setResult(RESULT_OK, new Intent().putExtra(PantryActivity.RESULT_DATA_CHANGED, true));
         }
 
-        latestVerdict = HealthVerdict.fromAiVerdict(aiVerdict, aiVerdictReason, results, getIngredientCount(product));
+        latestVerdict = HealthVerdict.fromReport(report, getIngredientCount(product));
         healthScoreTextView.setText(latestVerdict.getLabel());
-        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.score(findViewById(android.R.id.content), report == null ? null : report.getOverallScore());
+        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.explain(findViewById(android.R.id.content), report);
+        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.score(findViewById(android.R.id.content), report == null || latestVerdict.getStatus() == HealthVerdict.Status.REVIEW ? null : report.getOverallScore());
         healthScoreTextView.setTextColor(getVerdictColor(latestVerdict));
     }
 

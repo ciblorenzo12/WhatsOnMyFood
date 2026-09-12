@@ -772,9 +772,10 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
             product.product.healthScore = ruleScore;
             productRepository.updateProductHealthScore(product.product.barcode, ruleScore);
         }
-        latestVerdict = HealthVerdict.fromAiVerdict(aiVerdict, aiVerdictReason, results, getIngredientCount(product));
+        latestVerdict = HealthVerdict.fromReport(report, getIngredientCount(product));
         healthScoreTextView.setText(latestVerdict.getLabel());
-        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.score(getView(), report == null ? null : report.getOverallScore());
+        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.explain(getView(), report);
+        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.score(getView(), report == null || latestVerdict.getStatus() == HealthVerdict.Status.REVIEW ? null : report.getOverallScore());
         com.ciblorenzo.whatsonmyfood.ui.ScanHistory.record(requireContext(), product.product);
         healthScoreTextView.setTextColor(getVerdictColor(latestVerdict));
     }
