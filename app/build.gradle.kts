@@ -51,8 +51,8 @@ android {
         applicationId = "com.ciblorenzo.whatsonmyfood"
         minSdk = 26
         targetSdk = 35
-        versionCode = 15
-        versionName = "1.19-rc-1"
+        versionCode = 16
+        versionName = "1.19-rc-2"
 
         buildConfigField("String", "FDC_API_KEY", buildConfigString(apiKey("FDC_API_KEY")))
         buildConfigField("String", "NUTRITIONIX_APP_ID", buildConfigString(apiKey("NUTRITIONIX_APP_ID")))
