@@ -9,7 +9,7 @@ import androidx.core.view.ViewCompat;
 import com.ciblorenzo.whatsonmyfood.R;
 
 public class ExpandableSection extends LinearLayout {
-    private boolean expanded;
+    private boolean expanded = true;
     public ExpandableSection(Context c, AttributeSet a){super(c,a);setOrientation(VERTICAL);}
     @Override protected void onFinishInflate(){super.onFinishInflate(); if(getChildCount()<2)return;
         View heading=getChildAt(0); heading.setOnClickListener(v->{expanded=!expanded;apply();}); apply();
