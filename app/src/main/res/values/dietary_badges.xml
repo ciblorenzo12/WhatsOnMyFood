@@ -1,0 +1,10 @@
+<resources>
+    <string name="dietary_not_verified">Not verified</string>
+    <color name="dietary_unverified_foreground">#774409</color>
+    <color name="dietary_unverified_background">#FFF0D3</color>
+    <string name="dietary_gluten_free">Gluten-Free</string>
+    <string name="dietary_vegan">Vegan</string>
+    <string name="dietary_vegetarian">Vegetarian</string>
+    <color name="dietary_badge_foreground">#21633F</color>
+    <color name="dietary_badge_background">#EDF6EF</color>
+</resources>

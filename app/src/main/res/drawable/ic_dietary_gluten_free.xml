@@ -1,0 +1,5 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="36dp" android:height="36dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#00000000" android:strokeColor="@color/dietary_badge_foreground" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M12,21L12,6M12,7C9,5 10,3 12,1C14,3 15,5 12,7ZM12,11C8,11 6,8 7,6C10,6 12,8 12,11ZM12,11C16,11 18,8 17,6C14,6 12,8 12,11ZM12,17C8,17 6,14 7,12C10,12 12,14 12,17ZM12,17C16,17 18,14 17,12C14,12 12,14 12,17" />
+    <path android:fillColor="#00000000" android:strokeColor="@color/dietary_badge_background" android:strokeWidth="4" android:pathData="M3,21L21,3" />
+    <path android:fillColor="#00000000" android:strokeColor="@color/dietary_badge_foreground" android:strokeWidth="1.8" android:strokeLineCap="round" android:pathData="M3,21L21,3" />
+</vector>

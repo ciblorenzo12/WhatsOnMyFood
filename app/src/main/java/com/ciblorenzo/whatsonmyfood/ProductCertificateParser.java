@@ -16,6 +16,9 @@ public final class ProductCertificateParser {
         for (String rawLabel : splitLabels(labels)) {
             ProductCertificate certificate = matchCertificate(rawLabel);
             if (certificate != null) {
+                certificate = new ProductCertificate(certificate.key, certificate.displayName,
+                        certificate.badgeText, certificate.styleKey, certificate.specific,
+                        prettify(rawLabel));
                 addCertificate(certificates, certificate);
             }
         }
@@ -35,7 +38,9 @@ public final class ProductCertificateParser {
 
     private static void addCertificate(Map<String, ProductCertificate> certificates, ProductCertificate certificate) {
         ProductCertificate existing = certificates.get(certificate.key);
-        if (existing == null || (!existing.specific && certificate.specific)) {
+        if (existing == null
+                || (existing.logoKey == null && certificate.logoKey != null)
+                || (existing.logoKey == null && !existing.specific && certificate.specific)) {
             certificates.put(certificate.key, certificate);
         }
     }

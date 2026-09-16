@@ -72,7 +72,7 @@
                 </com.ciblorenzo.whatsonmyfood.ui.ExpandableSection>
             </FrameLayout>
             <HorizontalScrollView android:id="@+id/certificate_badges_scroll_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="20dp" android:clipToPadding="false" android:overScrollMode="never" android:scrollbars="none" android:visibility="gone" tools:visibility="visible">
-                <LinearLayout android:id="@+id/certificate_badges_container" android:layout_width="wrap_content" android:layout_height="92dp" android:gravity="center_vertical" android:orientation="horizontal" />
+                <LinearLayout android:id="@+id/certificate_badges_container" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="92dp" android:gravity="center_vertical" android:orientation="horizontal" />
             </HorizontalScrollView>
             <com.ciblorenzo.whatsonmyfood.ui.ExpandableSection android:id="@+id/ui_expand_ingredients_card" android:layout_width="match_parent" android:layout_height="wrap_content">
                 <Button android:id="@+id/ingredients_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/ui_ingredients_notice" android:gravity="start|center_vertical" android:minHeight="48dp" style="@style/SecondaryButton" />

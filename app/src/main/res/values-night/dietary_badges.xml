@@ -1,0 +1,6 @@
+<resources>
+    <color name="dietary_unverified_foreground">#FFDA99</color>
+    <color name="dietary_unverified_background">#503A1D</color>
+    <color name="dietary_badge_foreground">#B5E8C4</color>
+    <color name="dietary_badge_background">#233B2E</color>
+</resources>
