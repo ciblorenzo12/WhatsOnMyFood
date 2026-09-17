@@ -1,0 +1,14 @@
+<resources>
+    <string name="recall_pending">Recall check pending — tap for details</string>
+    <string name="recall_last_success">Last successful check: %1$s</string>
+    <string name="recall_never_checked">No successful recall check yet.</string>
+    <string name="recall_refresh_failed">The latest check failed. We will retry automatically.</string>
+    <string name="recall_outdated">Previous result — awaiting an updated check.</string>
+    <string name="recall_auto_schedule">Pantry recalls are checked automatically when items change and about once a day when online.</string>
+    <string name="recall_enable_notifications">Enable recall notifications</string>
+    <string name="recall_notification_settings">Recall notification settings</string>
+    <string name="recall_notification_channel">Pantry recalls</string>
+    <string name="recall_notification_title">Review a pantry recall match</string>
+    <string name="recall_notification_body">%1$s may be affected by a recall. Open the notice and compare the lot and package details.</string>
+    <string name="recall_other_notices">View next matching notice (%1$d of %2$d)</string>
+</resources>

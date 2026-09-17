@@ -130,10 +130,28 @@
                 android:isIndicator="false"
                 android:numStars="5"
                 android:stepSize="1"
-                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintBottom_toTopOf="@+id/pantry_recall_status"
                 app:layout_constraintStart_toStartOf="@id/product_name_text_view"
                 app:layout_constraintTop_toBottomOf="@id/ingredient_concern_label"
                 tools:rating="3" />
+
+            <TextView
+                android:id="@+id/pantry_recall_status"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:padding="10dp"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:background="?attr/selectableItemBackground"
+                android:text="@string/recall_pending"
+                android:textColor="@color/text_secondary"
+                android:clickable="true"
+                android:focusable="true"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/user_risk_rating_bar"
+                app:layout_constraintBottom_toBottomOf="parent" />
 
             <TextView
                 android:id="@+id/ai_verified_badge"
@@ -151,7 +169,7 @@
                 android:textSize="10sp"
                 android:textStyle="bold"
                 android:visibility="gone"
-                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintBottom_toTopOf="@id/pantry_recall_status"
                 app:layout_constraintEnd_toEndOf="parent"
                 tools:visibility="visible" />
 

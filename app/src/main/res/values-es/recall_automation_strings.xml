@@ -1,0 +1,14 @@
+<resources>
+    <string name="recall_pending">Comprobación de retiradas pendiente — toca para ver los detalles</string>
+    <string name="recall_last_success">Última comprobación correcta: %1$s</string>
+    <string name="recall_never_checked">Aún no se ha completado ninguna comprobación de retiradas.</string>
+    <string name="recall_refresh_failed">La última comprobación falló. Volveremos a intentarlo automáticamente.</string>
+    <string name="recall_outdated">Resultado anterior — esperando una nueva comprobación.</string>
+    <string name="recall_auto_schedule">Las retiradas de productos de la despensa se comprueban automáticamente cuando cambian y aproximadamente una vez al día con conexión a internet.</string>
+    <string name="recall_enable_notifications">Activar notificaciones de retiradas</string>
+    <string name="recall_notification_settings">Ajustes de notificaciones de retiradas</string>
+    <string name="recall_notification_channel">Retiradas de productos de la despensa</string>
+    <string name="recall_notification_title">Revisa una posible retirada en tu despensa</string>
+    <string name="recall_notification_body">%1$s podría estar afectado por una retirada. Abre el aviso y compara el lote y los detalles del envase.</string>
+    <string name="recall_other_notices">Ver el siguiente aviso coincidente (%1$d de %2$d)</string>
+</resources>

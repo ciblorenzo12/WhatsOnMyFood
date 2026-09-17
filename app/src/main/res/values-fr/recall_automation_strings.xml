@@ -1,0 +1,14 @@
+<resources>
+    <string name="recall_pending">Vérification des rappels en attente — touchez pour voir les détails</string>
+    <string name="recall_last_success">Dernière vérification réussie : %1$s</string>
+    <string name="recall_never_checked">Aucune vérification des rappels réussie pour le moment.</string>
+    <string name="recall_refresh_failed">La dernière vérification a échoué. Nous réessaierons automatiquement.</string>
+    <string name="recall_outdated">Résultat précédent — en attente de vérification.</string>
+    <string name="recall_auto_schedule">Les rappels des produits du garde-manger sont vérifiés automatiquement après une modification et environ une fois par jour avec une connexion internet.</string>
+    <string name="recall_enable_notifications">Activer les notifications de rappel</string>
+    <string name="recall_notification_settings">Paramètres des notifications de rappel</string>
+    <string name="recall_notification_channel">Rappels du garde-manger</string>
+    <string name="recall_notification_title">Vérifiez un rappel potentiel dans votre garde-manger</string>
+    <string name="recall_notification_body">%1$s pourrait faire l’objet d’un rappel. Ouvrez l’avis et comparez le lot et les détails de l’emballage.</string>
+    <string name="recall_other_notices">Voir l’avis correspondant suivant (%1$d sur %2$d)</string>
+</resources>

@@ -61,6 +61,23 @@ public final class FoodRecallNavigation {
             action.setContentDescription(context.getString(R.string.food_recall_unavailable_product));
         }
         GlassMotion.attachPress(action);
+        TextView saved = root.findViewById(R.id.food_recall_saved_status);
+        if (saved != null) {
+            if (saved.getTag() instanceof Runnable) ((Runnable) saved.getTag()).run();
+            saved.setTag(null);
+            saved.setVisibility(View.GONE);
+            com.google.firebase.auth.FirebaseUser user = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+            if (available && user != null && context instanceof androidx.lifecycle.LifecycleOwner) {
+                androidx.lifecycle.LiveData<PantryRecallStatus> data = com.ciblorenzo.whatsonmyfood.AppDatabase.getDatabase(context)
+                        .pantryRecallDao().observe(user.getUid(), productDetails.product.barcode);
+                androidx.lifecycle.Observer<PantryRecallStatus> observer = status -> {
+                    saved.setVisibility(status == null ? View.GONE : View.VISIBLE);
+                    if (status != null) saved.setText(RecallStatusText.describe(context, productDetails.product, status));
+                };
+                data.observe((androidx.lifecycle.LifecycleOwner) context, observer);
+                saved.setTag((Runnable) () -> data.removeObserver(observer));
+            }
+        }
     }
 
     public static Intent createIntent(

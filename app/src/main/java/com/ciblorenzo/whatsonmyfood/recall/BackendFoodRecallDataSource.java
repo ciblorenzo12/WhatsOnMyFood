@@ -56,9 +56,6 @@ public final class BackendFoodRecallDataSource implements FoodRecallDataSource {
 
         for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
             try (Response response = client.newCall(request).execute()) {
-                if (response.code() == 404) {
-                    return new FoodRecallDataset(Collections.emptyList(), "");
-                }
                 if (isTransient(response.code()) && attempt + 1 < MAX_ATTEMPTS) {
                     ResilientRequestPolicy.waitBeforeRetry();
                     continue;
@@ -114,6 +111,9 @@ public final class BackendFoodRecallDataSource implements FoodRecallDataSource {
             JsonElement parsed = JsonParser.parseString(body);
             if (!parsed.isJsonObject()) throw new IOException("Recall backend returned an invalid response");
             JsonObject root = parsed.getAsJsonObject();
+            if (root.has("error") || !root.has("results") || !root.get("results").isJsonArray()) {
+                throw new IOException("Recall backend returned an incomplete response");
+            }
             String lastUpdated = "";
             if (root.has("meta") && root.get("meta").isJsonObject()) {
                 lastUpdated = text(root.getAsJsonObject("meta"), "last_updated");
@@ -123,8 +123,11 @@ public final class BackendFoodRecallDataSource implements FoodRecallDataSource {
                     ? root.getAsJsonArray("results")
                     : new JsonArray();
             for (JsonElement element : results) {
-                if (!element.isJsonObject()) continue;
+                if (!element.isJsonObject()) throw new IOException("Invalid recall record");
                 JsonObject item = element.getAsJsonObject();
+                if (text(item, "recall_number").isEmpty() || text(item, "product_description").isEmpty()) {
+                    throw new IOException("Incomplete recall record");
+                }
                 records.add(new FoodRecallRecord(
                         text(item, "recall_number"),
                         text(item, "product_description"),

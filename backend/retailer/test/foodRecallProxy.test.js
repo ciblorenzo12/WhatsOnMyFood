@@ -100,3 +100,52 @@ test("refuses a recall request when the backend key is not configured", async ()
   assert.equal(result.status, 503);
   assert.match(result.body.error, /not configured/i);
 });
+
+test("barcode-only search includes UPC and equivalent EAN fields", () => {
+  const query = buildSearchQuery({ barcode: "012345678905" });
+  assert.match(query, /code_info:"012345678905"/);
+  assert.match(query, /product_description:"0012345678905"/);
+});
+
+test("only an official no-match 404 becomes an empty successful result", async () => {
+  const options = body => ({ apiKey: "key", fetchImpl: async () => ({
+    ok: false, status: 404, text: async () => body,
+  }) });
+  const empty = await fetchFoodRecalls({ barcode: "012345678905" }, options(
+    '{"error":{"code":"NOT_FOUND","message":"No matches found!"}}'));
+  assert.deepEqual(empty.results, []);
+  await assert.rejects(fetchFoodRecalls({ barcode: "012345678905" }, options('<html>not found</html>')));
+  await assert.rejects(fetchFoodRecalls({ barcode: "012345678905" }, options('{"error":"not found"}')));
+});
+
+test("incomplete records and unexpected success payloads fail closed", async () => {
+  for (const payload of [{ results: [{}] }, { results: [null] }, { error: "oops", results: [] }, {}]) {
+    await assert.rejects(fetchFoodRecalls({ productName: "cereal" }, {
+      apiKey: "key", fetchImpl: async () => ({ ok: true, status: 200, text: async () => JSON.stringify(payload) }),
+    }));
+  }
+});
+
+test("fetches later pages rather than incorrectly treating the first page as complete", async () => {
+  const skips = [];
+  const result = await fetchFoodRecalls({ productName: "cereal" }, {
+    apiKey: "key", fetchImpl: async url => {
+      const skip = Number(url.searchParams.get("skip") || 0); skips.push(skip);
+      const count = skip === 0 ? RESULT_LIMIT : 1;
+      return { ok: true, status: 200, text: async () => JSON.stringify({
+        meta: { last_updated: "2026-09-01", results: { total: RESULT_LIMIT + 1 } },
+        results: Array.from({length: count}, (_,i) => ({ recall_number: `F-${skip+i}`, product_description: "Cereal" })),
+      }) };
+    },
+  });
+  assert.deepEqual(skips, [0, RESULT_LIMIT]);
+  assert.equal(result.results.length, RESULT_LIMIT + 1);
+});
+
+test("an interrupted multi-page result never becomes no known match", async () => {
+  await assert.rejects(fetchFoodRecalls({ productName: "cereal" }, {
+    apiKey: "key", fetchImpl: async () => ({ ok: true, status: 200, text: async () => JSON.stringify({
+      meta: { results: { total: 101 } }, results: [{ recall_number: "F-1", product_description: "Cereal" }],
+    }) }),
+  }));
+});

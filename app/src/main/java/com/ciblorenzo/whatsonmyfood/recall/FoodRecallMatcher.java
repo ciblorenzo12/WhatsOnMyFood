@@ -13,19 +13,25 @@ public final class FoodRecallMatcher {
     private static final Pattern IDENTIFIER_PATTERN = Pattern.compile("(?:\\d[\\s-]*){8,14}");
 
     public FoodRecallCheckResult match(Product product, FoodRecallDataset dataset) {
-        if (product == null || dataset == null) return FoodRecallCheckResult.noKnownMatch("");
+        if (product == null || dataset == null) throw new IllegalArgumentException("Product and recall data are required");
         Candidate best = null;
+        java.util.List<FoodRecallRecord> matches = new java.util.ArrayList<>();
         for (FoodRecallRecord record : dataset.records) {
             if (record == null || !record.isActive()) continue;
             Candidate candidate = score(product, record);
+            if (candidate != null) matches.add(record);
             if (candidate != null && (best == null || candidate.score > best.score)) {
                 best = candidate;
             }
         }
         if (best == null) return FoodRecallCheckResult.noKnownMatch(dataset.sourceUpdatedAt);
-        return best.confirmed
+        FoodRecallCheckResult result = best.confirmed
                 ? FoodRecallCheckResult.confirmed(best.record, best.score, dataset.sourceUpdatedAt)
                 : FoodRecallCheckResult.possible(best.record, best.score, dataset.sourceUpdatedAt);
+        matches.remove(best.record);
+        matches.add(0, best.record);
+        result.matchedRecords = matches;
+        return result;
     }
 
     private Candidate score(Product product, FoodRecallRecord record) {
@@ -60,6 +66,10 @@ public final class FoodRecallMatcher {
     static boolean containsBarcode(String barcode, String recordText) {
         String expected = digits(barcode);
         if (expected.length() < 8) return false;
+        Matcher unformatted = Pattern.compile("(?<!\\d)\\d{8,14}(?!\\d)").matcher(recordText == null ? "" : recordText);
+        while (unformatted.find()) {
+            if (sameIdentifier(expected, unformatted.group())) return true;
+        }
         Matcher matcher = IDENTIFIER_PATTERN.matcher(recordText == null ? "" : recordText);
         while (matcher.find()) {
             String candidate = digits(matcher.group());
@@ -74,15 +84,16 @@ public final class FoodRecallMatcher {
     }
 
     private static String trimLeadingZero(String value) {
-        return value.startsWith("0") ? value.substring(1) : value;
+        return value.replaceFirst("^0+(?!$)", "");
     }
 
     private static boolean hasBrandMatch(String brand, String identityText) {
         List<String> brandTokens = FoodRecallQueryBuilder.significantTokens(brand);
         if (brandTokens.isEmpty()) return false;
         int found = 0;
+        Set<String> identityTokens = new HashSet<>(java.util.Arrays.asList(identityText.split(" ")));
         for (String token : brandTokens) {
-            if (identityText.contains(token)) found++;
+            if (identityTokens.contains(token)) found++;
         }
         return found >= Math.max(1, (int) Math.ceil(brandTokens.size() * 0.75));
     }

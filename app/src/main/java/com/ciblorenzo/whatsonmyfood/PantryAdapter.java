@@ -21,6 +21,13 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
     private List<Product> products;
     private final OnItemClickListener listener;
     private final OnRiskRatingChangeListener riskRatingChangeListener;
+    private final java.util.Map<String, com.ciblorenzo.whatsonmyfood.recall.PantryRecallStatus> recalls = new java.util.HashMap<>();
+
+    public void updateRecalls(java.util.List<com.ciblorenzo.whatsonmyfood.recall.PantryRecallStatus> statuses) {
+        recalls.clear();
+        if (statuses != null) for (com.ciblorenzo.whatsonmyfood.recall.PantryRecallStatus status : statuses) recalls.put(status.barcode, status);
+        notifyDataSetChanged();
+    }
 
     public interface OnItemClickListener {
         void onItemClick(Product product);
@@ -47,6 +54,18 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
     public void onBindViewHolder(@NonNull PantryViewHolder holder, int position) {
         Product product = products.get(position);
         holder.bind(product, listener, riskRatingChangeListener);
+        com.ciblorenzo.whatsonmyfood.recall.PantryRecallStatus status = recalls.get(product.barcode);
+        TextView recall = holder.itemView.findViewById(R.id.pantry_recall_status);
+        recall.setText(com.ciblorenzo.whatsonmyfood.recall.RecallStatusText.describe(recall.getContext(), product, status));
+        com.ciblorenzo.whatsonmyfood.recall.FoodRecallState state = status == null
+                ? com.ciblorenzo.whatsonmyfood.recall.FoodRecallState.READY
+                : status.displayState(product, System.currentTimeMillis());
+        recall.setTextColor(recall.getContext().getColor(com.ciblorenzo.whatsonmyfood.recall.FoodRecallPresentation.forState(state).statusColor));
+        recall.setOnClickListener(view -> {
+            ProductWithDetails details = new ProductWithDetails(); details.product = product;
+            view.getContext().startActivity(com.ciblorenzo.whatsonmyfood.recall.FoodRecallNavigation.createIntent(
+                    view.getContext(), details, com.ciblorenzo.whatsonmyfood.recall.FoodRecallNavigation.EntryPoint.SAVED_PRODUCT));
+        });
         GlassMotion.enter(holder.cardView, Math.min(position * 35L, 220L));
     }
 

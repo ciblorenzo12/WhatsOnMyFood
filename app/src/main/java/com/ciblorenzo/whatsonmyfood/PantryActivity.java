@@ -51,6 +51,12 @@ public class PantryActivity extends BaseActivity {
     private View emptyState;
     private String uiQuery = "", uiFilter = "all";
     private PantrySortOption currentSort = PantrySortOption.RECENT;
+    private java.util.List<com.ciblorenzo.whatsonmyfood.recall.PantryRecallStatus> recallStatuses = new java.util.ArrayList<>();
+    private final ActivityResultLauncher<String> recallPermission = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(), granted -> {
+                if (granted && currentUser != null) com.ciblorenzo.whatsonmyfood.recall.PantryRecallScheduler.sweep(this, currentUser.getUid());
+                updateNotificationAction();
+            });
 
     private final ActivityResultLauncher<Intent> detailsActivityLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -98,6 +104,21 @@ public class PantryActivity extends BaseActivity {
 
         db = AppDatabase.getDatabase(this);
         executorService = Executors.newSingleThreadExecutor();
+        db.pantryRecallDao().observePantry(currentUser.getUid()).observe(this, statuses -> {
+            recallStatuses = statuses;
+            if (adapter != null) adapter.updateRecalls(statuses);
+        });
+        findViewById(R.id.pantry_recall_notifications).setOnClickListener(view -> {
+            if (android.os.Build.VERSION.SDK_INT >= 33 && androidx.core.content.ContextCompat.checkSelfPermission(
+                    this, android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
+                    && !getSharedPreferences(PANTRY_PREFERENCES, MODE_PRIVATE).getBoolean("recall_permission_asked", false)) {
+                getSharedPreferences(PANTRY_PREFERENCES, MODE_PRIVATE).edit().putBoolean("recall_permission_asked", true).apply();
+                recallPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS);
+            } else {
+                startActivity(new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, getPackageName()));
+            }
+        });
         currentSort = PantrySortOption.fromPreference(
                 getSharedPreferences(PANTRY_PREFERENCES, MODE_PRIVATE)
                         .getString(SORT_PREFERENCE, PantrySortOption.RECENT.getPreferenceValue())
@@ -134,6 +155,14 @@ public class PantryActivity extends BaseActivity {
         // Scans reached through shared navigation may save products without using
         // this Activity's detail-result launcher.
         if (db != null && executorService != null && !executorService.isShutdown()) loadPantryItems();
+        updateNotificationAction();
+        if (currentUser != null) com.ciblorenzo.whatsonmyfood.recall.PantryRecallScheduler.sweep(this, currentUser.getUid());
+    }
+
+    private void updateNotificationAction() {
+        android.widget.TextView action = findViewById(R.id.pantry_recall_notifications);
+        if (action != null) action.setText(androidx.core.app.NotificationManagerCompat.from(this).areNotificationsEnabled()
+                ? R.string.recall_notification_settings : R.string.recall_enable_notifications);
     }
 
     @Override
@@ -221,6 +250,7 @@ public class PantryActivity extends BaseActivity {
                             db.productDao().updateUserIngredientRiskScore(product.barcode, score)
                     ));
                     recyclerView.setAdapter(adapter);
+                    adapter.updateRecalls(recallStatuses);
                     GlassMotion.enter(recyclerView, 80L);
                 } else {
                     adapter.updateList(new java.util.ArrayList<>(pantryProducts));

@@ -99,9 +99,6 @@ android {
     lint {
         abortOnError = true
         checkReleaseBuilds = true
-        // Picasso contains an optional RemoteViews notification target. This app never
-        // posts notifications, so requesting POST_NOTIFICATIONS would be misleading.
-        disable += "NotificationPermission"
     }
 
     bundle {
@@ -134,6 +131,7 @@ dependencies {
     // Room
     val roomVersion = "2.6.1"
     implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.work:work-runtime:2.10.1")
     annotationProcessor("androidx.room:room-compiler:$roomVersion")
 
     // Camera & ML Kit

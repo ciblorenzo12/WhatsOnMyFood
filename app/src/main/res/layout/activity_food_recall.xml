@@ -148,6 +148,21 @@
                         android:textSize="15sp"
                         tools:text="A recall may involve a similar product. Compare the official notice with the package." />
 
+                    <TextView
+                        android:id="@+id/food_recall_last_checked"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/recall_never_checked"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+
+                    <Button
+                        android:id="@+id/food_recall_other_notices"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone" />
+
                     <LinearLayout
                         android:id="@+id/food_recall_guidance"
                         android:layout_width="match_parent"

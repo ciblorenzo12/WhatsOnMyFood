@@ -31,16 +31,25 @@ function phrase(value, limit) {
   return significantTokens(value).slice(0, limit).join(" ");
 }
 
-function buildSearchQuery({ productName, brand }) {
+function buildSearchQuery({ productName, brand, barcode }) {
   const namePhrase = phrase(productName, 3);
   const brandPhrase = phrase(brand, 2);
   const clauses = [];
+  const digits = String(barcode || "").replace(/\D/g, "");
+  if (/^\d{8,14}$/.test(digits)) {
+    const identifiers = new Set([digits]);
+    if (digits.length === 12) identifiers.add(`0${digits}`);
+    if (digits.length === 13 && digits.startsWith("0")) identifiers.add(digits.slice(1));
+    for (const id of identifiers) {
+      clauses.push(`code_info:"${id}"`, `product_description:"${id}"`);
+    }
+  }
   if (namePhrase) clauses.push(`product_description:"${namePhrase}"`);
   if (brandPhrase && brandPhrase !== namePhrase) {
     clauses.push(`product_description:"${brandPhrase}"`);
   }
   if (!clauses.length) {
-    const error = new Error("Product name or brand is required");
+    const error = new Error("Barcode, product name or brand is required");
     error.code = "invalid_product";
     throw error;
   }
@@ -64,8 +73,12 @@ function safeText(value) {
 
 function normalizePayload(payload) {
   const results = Array.isArray(payload?.results) ? payload.results : [];
+  if (results.some(record => !safeText(record?.recall_number) || !safeText(record?.product_description))) {
+    throw new Error("Incomplete FDA recall record");
+  }
   return {
-    meta: { last_updated: safeText(payload?.meta?.last_updated) },
+    meta: { last_updated: safeText(payload?.meta?.last_updated),
+      total: payload?.meta?.results?.total ?? results.length },
     results: results.slice(0, RESULT_LIMIT).map((record) => ({
       recall_number: safeText(record?.recall_number),
       product_description: safeText(record?.product_description),
@@ -103,13 +116,15 @@ async function fetchAttempt(url, { fetchImpl, timeoutMs }) {
   }
 }
 
-async function fetchFoodRecalls(query, {
+async function fetchFoodRecallPage(query, {
   fetchImpl = globalThis.fetch,
   apiKey = process.env.OPENFDA_API_KEY,
   timeoutMs = DEFAULT_TIMEOUT_MS,
   sleep = defaultSleep,
+  skip = 0,
 } = {}) {
   const upstreamUrl = buildOpenFdaUrl(query, apiKey);
+  if (skip) upstreamUrl.searchParams.set("skip", String(skip));
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
     let response;
     try {
@@ -126,7 +141,13 @@ async function fetchFoodRecalls(query, {
     }
 
     if (response.status === 404) {
-      return normalizePayload({ results: [] });
+      // Only the documented empty-query response means no matches. A proxy/route
+      // 404 or a malformed error is a failed check, not evidence of no recalls.
+      const empty = JSON.parse(await response.text());
+      if (empty?.error?.code === "NOT_FOUND" && empty?.error?.message === "No matches found!") {
+        return normalizePayload({ results: [] });
+      }
+      throw new Error("Unexpected FDA 404 response");
     }
     if (isTransient(response.status) && attempt + 1 < MAX_ATTEMPTS) {
       await sleep(250);
@@ -147,7 +168,8 @@ async function fetchFoodRecalls(query, {
       invalid.code = "invalid_upstream_response";
       throw invalid;
     }
-    if (!payload || typeof payload !== "object" || !Array.isArray(payload.results)) {
+    if (!payload || typeof payload !== "object" || payload.error || !Array.isArray(payload.results)
+        || (payload.results.length >= RESULT_LIMIT && !Number.isInteger(payload?.meta?.results?.total))) {
       const invalid = new Error("FDA recall source returned an invalid response");
       invalid.code = "invalid_upstream_response";
       throw invalid;
@@ -155,6 +177,22 @@ async function fetchFoodRecalls(query, {
     return normalizePayload(payload);
   }
   throw new Error("FDA recall source request did not complete");
+}
+
+async function fetchFoodRecalls(query, options = {}) {
+  const records = [];
+  let updated = "";
+  for (let page = 0; page < 10; page += 1) {
+    const payload = await fetchFoodRecallPage(query, { ...options, skip: page * RESULT_LIMIT });
+    if (page > 0 && payload.results.length === 0) throw new Error("FDA result set changed during pagination");
+    records.push(...payload.results);
+    updated = payload.meta.last_updated || updated;
+    if (records.length >= payload.meta.total) {
+      return { meta: { last_updated: updated }, results: records };
+    }
+    if (payload.results.length < RESULT_LIMIT) throw new Error("Incomplete FDA result page");
+  }
+  throw new Error("FDA result set exceeds the complete-check limit");
 }
 
 async function handleFoodRecallCheck(url, options = {}) {
@@ -179,7 +217,7 @@ async function handleFoodRecallCheck(url, options = {}) {
     };
   } catch (error) {
     if (error.code === "invalid_product") {
-      return { status: 400, body: { error: "A product name or brand is required." } };
+      return { status: 400, body: { error: "A barcode, product name or brand is required." } };
     }
     if (error.code === "upstream_unavailable") {
       return { status: 503, body: { error: "The FDA recall source is temporarily unavailable." } };

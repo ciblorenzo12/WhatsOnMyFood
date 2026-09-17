@@ -12,6 +12,20 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 
 public class BackendFoodRecallDataSourceTest {
+    @Test public void malformedOrIncompleteResponsesAreFailuresNotEmptyMatches() {
+        for (String response : new String[] {"{}", "{\"error\":\"unavailable\"}", "{\"results\":null}",
+                "{\"results\":[null]}", "{\"results\":[{}]}"}) {
+            org.junit.Assert.assertThrows(java.io.IOException.class, () -> BackendFoodRecallDataSource.parseResponse(response));
+        }
+    }
+
+    @Test public void backend404IsNotInterpretedAsNoRecalls() {
+        OkHttpClient client = new OkHttpClient.Builder().addInterceptor(chain -> new okhttp3.Response.Builder()
+                .request(chain.request()).protocol(okhttp3.Protocol.HTTP_1_1).code(404).message("Not found")
+                .body(okhttp3.ResponseBody.create("{}", okhttp3.MediaType.get("application/json"))).build()).build();
+        org.junit.Assert.assertThrows(java.io.IOException.class, () ->
+                new BackendFoodRecallDataSource(client, "https://backend.test", "token").search(product()));
+    }
 
     @Test
     public void requestUsesProtectedBackendWithoutProviderKey() {

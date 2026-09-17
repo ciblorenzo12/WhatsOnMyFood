@@ -36,6 +36,14 @@ public final class FoodRecallRecord {
         return !normalized.equals("terminated") && !normalized.equals("completed");
     }
 
+    public String officialUrl() {
+        // Link to the exact official FDA record rather than an unrelated general landing page.
+        return new okhttp3.HttpUrl.Builder().scheme("https").host("api.fda.gov")
+                .addPathSegments("food/enforcement.json")
+                .addQueryParameter("search", "recall_number:\"" + recallNumber.replace("\"", "") + "\"")
+                .addQueryParameter("limit", "1").build().toString();
+    }
+
     private static String safe(String value) {
         return value == null ? "" : value.trim();
     }

@@ -53,6 +53,14 @@ public class FoodRecallActivity extends BaseActivity {
     private TextView recallSourceUpdated;
     private FoodRecallState currentState = FoodRecallState.READY;
     private Product currentProduct;
+    private String ownerId;
+    private PantryRecallStatus savedStatus;
+    private FoodRecallCheckResult displayedResult;
+    private FoodRecallRecord displayedRecord;
+    private int noticeIndex;
+    private boolean checking;
+    private TextView lastChecked;
+    private Button otherNotices;
     private final ExecutorService recallExecutor = Executors.newSingleThreadExecutor();
     private final FoodRecallRepository recallRepository = new FoodRecallRepository();
 
@@ -90,6 +98,13 @@ public class FoodRecallActivity extends BaseActivity {
         recallCodes = findViewById(R.id.food_recall_codes);
         recallReportDate = findViewById(R.id.food_recall_report_date);
         recallSourceUpdated = findViewById(R.id.food_recall_source_updated);
+        lastChecked = findViewById(R.id.food_recall_last_checked);
+        otherNotices = findViewById(R.id.food_recall_other_notices);
+        otherNotices.setOnClickListener(view -> {
+            if (displayedResult == null || displayedResult.matches().isEmpty()) return;
+            noticeIndex = (noticeIndex + 1) % displayedResult.matches().size();
+            bindRecallDetails(displayedResult);
+        });
         GlassMotion.attachPress(primaryAction);
         GlassMotion.attachPress(officialSourceAction);
 
@@ -101,6 +116,10 @@ public class FoodRecallActivity extends BaseActivity {
         }
 
         currentProduct = productDetails.product;
+        com.google.firebase.auth.FirebaseUser user = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+        ownerId = user == null ? null : user.getUid();
+        String notificationOwner = getIntent().getStringExtra("recall_owner");
+        if (notificationOwner != null && !notificationOwner.equals(ownerId)) { finish(); return; }
         bindProduct(currentProduct, FoodRecallNavigation.readEntryPoint(getIntent()));
         if (BuildConfig.DEBUG) {
             currentState = FoodRecallState.fromName(getIntent().getStringExtra(EXTRA_DEBUG_STATE));
@@ -109,6 +128,13 @@ public class FoodRecallActivity extends BaseActivity {
 
         primaryAction.setOnClickListener(view -> handlePrimaryAction());
         officialSourceAction.setOnClickListener(view -> openOfficialSource());
+        if (!(BuildConfig.DEBUG && getIntent().hasExtra(EXTRA_DEBUG_STATE))) {
+            if (ownerId != null) com.ciblorenzo.whatsonmyfood.AppDatabase.getDatabase(this).pantryRecallDao()
+                    .observe(ownerId, currentProduct.barcode).observe(this, status -> {
+                        if (status != null) { savedStatus = status; if (!checking) renderSaved(status); }
+                    });
+            refresh(false);
+        }
     }
 
     private void bindProduct(Product product, FoodRecallNavigation.EntryPoint entryPoint) {
@@ -126,18 +152,42 @@ public class FoodRecallActivity extends BaseActivity {
     }
 
     private void handlePrimaryAction() {
-        if (FoodRecallPresentation.requiresImmediateAttention(currentState)) {
-            openOfficialSource();
-            return;
-        }
+        refresh(true);
+    }
+
+    private void refresh(boolean force) {
+        if (checking) return;
+        checking = true;
         render(FoodRecallState.CHECKING);
         recallExecutor.execute(() -> {
             try {
-                FoodRecallCheckResult result = recallRepository.check(currentProduct);
+                com.ciblorenzo.whatsonmyfood.AppDatabase db = com.ciblorenzo.whatsonmyfood.AppDatabase.getDatabase(this);
+                boolean pantry = ownerId != null && db.productDao().findPantryItemByBarcode(currentProduct.barcode, ownerId) != null;
+                PantryRecallStatus stored = null;
+                FoodRecallCheckResult result;
+                if (pantry) {
+                    // Read current identity rather than a potentially old navigation/notification snapshot.
+                    ProductWithDetails latest = db.productDao().getProductWithDetails(currentProduct.barcode);
+                    if (latest != null) currentProduct = latest.product;
+                    stored = PantryRecallService.check(this, ownerId, currentProduct, force,
+                            () -> !Thread.currentThread().isInterrupted());
+                    if (stored == null) throw new IOException("Product is no longer in this pantry");
+                    result = stored.result();
+                } else {
+                    result = recallRepository.check(currentProduct);
+                    stored = new PantryRecallStatus();
+                    stored.barcode = currentProduct.barcode;
+                    stored.fingerprint = PantryRecallStatus.identity(currentProduct);
+                    stored.lastSuccessfulAt = System.currentTimeMillis();
+                    stored.resultJson = new com.google.gson.Gson().toJson(result);
+                }
+                PantryRecallStatus completed = stored;
                 runOnUiThread(() -> {
                     if (isFinishing() || isDestroyed()) return;
-                    render(result.state);
-                    bindRecallDetails(result);
+                    checking = false;
+                    savedStatus = completed;
+                    bindProduct(currentProduct, FoodRecallNavigation.readEntryPoint(getIntent()));
+                    renderSaved(completed);
                 });
             } catch (FoodRecallServiceException error) {
                 showFailure(error.temporarilyUnavailable
@@ -150,17 +200,33 @@ public class FoodRecallActivity extends BaseActivity {
     }
 
     private void showFailure(FoodRecallState state) {
+        if (ownerId != null) PantryRecallScheduler.item(this, ownerId, currentProduct.barcode);
         runOnUiThread(() -> {
             if (isFinishing() || isDestroyed()) return;
-            render(state);
-            bindRecallDetails(null);
+            checking = false;
+            if (savedStatus != null) {
+                savedStatus.failed = true;
+                renderSaved(savedStatus);
+            } else {
+                render(state);
+                lastChecked.setText(getString(R.string.recall_never_checked) + "\n" + getString(R.string.recall_refresh_failed));
+            }
         });
+    }
+
+    private void renderSaved(PantryRecallStatus status) {
+        render(status.displayState(currentProduct, System.currentTimeMillis()));
+        lastChecked.setText(RecallStatusText.checked(this, status)
+                + (!status.isCurrent(currentProduct, System.currentTimeMillis()) && status.lastSuccessfulAt > 0
+                ? "\n" + getString(R.string.recall_outdated) : ""));
+        noticeIndex = 0;
+        bindRecallDetails(status.result());
     }
 
     private void openOfficialSource() {
         LinkHandler.openLink(
                 this,
-                FDA_RECALLS_URL,
+                displayedRecord == null ? FDA_RECALLS_URL : displayedRecord.officialUrl(),
                 getString(R.string.food_recall_official_source),
                 "Recalls, Market Withdrawals, and Safety Alerts"
         );
@@ -188,7 +254,7 @@ public class FoodRecallActivity extends BaseActivity {
                 ? View.ACCESSIBILITY_LIVE_REGION_ASSERTIVE
                 : View.ACCESSIBILITY_LIVE_REGION_POLITE);
         if (model.showPrimaryAction) {
-            primaryAction.setText(model.primaryActionText);
+            primaryAction.setText(R.string.food_recall_check_again);
         }
         if (currentState != FoodRecallState.POSSIBLE_MATCH
                 && currentState != FoodRecallState.CONFIRMED_MATCH) {
@@ -197,7 +263,13 @@ public class FoodRecallActivity extends BaseActivity {
     }
 
     private void bindRecallDetails(FoodRecallCheckResult result) {
-        FoodRecallRecord record = result == null ? null : result.record;
+        displayedResult = result;
+        java.util.List<FoodRecallRecord> matches = result == null ? java.util.Collections.emptyList() : result.matches();
+        if (noticeIndex >= matches.size()) noticeIndex = 0;
+        FoodRecallRecord record = matches.isEmpty() ? null : matches.get(noticeIndex);
+        displayedRecord = record;
+        otherNotices.setVisibility(matches.size() > 1 ? View.VISIBLE : View.GONE);
+        otherNotices.setText(getString(R.string.recall_other_notices, noticeIndex + 1, matches.size()));
         if (record == null) {
             recallDetails.setVisibility(View.GONE);
             return;
@@ -218,7 +290,7 @@ public class FoodRecallActivity extends BaseActivity {
                 R.string.food_recall_detail_status,
                 safeText(record.status, getString(R.string.food_recall_detail_not_provided))
         ));
-        recallMatchBasis.setText(result.state == FoodRecallState.CONFIRMED_MATCH
+        recallMatchBasis.setText(noticeIndex == 0 && result.state == FoodRecallState.CONFIRMED_MATCH
                 ? R.string.food_recall_detail_match_confirmed
                 : R.string.food_recall_detail_match_possible);
         recallDescription.setText(getString(

@@ -1,6 +1,7 @@
 package com.ciblorenzo.whatsonmyfood.recall;
 
 public final class FoodRecallCheckResult {
+    public java.util.List<FoodRecallRecord> matchedRecords;
     public final FoodRecallState state;
     public final FoodRecallRecord record;
     public final int confidenceScore;
@@ -16,6 +17,13 @@ public final class FoodRecallCheckResult {
         this.record = record;
         this.confidenceScore = confidenceScore;
         this.sourceUpdatedAt = sourceUpdatedAt == null ? "" : sourceUpdatedAt;
+        this.matchedRecords = record == null ? java.util.Collections.emptyList()
+                : java.util.Collections.singletonList(record);
+    }
+
+    public java.util.List<FoodRecallRecord> matches() {
+        return matchedRecords != null ? matchedRecords : record == null
+                ? java.util.Collections.emptyList() : java.util.Collections.singletonList(record);
     }
 
     public static FoodRecallCheckResult noKnownMatch(String sourceUpdatedAt) {
