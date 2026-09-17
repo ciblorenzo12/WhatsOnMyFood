@@ -40,6 +40,7 @@ public final class FoodRecallNavigation {
             @Nullable ProductWithDetails productDetails,
             EntryPoint entryPoint
     ) {
+        if (entryPoint == EntryPoint.SCAN_RESULT && ScanRecallNotice.isBound(root, productDetails)) return;
         View layout = root.findViewById(R.id.food_recall_entry_layout);
         Button action = root.findViewById(R.id.food_recall_entry_button);
         TextView unavailable = root.findViewById(R.id.food_recall_entry_unavailable);
@@ -67,7 +68,7 @@ public final class FoodRecallNavigation {
             saved.setTag(null);
             saved.setVisibility(View.GONE);
             com.google.firebase.auth.FirebaseUser user = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
-            if (available && user != null && context instanceof androidx.lifecycle.LifecycleOwner) {
+            if (entryPoint != EntryPoint.SCAN_RESULT && available && user != null && context instanceof androidx.lifecycle.LifecycleOwner) {
                 androidx.lifecycle.LiveData<PantryRecallStatus> data = com.ciblorenzo.whatsonmyfood.AppDatabase.getDatabase(context)
                         .pantryRecallDao().observe(user.getUid(), productDetails.product.barcode);
                 androidx.lifecycle.Observer<PantryRecallStatus> observer = status -> {

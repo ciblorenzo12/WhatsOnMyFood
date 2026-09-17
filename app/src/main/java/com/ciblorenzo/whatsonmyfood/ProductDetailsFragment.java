@@ -479,6 +479,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                 productDetails,
                 FoodRecallNavigation.EntryPoint.SCAN_RESULT
         );
+        com.ciblorenzo.whatsonmyfood.recall.ScanRecallNotice.bind(this, getView(), productDetails);
         packagingTextView.setText(productDetails.product.packaging != null ? productDetails.product.packaging : "");
         ProductCertificateBadgeRenderer.bind(
                 requireContext(),

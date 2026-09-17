@@ -2,6 +2,8 @@
 
 ## Behavior
 
+- Opening a scanned product starts a fresh recall check immediately when its product details load, even before saving it to the pantry. A match displays an in-app dialog with a **View notice** action; no notification permission is needed for this warning. The recall section shows checking, success, or error status and the successful check time.
+- Scan checks survive view recreation and do not repeat when AI/ingredient UI updates render the same product again. Each scan screen shows the match dialog once per product identity. Manual recall checks remain available after a failed scan check.
 - Adding pantry items or changing stored product identity schedules a check. Room observers cover manual entry, scanning, OCR, and product refresh paths.
 - WorkManager schedules a daily pantry sweep for the signed-in user. Each item requires a network connection; Android may defer execution for power or connectivity reasons. This is not an exact-time alarm.
 - Successful results are cached for 24 hours. Changes to barcode, name, brand, or quantity invalidate freshness. Manual **Check again** bypasses the cache.
@@ -25,6 +27,7 @@ This feature uses the existing FDA food enforcement source. A product match stil
 
 ## Release smoke checks
 
+0. Scan the barcode of a matching product without saving it. Verify the request starts automatically and the recall dialog appears while the scan result is open. Re-render/rotate the screen and confirm no duplicate alert. Test a no-match response and an offline failure. Dedicated `ScanRecallViewModelTest` checks automatic matching, duplicate suppression, no matches, and failure handling; these three tests and the two existing recall screen tests passed on SM-X800 / Android 16.
 1. With a signed-in account, add a product matching a known active test notice. Verify a check runs without tapping the button, the pantry row is flagged, and the official record opens from details.
 2. Edit the product name/brand/quantity and verify it is checked again. Remove an item during a request and confirm no stale result/alert is published.
 3. Enable notifications, detect a new notice, and repeat manual/background checks. Confirm only one alert for the same product/notice, including after restarting the app.
