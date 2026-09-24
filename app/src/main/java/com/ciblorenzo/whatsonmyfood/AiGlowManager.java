@@ -9,9 +9,20 @@ public class AiGlowManager {
     public static void startGlow(Activity activity) {
         if (activity == null) return;
 
+        activity.runOnUiThread(() -> startGlowOnMainThread(activity));
+    }
+
+    private static void startGlowOnMainThread(Activity activity) {
+        if (activity.isFinishing() || activity.isDestroyed()) return;
+
         ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
+        setSpriteAnimation(decorView, true);
         View existingGlow = decorView.findViewWithTag("AI_GLOW_VIEW");
-        if (existingGlow != null) return;
+        if (existingGlow != null) {
+            existingGlow.animate().cancel();
+            existingGlow.animate().alpha(0.85f).setDuration(450).start();
+            return;
+        }
 
         AiGlowView glowView = new AiGlowView(activity);
         glowView.setScreenBorder(true);
@@ -31,7 +42,14 @@ public class AiGlowManager {
     public static void stopGlow(Activity activity) {
         if (activity == null) return;
 
+        activity.runOnUiThread(() -> stopGlowOnMainThread(activity));
+    }
+
+    private static void stopGlowOnMainThread(Activity activity) {
+        if (activity.isFinishing() || activity.isDestroyed()) return;
+
         ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
+        setSpriteAnimation(decorView, false);
         View glowView = decorView.findViewWithTag("AI_GLOW_VIEW");
         if (glowView != null) {
             glowView.animate()
@@ -39,6 +57,17 @@ public class AiGlowManager {
                     .setDuration(450)
                     .withEndAction(() -> decorView.removeView(glowView))
                     .start();
+        }
+    }
+
+    private static void setSpriteAnimation(View view, boolean animating) {
+        if (view instanceof BitwiseAiSpriteView) {
+            ((BitwiseAiSpriteView) view).setAnimating(animating);
+        } else if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                setSpriteAnimation(group.getChildAt(i), animating);
+            }
         }
     }
 }

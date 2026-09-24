@@ -28,6 +28,7 @@ public class BitwiseAiSpriteView extends View {
     private final Matrix matrix = new Matrix();
 
     private long startTimeMs;
+    private boolean animating;
     private RadialGradient auraGradient;
     private LinearGradient coreGradient;
     private RadialGradient highlightGradient;
@@ -48,6 +49,18 @@ public class BitwiseAiSpriteView extends View {
         highlightPaint.setStyle(Paint.Style.FILL);
         glintPaint.setStyle(Paint.Style.FILL);
         startTimeMs = SystemClock.uptimeMillis();
+    }
+
+    /** Animate only while an AI request is in progress; the resting icon is a still image. */
+    public void setAnimating(boolean animating) {
+        if (this.animating == animating) return;
+        this.animating = animating;
+        if (animating) startTimeMs = SystemClock.uptimeMillis();
+        invalidate();
+    }
+
+    boolean isAnimating() {
+        return animating;
     }
 
     @Override
@@ -122,7 +135,7 @@ public class BitwiseAiSpriteView extends View {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        if (isShown()) {
+        if (animating && isShown()) {
             postInvalidateOnAnimation();
         }
     }
@@ -130,7 +143,15 @@ public class BitwiseAiSpriteView extends View {
     @Override
     protected void onVisibilityChanged(View changedView, int visibility) {
         super.onVisibilityChanged(changedView, visibility);
-        if (visibility == VISIBLE && isShown()) {
+        if (animating && visibility == VISIBLE && isShown()) {
+            postInvalidateOnAnimation();
+        }
+    }
+
+    @Override
+    protected void onWindowVisibilityChanged(int visibility) {
+        super.onWindowVisibilityChanged(visibility);
+        if (animating && visibility == VISIBLE && isShown()) {
             postInvalidateOnAnimation();
         }
     }
@@ -145,7 +166,7 @@ public class BitwiseAiSpriteView extends View {
         float cx = width / 2f;
         float cy = height / 2f;
         float radius = Math.min(width, height) * 0.22f;
-        float elapsed = android.animation.ValueAnimator.areAnimatorsEnabled()
+        float elapsed = animating && android.animation.ValueAnimator.areAnimatorsEnabled()
                 ? (SystemClock.uptimeMillis() - startTimeMs) / 1000f : 0f;
         float pulse = 0.5f + 0.5f * (float) Math.sin(elapsed * 2.85f);
         float rotation = (elapsed * 50f) % 360f;
@@ -169,7 +190,7 @@ public class BitwiseAiSpriteView extends View {
         glintPaint.setColor(0xCCFFFFFF);
         canvas.drawCircle(cx + radius * 0.48f, cy - radius * 0.45f, radius * (0.09f + pulse * 0.025f), glintPaint);
 
-        if (isShown() && android.animation.ValueAnimator.areAnimatorsEnabled()) {
+        if (animating && isShown() && android.animation.ValueAnimator.areAnimatorsEnabled()) {
             postInvalidateOnAnimation();
         }
     }
