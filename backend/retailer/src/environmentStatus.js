@@ -8,6 +8,11 @@ function foodRecallProviderConfigured(env = process.env) {
   return Boolean(String(env.OPENFDA_API_KEY || "").trim());
 }
 
+function usdaProviderConfigured(env = process.env) {
+  const key = String(env.FDC_API_KEY || "").trim();
+  return Boolean(key) && key.toUpperCase() !== "DEMO_KEY";
+}
+
 function publicBaseUrl(env = process.env) {
   return String(env.PUBLIC_BASE_URL || "").trim().replace(/\/+$/, "");
 }
@@ -20,6 +25,7 @@ function healthPayload(env = process.env) {
     model: env.GEMINI_MODEL || DEFAULT_MODEL,
     foodRecallProvider: "openfda",
     foodRecallKeyConfigured: foodRecallProviderConfigured(env),
+    usdaKeyConfigured: usdaProviderConfigured(env),
   };
 }
 
@@ -48,6 +54,7 @@ function readinessResult({
       publicBaseUrl: baseUrl,
       model: env.GEMINI_MODEL || DEFAULT_MODEL,
       playBillingConfigured: Boolean(playBillingConfigured),
+      usdaKeyConfigured: usdaProviderConfigured(env),
       checks,
       endpoints: {
         health: "/health",
@@ -55,6 +62,7 @@ function readinessResult({
         aiAnalysis: "/v1/bitwise/analyze",
         ragIngredients: "/api/retail/products/:barcode/ingredients/rag",
         foodRecalls: "/v1/food-recalls",
+        usdaFoodData: "/v1/food-data/usda",
       },
     },
   };

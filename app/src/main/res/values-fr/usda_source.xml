@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="source_status_usda_food_data_central">Fiche principale du produit : USDA FoodData Central (données de l’étiquette fournies par le fabricant). Cela ne constitue pas une approbation de l’USDA.</string>
+    <string name="source_status_usda_per_100g_nutrition_unavailable">Aucune valeur nutritionnelle exploitable pour 100 g n’est disponible. Les valeurs pour 100 mL ne sont pas traitées comme des valeurs pour 100 g. Vérifiez l’étiquette du produit ; les valeurs manquantes ne signifient pas zéro.</string>
+</resources>

@@ -10,6 +10,29 @@ import static org.junit.Assert.assertEquals;
 public class HealthVerdictTest {
 
     @Test
+    public void incompleteNutritionCannotTurnNoWarningsIntoHealthy() {
+        ProductAnalysisReport report = new ProductAnalysisReport(100, Collections.emptyList());
+        HealthVerdict verdict = HealthVerdict.fromReport(report, 1, false);
+        assertEquals(HealthVerdict.Status.REVIEW, verdict.getStatus());
+    }
+
+    @Test
+    public void incompleteNutritionStillKeepsAnActualHighSugarFinding() {
+        ProductAnalysisReport report = new ProductAnalysisReport(85, Collections.singletonList(
+                new AnalysisResult("High sugar content", AnalysisResult.WarningLevel.WARNING,
+                        15, null, "25 g per 100 g")));
+        assertEquals(HealthVerdict.Status.NOT_HEALTHY,
+                HealthVerdict.fromReport(report, 2, false).getStatus());
+    }
+
+    @Test
+    public void completeCoreNutritionKeepsExistingVerdictBehavior() {
+        ProductAnalysisReport report = new ProductAnalysisReport(100, Collections.emptyList());
+        assertEquals(HealthVerdict.Status.HEALTHY,
+                HealthVerdict.fromReport(report, 1, true).getStatus());
+    }
+
+    @Test
     public void fromResults_withSevereSignal_returnsNotHealthy() {
         HealthVerdict verdict = HealthVerdict.fromResults(
                 Collections.singletonList(new AnalysisResult("Artificial color", AnalysisResult.WarningLevel.SEVERE, 20, "Red 40", "Concern")),

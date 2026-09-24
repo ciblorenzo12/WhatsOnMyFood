@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="source_status_usda_food_data_central">Registro principal del producto: USDA FoodData Central (datos de la etiqueta proporcionados por el fabricante). Esto no implica el respaldo del USDA.</string>
+    <string name="source_status_usda_per_100g_nutrition_unavailable">No hay valores nutricionales utilizables por cada 100 g. Los valores por cada 100 mL no se consideran valores por cada 100 g. Revisa la etiqueta del envase; los valores que faltan no equivalen a cero.</string>
+</resources>

@@ -1,6 +1,8 @@
 [CmdletBinding()]
 param(
-    [string]$ConfigPath = (Join-Path $PSScriptRoot "..\\runpod.local.env")
+    [string]$ConfigPath = (Join-Path $PSScriptRoot "..\\runpod.local.env"),
+    [string]$KnownHostsPath = "",
+    [switch]$SkipUsdaKeyPrompt
 )
 
 $ErrorActionPreference = "Stop"
@@ -25,7 +27,7 @@ function Read-ConfigFile {
 
         $separator = $trimmed.IndexOf("=")
         if ($separator -lt 1) {
-            throw "Invalid configuration line in ${Path}: $line"
+            throw "Invalid configuration line in ${Path} (expected NAME=value)."
         }
 
         $name = $trimmed.Substring(0, $separator).Trim()
@@ -129,6 +131,14 @@ if ([string]::IsNullOrWhiteSpace($openFdaApiKey)) {
 }
 
 $geminiModel = if ([string]::IsNullOrWhiteSpace([string]$config.GEMINI_MODEL)) { "gemini-3.1-pro-preview" } else { [string]$config.GEMINI_MODEL }
+$fdcApiKey = [string]$config.FDC_API_KEY
+if ([string]::IsNullOrWhiteSpace($fdcApiKey)) {
+    $fdcApiKey = [string]$env:FDC_API_KEY
+}
+if ([string]::IsNullOrWhiteSpace($fdcApiKey) -and -not $SkipUsdaKeyPrompt) {
+    $enteredFdcKey = Read-Host "USDA FoodData Central key (masked; blank disables USDA for this deployment)" -AsSecureString
+    $fdcApiKey = ConvertFrom-SecureString -Value $enteredFdcKey
+}
 $runtimeValues = [ordered]@{
     PORT = "$port"
     NODE_ENV = "production"
@@ -136,6 +146,7 @@ $runtimeValues = [ordered]@{
     GEMINI_API_KEY = $geminiApiKey
     GEMINI_MODEL = $geminiModel
     OPENFDA_API_KEY = $openFdaApiKey
+    FDC_API_KEY = $fdcApiKey
 }
 if (-not [string]::IsNullOrWhiteSpace([string]$config.BITWISE_APP_TOKEN)) {
     $runtimeValues.BITWISE_APP_TOKEN = [string]$config.BITWISE_APP_TOKEN
@@ -151,7 +162,14 @@ try {
     New-PortableBackendArchive -Root $backendRoot -DestinationPath $archivePath
     [IO.File]::WriteAllText($runtimePath, ($runtimeValues | ConvertTo-Json -Compress), [Text.UTF8Encoding]::new($false))
 
-    $sshArguments = @("-i", $sshKeyPath)
+    $sshOptions = @("-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes")
+    if (-not [string]::IsNullOrWhiteSpace($KnownHostsPath)) {
+        if (-not (Test-Path -LiteralPath $KnownHostsPath)) {
+            throw "The verified SSH host-key file does not exist."
+        }
+        $sshOptions += @("-o", "UserKnownHostsFile=$KnownHostsPath")
+    }
+    $sshArguments = @("-i", $sshKeyPath) + $sshOptions
     if ($sshPort -gt 0) {
         $sshArguments += @("-p", "$sshPort")
     }
@@ -166,7 +184,7 @@ try {
     if ($sshPort -gt 0 -and (Get-Command scp -ErrorAction SilentlyContinue)) {
         # RunPod's direct TCP endpoint supports SCP, which preserves binary files on
         # Windows without relying on PowerShell's text pipeline encoding.
-        $scpArguments = @("-i", $sshKeyPath, "-P", "$sshPort")
+        $scpArguments = @("-i", $sshKeyPath, "-P", "$sshPort") + $sshOptions
         $archiveTarget = "${sshTarget}:$remoteArchive"
         & scp @scpArguments $archivePath $archiveTarget
         if ($LASTEXITCODE -ne 0) {
@@ -239,7 +257,7 @@ const fs = require("fs");
 const path = require("path");
 const appDir = __dirname;
 Object.assign(process.env, JSON.parse(fs.readFileSync(path.join(appDir, "runpod.runtime.json"), "utf8")));
-require(path.join(appDir, "src", "server.js"));
+require(path.join(appDir, "src", "server.js")).startServer();
 EOF
 
 if [ -s "$APP_DIR/server.pid" ]; then
@@ -257,7 +275,7 @@ nohup node "$APP_DIR/run-server.js" > "$APP_DIR/server.log" 2>&1 < /dev/null &
 echo $! > "$APP_DIR/server.pid"
 sleep 2
 if ! kill -0 "$(cat "$APP_DIR/server.pid")" 2>/dev/null; then
-  cat "$APP_DIR/server.log" >&2 || true
+  echo "The backend exited during startup. Inspect the private server log on the pod." >&2
   exit 1
 fi
 

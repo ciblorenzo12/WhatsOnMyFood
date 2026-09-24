@@ -41,7 +41,7 @@ val releaseSigningConfigured = listOf(
 
 android {
     namespace = "com.ciblorenzo.whatsonmyfood"
-    compileSdk = 35
+    compileSdk = 36
 
     buildFeatures {
         buildConfig = true
@@ -50,11 +50,11 @@ android {
     defaultConfig {
         applicationId = "com.ciblorenzo.whatsonmyfood"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 16
-        versionName = "1.19-rc-2"
+        targetSdk = 36
+        versionCode = 18
+        versionName = "1.30.0-rc1"
 
-        buildConfigField("String", "FDC_API_KEY", buildConfigString(apiKey("FDC_API_KEY")))
+        // USDA credentials are server-only; Android calls the protected backend.
         buildConfigField("String", "NUTRITIONIX_APP_ID", buildConfigString(apiKey("NUTRITIONIX_APP_ID")))
         buildConfigField("String", "NUTRITIONIX_APP_KEY", buildConfigString(apiKey("NUTRITIONIX_APP_KEY")))
         buildConfigField("String", "BARCODE_LOOKUP_API_KEY", buildConfigString(apiKey("BARCODE_LOOKUP_API_KEY")))

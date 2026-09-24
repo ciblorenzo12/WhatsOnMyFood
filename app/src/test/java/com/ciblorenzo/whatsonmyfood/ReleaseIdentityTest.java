@@ -9,12 +9,12 @@ public class ReleaseIdentityTest {
 
     @Test
     public void candidateUsesTheRequestedRcVersionIdentity() {
-        assertEquals("1.19-rc-2", BuildConfig.VERSION_NAME);
-        assertEquals(16, BuildConfig.VERSION_CODE);
+        assertEquals("1.30.0-rc1", BuildConfig.VERSION_NAME);
+        assertEquals(18, BuildConfig.VERSION_CODE);
     }
 
     @Test
-    public void debugParticipantCandidateHasUnlimitedAiTestingAccess() {
+    public void participantCandidateHasUnlimitedAiTestingAccess() {
         assertTrue(BuildConfig.UNLIMITED_AI_TESTING);
     }
 }

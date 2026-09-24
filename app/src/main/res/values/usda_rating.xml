@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="incomplete_nutrition_rating">An overall score is unavailable because comparable total sugar, saturated fat, or sodium/salt values are missing. Missing values do not mean zero. Review the available findings and check the package label.</string>
+</resources>

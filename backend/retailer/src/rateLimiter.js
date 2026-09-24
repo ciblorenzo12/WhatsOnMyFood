@@ -43,6 +43,9 @@ function rateLimitBucketKey(clientKey, pathname) {
   if (path === "/v1/food-recalls") {
     return `${client}|food-recalls`;
   }
+  if (path === "/v1/food-data/usda") {
+    return `${client}|usda-food-data`;
+  }
   return `${client}|bitwise-analysis`;
 }
 

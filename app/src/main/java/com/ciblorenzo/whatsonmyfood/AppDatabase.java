@@ -12,7 +12,7 @@ import com.ciblorenzo.whatsonmyfood.recall.PantryRecallStatus;
 import com.ciblorenzo.whatsonmyfood.recall.PantryRecallDao;
 import com.ciblorenzo.whatsonmyfood.recall.RecallAlert;
 
-@Database(entities = {Product.class, Nutriments.class, Ingredient.class, Pantry.class, CacheMeta.class, AdditiveEntry.class, PantryRecallStatus.class, RecallAlert.class}, version = 12, exportSchema = false)
+@Database(entities = {Product.class, Nutriments.class, Ingredient.class, Pantry.class, CacheMeta.class, AdditiveEntry.class, PantryRecallStatus.class, RecallAlert.class}, version = 13, exportSchema = false)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -27,6 +27,14 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    public static final Migration MIGRATION_12_13 = new Migration(12, 13) {
+        @Override public void migrate(SupportSQLiteDatabase db) {
+            // Older saved records keep their data without inventing a provider attribution.
+            db.execSQL("ALTER TABLE cache_meta ADD COLUMN sourceName TEXT");
+            db.execSQL("ALTER TABLE cache_meta ADD COLUMN usdaNutrientBasis TEXT");
+        }
+    };
+
     private static volatile AppDatabase INSTANCE;
 
     public static AppDatabase getDatabase(final Context context) {
@@ -35,7 +43,7 @@ public abstract class AppDatabase extends RoomDatabase {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                             AppDatabase.class, "food_database")
-                            .addMigrations(MIGRATION_11_12)
+                            .addMigrations(MIGRATION_11_12, MIGRATION_12_13)
                             .fallbackToDestructiveMigration()
                             .build();
                 }

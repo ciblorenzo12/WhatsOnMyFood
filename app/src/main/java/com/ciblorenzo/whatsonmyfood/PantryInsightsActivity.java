@@ -78,7 +78,9 @@ public class PantryInsightsActivity extends BaseActivity {
                 ProductAnalysisReport report = ruleEngine.analyze(product);
                 reports.add(report);
                 if (product != null && product.product != null && report != null) {
-                    product.product.healthScore = report.getOverallScore();
+                    product.product.healthScore = NutritionScoreCoverage.hasCoreNutrition(product)
+                            && product.ingredients != null && !product.ingredients.isEmpty()
+                            ? report.getOverallScore() : null;
                 }
             }
             List<PantryRiskScorer.RiskItem> items = PantryRiskScorer.scoreProductDetails(products);

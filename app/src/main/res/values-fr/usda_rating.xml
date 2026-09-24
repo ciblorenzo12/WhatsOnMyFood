@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="incomplete_nutrition_rating">Un score global n’est pas disponible, car il manque des valeurs comparables pour les sucres totaux, les graisses saturées ou le sodium/sel. Une valeur manquante ne signifie pas zéro. Consultez les résultats disponibles et l’étiquette du produit.</string>
+</resources>

@@ -1,6 +1,7 @@
 package com.ciblorenzo.whatsonmyfood.analysis.rules;
 
 import com.ciblorenzo.whatsonmyfood.ProductWithDetails;
+import com.ciblorenzo.whatsonmyfood.NutritionScoreCoverage;
 import com.ciblorenzo.whatsonmyfood.analysis.AnalysisResult;
 
 import java.util.ArrayList;
@@ -14,9 +15,11 @@ public class HighSodiumRule implements ProductAnalysisRule {
     @Override
     public List<AnalysisResult> evaluate(ProductWithDetails productWithDetails) {
         List<AnalysisResult> results = new ArrayList<>();
-        if (productWithDetails != null && productWithDetails.nutriments != null && productWithDetails.nutriments.sodium != null) {
+        Double sodium = NutritionScoreCoverage.sodiumForAnalysis(
+                productWithDetails == null ? null : productWithDetails.nutriments);
+        if (sodium != null) {
             // The API provides sodium in g, so we convert to mg for comparison
-            double sodiumInMg = productWithDetails.nutriments.sodium * 1000;
+            double sodiumInMg = sodium * 1000;
             if (sodiumInMg > SODIUM_THRESHOLD_MG_PER_100G) {
                 results.add(new AnalysisResult("High sodium content", AnalysisResult.WarningLevel.WARNING, 20, null, EXPLANATION));
             }

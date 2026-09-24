@@ -4,12 +4,12 @@ import android.content.Intent;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.StyleSpan;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MenuItem;
@@ -397,6 +397,7 @@ public class ProductDetailsActivity extends BaseActivity {
                 FoodRecallNavigation.EntryPoint.SAVED_PRODUCT
         );
 
+        clearUnsupportedRating(productDetails);
         currentReport = ruleEngine.analyze(productDetails);
         boolean ingredientsMissing = !hasListedIngredients(productDetails);
         contributeIngredientsButton.setVisibility(ingredientsMissing ? View.VISIBLE : View.GONE);
@@ -484,6 +485,12 @@ public class ProductDetailsActivity extends BaseActivity {
         if (product.nutriments != null) {
             productData.append("\nNutrition Facts (per 100g): ").append(product.nutriments.toString());
         }
+        if (!NutritionScoreCoverage.hasCoreNutrition(product)) {
+            productData.append("\nOverall nutrition rating unavailable: comparable total sugar, saturated fat, "
+                    + "or sodium/salt data are missing. Do not infer zero or low amounts, call the product "
+                    + "healthy/approved overall, or supply a numeric score. Explain only supported findings "
+                    + "and the missing information; use REVIEW unless a known concern supports NOT_HEALTHY.");
+        }
 
         BitwiseAiCore.startAnalysis(this, productData.toString(), ruleEngine.getRuleDescriptions(), null, new BitwiseAiCore.AiCallback() {
             @Override
@@ -556,9 +563,15 @@ public class ProductDetailsActivity extends BaseActivity {
                                     sourcesArr = HealthVerdictExplanationBuilder.buildSources(currentReport.getResults());
                                 }
                             }
-                            String cachedInsight = buildAiInsightCache(summary, sourcesArr);
-                            productRepository.updateProductAiInsight(product.product.barcode, cachedInsight);
-                            product.product.aiInsight = cachedInsight;
+                            if (NutritionScoreCoverage.hasCoreNutrition(product)) {
+                                String cachedInsight = buildAiInsightCache(summary, sourcesArr);
+                                productRepository.updateProductAiInsight(product.product.barcode, cachedInsight);
+                                product.product.aiInsight = cachedInsight;
+                            } else {
+                                summary = getString(R.string.incomplete_nutrition_rating);
+                                sourcesArr = HealthVerdictExplanationBuilder.buildSources(
+                                        currentReport != null ? currentReport.getResults() : null);
+                            }
                             setResult(RESULT_OK, new Intent().putExtra(PantryActivity.RESULT_DATA_CHANGED, true));
                             animateText(aiSummaryTextView, summary);
                             displaySources(sourcesArr);
@@ -614,6 +627,7 @@ public class ProductDetailsActivity extends BaseActivity {
     }
 
     private boolean displayCachedAiInsight(ProductWithDetails product) {
+        if (!NutritionScoreCoverage.hasCoreNutrition(product)) return false;
         if (product == null
                 || product.product == null
                 || product.product.aiInsight == null
@@ -662,18 +676,39 @@ public class ProductDetailsActivity extends BaseActivity {
     private void applyHealthVerdict(ProductWithDetails product, ProductAnalysisReport report, List<AnalysisResult> results, String aiVerdict, String aiVerdictReason) {
         if (product == null || product.product == null) return;
 
-        if (report != null) {
+        boolean hasCoreNutrition = NutritionScoreCoverage.hasCoreNutrition(product);
+        if (report != null && hasCoreNutrition && getIngredientCount(product) > 0) {
             int ruleScore = report.getOverallScore();
             product.product.healthScore = ruleScore;
             productRepository.updateProductHealthScore(product.product.barcode, ruleScore);
             setResult(RESULT_OK, new Intent().putExtra(PantryActivity.RESULT_DATA_CHANGED, true));
         }
+        if (!hasCoreNutrition) clearUnsupportedRating(product);
 
-        latestVerdict = HealthVerdict.fromReport(report, getIngredientCount(product));
+        latestVerdict = HealthVerdict.fromReport(report, getIngredientCount(product), hasCoreNutrition);
         healthScoreTextView.setText(latestVerdict.getLabel());
-        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.explain(findViewById(android.R.id.content), report);
-        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.score(findViewById(android.R.id.content), report == null || latestVerdict.getStatus() == HealthVerdict.Status.REVIEW ? null : report.getOverallScore());
+        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.explain(findViewById(android.R.id.content), hasCoreNutrition ? report : null);
+        if (!hasCoreNutrition) {
+            TextView explanation = findViewById(R.id.ui_score_calculation);
+            if (explanation != null) explanation.setText(R.string.incomplete_nutrition_rating);
+        }
+        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.score(findViewById(android.R.id.content), report == null || !hasCoreNutrition || latestVerdict.getStatus() == HealthVerdict.Status.REVIEW ? null : report.getOverallScore());
         healthScoreTextView.setTextColor(getVerdictColor(latestVerdict));
+    }
+
+    private void clearUnsupportedRating(ProductWithDetails product) {
+        if (product == null || product.product == null
+                || NutritionScoreCoverage.hasCoreNutrition(product)) return;
+        if (product.product.healthScore != null || product.product.aiInsight != null) {
+            String barcode = product.product.barcode;
+            product.product.healthScore = null;
+            product.product.aiInsight = null;
+            executorService.execute(() -> {
+                db.productDao().updateHealthScore(barcode, null);
+                db.productDao().updateAiInsight(barcode, null);
+            });
+            setResult(RESULT_OK, new Intent().putExtra(PantryActivity.RESULT_DATA_CHANGED, true));
+        }
     }
 
     private int getIngredientCount(ProductWithDetails product) {

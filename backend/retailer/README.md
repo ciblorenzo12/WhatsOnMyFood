@@ -10,6 +10,7 @@ The Android app should call backend endpoints like these instead of calling reta
 - `GET /api/retail/products/:barcode/ingredients/rag`
 - `POST /v1/bitwise/analyze`
 - `GET /v1/food-recalls?barcode=:barcode&productName=:name&brand=:brand`
+- `GET /v1/food-data/usda?barcode=:barcode`
 - `GET /health`
 - `GET /ready`
 - `POST /v1/billing/google-play/verify`
@@ -76,6 +77,55 @@ The endpoint requires the same `X-APP-TOKEN` header as the other protected appli
 services. The Android build contains the backend URL and application token, but it does
 not contain the openFDA provider key. If the backend key is missing, `/ready` fails and
 recall requests return a safe unavailable response instead of making an anonymous call.
+
+## USDA FoodData Central fallback
+
+The Android product lookup tries Open Food Facts first, then asks this backend for
+an exact USDA branded-product match. The remaining product providers stay available
+if USDA has no match or cannot respond. The application calls
+`GET /v1/food-data/usda?barcode=:barcode` with `X-APP-TOKEN`; it does not call USDA
+directly or include a USDA key in the APK.
+
+Configure `FDC_API_KEY` in the **backend process environment**. Requests must include
+the application token expected by the server. If you configure `BITWISE_APP_TOKEN`,
+it must match the Android backend configuration; otherwise the existing application
+token behavior is unchanged.
+Keep the real USDA key out of Android `local.properties`, source code, chat messages,
+screenshots, and version control. This server does not automatically load `.env` files.
+There is no anonymous or `DEMO_KEY` fallback when the key is missing.
+
+For local setup, use the masked PowerShell prompts in the
+[USDA setup and test guide](../../docs/testing/usda-fallback-test-guide.md).
+On a hosted backend, set the values through the host's protected secret/environment
+configuration and restart the service. Editing the code does not deploy it or install
+the key on the server.
+
+The endpoint checks the barcode's GTIN length and check digit, compares normalized
+14-digit values, and requires a United States branded-food record. It never substitutes
+a similarly named food. A successful exact match returns HTTP 200 with `status: 1`
+and `source: "USDA FoodData Central"`; no exact match returns HTTP 200
+with `status: 0`. Invalid input returns 400, missing configuration returns 503, rate
+limiting returns 429, a provider timeout returns 504, and an unusable provider response
+returns 502. Invalid application authentication is rejected before the provider is called.
+The provider request has a 9-second timeout; the Android call has an 18-second total
+limit so the product lookup cannot wait indefinitely on this fallback.
+
+Nutrition parsing keeps total sugar separate from added sugar, preserves missing data
+as unknown, checks nutrient units, and does not relabel values per 100 mL as per 100 g.
+Records with an mL or unknown serving-unit basis do not populate per-100-g numbers.
+The response includes provenance, its nutrient basis (`per100g`,
+`per100ml_not_converted`, or `unknown`), and applicable warnings.
+USDA is an additional data source, not a guarantee that a branded-food record or an AI
+explanation is correct. Industry providers supply branded-food records, and USDA
+documents missing values and label-rounding limitations. Compare the exact product
+and its package label when checking accuracy.
+
+Official references: [USDA API guide](https://fdc.nal.usda.gov/api-guide/) and
+[branded-food documentation](https://fdc.nal.usda.gov/GBFPD_Documentation/).
+
+`/health` and `/ready` expose only a `usdaKeyConfigured` boolean, never the key.
+This reports whether a nonblank, non-demo value exists, not whether USDA has accepted it.
+USDA is optional and does not determine the overall readiness result.
 
 Run the mock server:
 
@@ -189,6 +239,13 @@ tab and its HTTP proxy URL. For **SSH over exposed TCP**, use `root@HOST` as
 a masked local prompt and sends it only to the RunPod server. The local file is ignored
 by Git.
 
+The script also accepts `FDC_API_KEY` from its local configuration or current process
+environment. If neither is set, it requests the USDA key using a masked prompt.
+**Leaving that prompt blank disables USDA for this deployment**; it does not preserve
+an existing server key. To keep a backend-only key private, use the masked prompt
+rather than adding it to a shared file. Configure the matching application token if
+your server uses a custom `BITWISE_APP_TOKEN`.
+
 Deploy or update the backend with one command:
 
 ```powershell
@@ -203,5 +260,5 @@ RETAILER_BACKEND_BASE_URL=https://YOUR-POD-ID-8000.proxy.runpod.net
 BITWISE_LLM_BASE_URL=https://YOUR-POD-ID-8000.proxy.runpod.net
 ```
 
-The Gemini and openFDA keys stay on the server. Do not put them in Android
+The Gemini, openFDA, and USDA keys stay on the server. Do not put them in Android
 `local.properties`, source code, or a committed configuration file.

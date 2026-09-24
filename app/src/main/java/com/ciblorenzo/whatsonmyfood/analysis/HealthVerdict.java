@@ -139,6 +139,17 @@ public final class HealthVerdict {
         return verdict;
     }
 
+    public static HealthVerdict fromReport(ProductAnalysisReport report, int ingredientCount,
+                                          boolean hasCoreNutrition) {
+        HealthVerdict verdict = fromReport(report, ingredientCount);
+        if (!hasCoreNutrition && verdict.getStatus() == Status.HEALTHY) {
+            return new HealthVerdict(Status.REVIEW, "Needs Review",
+                    "Comparable total sugar, saturated fat, or sodium/salt data are missing. "
+                            + "Missing nutrition values do not mean zero.");
+        }
+        return verdict;
+    }
+
     public String getLabel() {
         return label;
     }

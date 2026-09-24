@@ -6,6 +6,16 @@ public final class ProductRefreshPolicy {
     private ProductRefreshPolicy() {
     }
 
+    public static void preserveLocalState(ProductWithDetails refreshed, ProductWithDetails saved) {
+        if (refreshed == null || refreshed.product == null) return;
+        preserveLocalState(refreshed.product, saved == null ? null : saved.product);
+        if (!NutritionScoreCoverage.hasCoreNutrition(refreshed)) {
+            // A score or explanation from an older, fuller record is not current evidence.
+            refreshed.product.healthScore = null;
+            refreshed.product.aiInsight = null;
+        }
+    }
+
     public static void preserveLocalState(Product refreshedProduct, Product savedProduct) {
         if (refreshedProduct == null || savedProduct == null) return;
         if (!refreshedProduct.barcode.equals(savedProduct.barcode)) {

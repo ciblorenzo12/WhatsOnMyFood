@@ -5,6 +5,17 @@ import com.google.gson.annotations.SerializedName;
 public class ProductResponse {
     public int status;
     public ProductData product;
+    public String source;
+    public SourceProvenance provenance;
+
+    public static class SourceProvenance {
+        public long fdcId;
+        public String gtinUpc;
+        public String publicationDate;
+        public String marketCountry;
+        public String nutrientBasis;
+        public String sourceUrl;
+    }
 
     public static class ProductData {
         @SerializedName("product_name")

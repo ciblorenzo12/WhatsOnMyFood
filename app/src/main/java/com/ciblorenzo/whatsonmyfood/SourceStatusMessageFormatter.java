@@ -43,6 +43,10 @@ public final class SourceStatusMessageFormatter {
                 return R.string.source_status_ingredients_recovered;
             case AI_EXPLANATION_UNAVAILABLE:
                 return R.string.source_status_ai_unavailable;
+            case USDA_FOOD_DATA_CENTRAL:
+                return R.string.source_status_usda_food_data_central;
+            case USDA_PER_100G_NUTRITION_UNAVAILABLE:
+                return R.string.source_status_usda_per_100g_nutrition_unavailable;
             default:
                 throw new IllegalArgumentException("Unknown product source status: " + status);
         }

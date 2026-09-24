@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="incomplete_nutrition_rating">No se puede calcular una puntuación general porque faltan valores comparables de azúcares totales, grasas saturadas o sodio/sal. Los valores ausentes no significan cero. Revisa los resultados disponibles y la etiqueta del envase.</string>
+</resources>

@@ -9,6 +9,7 @@ const { createRateLimiter, rateLimitBucketKey } = require("./rateLimiter");
 const { healthPayload, readinessResult } = require("./environmentStatus");
 const { createRequestObserver } = require("./privacySafeObservability");
 const { handleFoodRecallCheck } = require("./foodRecallProxy");
+const { handleFoodDataCentralLookup } = require("./foodDataCentralProxy");
 
 const DEFAULT_APP_TOKEN = "R7qK2mZ9vP4xT0aLN6cY1sD8wF3hJ5bG";
 
@@ -42,6 +43,7 @@ function isProtectedEndpoint(pathname) {
     || pathname === "/v1/billing/google-play/verify"
     || pathname === "/v1/chat/completions"
     || pathname === "/v1/food-recalls"
+    || pathname === "/v1/food-data/usda"
     || /^\/api\/retail\/products\/[^/]+\/(availability|alternatives)$/.test(pathname)
     || /^\/api\/retail\/products\/[^/]+\/ingredients\/rag$/.test(pathname);
 }
@@ -133,6 +135,23 @@ async function handleRequest(req, res) {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/v1/food-data/usda") {
+      if (!hasValidAppToken(req)) {
+        diagnostic.setResult("failure", "authentication");
+        writeJson(res, 401, { error: "Unauthorized" });
+        return;
+      }
+      const result = await handleFoodDataCentralLookup(url);
+      if (result.status >= 400) {
+        const categories = { 400: "invalid_request", 429: "rate_limit", 503: "configuration", 504: "timeout" };
+        diagnostic.setResult("failure", categories[result.status] || "provider_unavailable");
+      } else {
+        diagnostic.setResult(result.body.status === 1 ? "fallback_success" : "empty_result", "none");
+      }
+      writeJson(res, result.status, result.body, result.headers);
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/v1/food-recalls") {
       if (!hasValidAppToken(req)) {
         diagnostic.setResult("failure", "authentication");
@@ -201,6 +220,7 @@ async function handleRequest(req, res) {
         "/v1/bitwise/analyze",
         "/v1/billing/google-play/verify",
         "/v1/food-recalls",
+        "/v1/food-data/usda",
         "/health",
         "/ready",
       ],
@@ -213,6 +233,12 @@ async function handleRequest(req, res) {
   }
 }
 
-http.createServer(handleRequest).listen(port, () => {
-  console.log(`Retailer mock backend listening on http://localhost:${port}`);
-});
+function startServer() {
+  return http.createServer(handleRequest).listen(port, () => {
+    console.log(`Retailer backend listening on http://localhost:${port}`);
+  });
+}
+
+if (require.main === module) startServer();
+
+module.exports = { handleRequest, isProtectedEndpoint, startServer };

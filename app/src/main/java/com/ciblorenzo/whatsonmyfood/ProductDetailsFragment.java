@@ -492,6 +492,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         categoriesTextView.setText(productDetails.product.categories != null ? productDetails.product.categories : "");
         servingSizeTextView.setText(productDetails.product.servingSize != null ? productDetails.product.servingSize : "");
 
+        clearUnsupportedRating(productDetails);
         currentReport = ruleEngine.analyze(productDetails);
         boolean ingredientsMissing = !hasListedIngredients(productDetails);
         contributeIngredientsButton.setVisibility(ingredientsMissing ? View.VISIBLE : View.GONE);
@@ -578,6 +579,11 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
         if (productDetails.nutriments != null) {
             productData.append("\nNutrition: ").append(productDetails.nutriments.toString());
         }
+        if (!NutritionScoreCoverage.hasCoreNutrition(productDetails)) {
+            productData.append("\nOverall nutrition rating unavailable: comparable total sugar, saturated fat, "
+                    + "or sodium/salt data are missing. Do not infer zero, low amounts, or an overall "
+                    + "healthy rating. Explain only supported findings and the missing information.");
+        }
 
         if (bitwiseAnalysisService != null) bitwiseAnalysisService.cancelActiveCall();
         bitwiseAnalysisService = new BitwiseAnalysisService();
@@ -606,15 +612,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                             addSourceStatus(ProductRepository.SourceStatus.INGREDIENTS_RECOVERED_FROM_LABEL_OR_SUPPORTING_SERVICE);
                         }
 
-                        // 2. Nutrition table
-                        org.json.JSONObject aiNutrition = obj.optJSONObject("nutrition");
-                        if (aiNutrition != null && productDetails.nutriments != null) {
-                            if (aiNutrition.has("energy")) productDetails.nutriments.energy = parseDouble(aiNutrition.optString("energy"));
-                            if (aiNutrition.has("fat")) productDetails.nutriments.fat = parseDouble(aiNutrition.optString("fat"));
-                            if (aiNutrition.has("sugars")) productDetails.nutriments.sugars = parseDouble(aiNutrition.optString("sugars"));
-                            if (aiNutrition.has("protein")) productDetails.nutriments.proteins = parseDouble(aiNutrition.optString("protein"));
-                            displayNutriments(productDetails.nutriments);
-                        }
+                        // Explanations cannot overwrite provider nutrition or fill unknown amounts.
 
                         // 3. Findings
                         org.json.JSONArray aiFindings = obj.optJSONArray("findings");
@@ -693,10 +691,6 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                 });
             }
 
-            private Double parseDouble(String val) {
-                try { return Double.parseDouble(val.replaceAll("[^0-9.]", "")); } catch (Exception e) { return 0.0; }
-            }
-
             @Override
             public void onError(Throwable t) {
                 Log.e(TAG, "Protected Bitwise explanation failed", t);
@@ -713,6 +707,7 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     }
 
     private boolean displayCachedAiInsight(ProductWithDetails product) {
+        if (!NutritionScoreCoverage.hasCoreNutrition(product)) return false;
         if (product == null
                 || product.product == null
                 || product.product.aiInsight == null
@@ -768,21 +763,40 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
     private void applyHealthVerdict(ProductWithDetails product, ProductAnalysisReport report, List<AnalysisResult> results, String aiVerdict, String aiVerdictReason) {
         if (product == null || product.product == null || getContext() == null) return;
 
-        if (report != null) {
+        boolean hasCoreNutrition = NutritionScoreCoverage.hasCoreNutrition(product);
+        if (report != null && hasCoreNutrition && getIngredientCount(product) > 0) {
             int ruleScore = report.getOverallScore();
             product.product.healthScore = ruleScore;
             productRepository.updateProductHealthScore(product.product.barcode, ruleScore);
         }
-        latestVerdict = HealthVerdict.fromReport(report, getIngredientCount(product));
+        if (!hasCoreNutrition) clearUnsupportedRating(product);
+        latestVerdict = HealthVerdict.fromReport(report, getIngredientCount(product), hasCoreNutrition);
         healthScoreTextView.setText(latestVerdict.getLabel());
-        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.explain(getView(), report);
-        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.score(getView(), report == null || latestVerdict.getStatus() == HealthVerdict.Status.REVIEW ? null : report.getOverallScore());
+        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.explain(getView(), hasCoreNutrition ? report : null);
+        if (!hasCoreNutrition && getView() != null) {
+            TextView explanation = getView().findViewById(R.id.ui_score_calculation);
+            if (explanation != null) explanation.setText(R.string.incomplete_nutrition_rating);
+        }
+        com.ciblorenzo.whatsonmyfood.ui.ProductPresentation.score(getView(), report == null || !hasCoreNutrition || latestVerdict.getStatus() == HealthVerdict.Status.REVIEW ? null : report.getOverallScore());
         com.ciblorenzo.whatsonmyfood.ui.ScanHistory.record(requireContext(), product.product);
         healthScoreTextView.setTextColor(getVerdictColor(latestVerdict));
     }
 
     private int getIngredientCount(ProductWithDetails product) {
         return product != null && product.ingredients != null ? product.ingredients.size() : 0;
+    }
+
+    private void clearUnsupportedRating(ProductWithDetails product) {
+        if (product == null || product.product == null || NutritionScoreCoverage.hasCoreNutrition(product)) return;
+        if (product.product.healthScore != null || product.product.aiInsight != null) {
+            String barcode = product.product.barcode;
+            product.product.healthScore = null;
+            product.product.aiInsight = null;
+            executorService.execute(() -> {
+                db.productDao().updateHealthScore(barcode, null);
+                db.productDao().updateAiInsight(barcode, null);
+            });
+        }
     }
 
     private int getVerdictColor(HealthVerdict verdict) {
@@ -1090,9 +1104,16 @@ public class ProductDetailsFragment extends BottomSheetDialogFragment {
                 sources = HealthVerdictExplanationBuilder.buildSources(currentReport.getResults());
             }
         }
-        String cachedInsight = buildAiInsightCache(text, sources);
-        productRepository.updateProductAiInsight(product.product.barcode, cachedInsight);
-        product.product.aiInsight = cachedInsight;
+        if (NutritionScoreCoverage.hasCoreNutrition(product)) {
+            String cachedInsight = buildAiInsightCache(text, sources);
+            productRepository.updateProductAiInsight(product.product.barcode, cachedInsight);
+            product.product.aiInsight = cachedInsight;
+        } else {
+            // Keep source-grounded findings visible; do not show an unsupported AI health claim.
+            text = getString(R.string.incomplete_nutrition_rating);
+            sources = HealthVerdictExplanationBuilder.buildSources(
+                    currentReport != null ? currentReport.getResults() : null);
+        }
 
         aiSummaryContainer.setVisibility(View.VISIBLE);
         GlassMotion.enter(aiSummaryContainer, 80L);

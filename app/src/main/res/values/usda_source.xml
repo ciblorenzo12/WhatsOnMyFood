@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="source_status_usda_food_data_central">Primary product record: USDA FoodData Central (manufacturer-supplied label data). This is not a USDA endorsement.</string>
+    <string name="source_status_usda_per_100g_nutrition_unavailable">Usable nutrition values per 100 g are unavailable. Values per 100 mL are not treated as values per 100 g. Check the package label; missing values do not mean zero.</string>
+</resources>

@@ -76,6 +76,9 @@ public class ProductRefreshPersistenceDaoTest {
                 false
         );
 
+        refreshed.nutriments = new com.google.gson.Gson().fromJson(
+                "{\"barcode\":\"" + BARCODE + "\",\"sugars_100g\":1,\"saturated-fat_100g\":0,\"sodium_100g\":0.1}",
+                Nutriments.class);
         dao.insertRefreshedProductWithDetails(refreshed);
 
         ProductWithDetails stored = dao.getProductWithDetails(BARCODE);
@@ -87,6 +90,29 @@ public class ProductRefreshPersistenceDaoTest {
         assertEquals("{\"summary\":\"Saved Bitwise insight\"}", stored.product.aiInsight);
         assertEquals(Integer.valueOf(40), stored.product.userIngredientRiskScore);
         assertNotNull(dao.findPantryItemByBarcode(BARCODE, USER_ID));
+        assertEquals(1, dao.countPantryProducts(USER_ID));
+    }
+
+    @Test
+    public void incompleteRefreshClearsOldRatingAndAiButKeepsPantryAndFavorite() {
+        saveInitialProduct();
+        dao.insertRefreshedProductWithDetails(details(
+                "USDA product without comparable nutrition", "water", null, null, 0, false));
+
+        ProductWithDetails stored = dao.getProductWithDetails(BARCODE);
+        assertNotNull(stored);
+        assertNull(stored.product.healthScore);
+        assertNull(stored.product.aiInsight);
+        assertTrue(stored.product.isFavorite);
+        assertEquals(Integer.valueOf(40), stored.product.userIngredientRiskScore);
+        assertNotNull(dao.findPantryItemByBarcode(BARCODE, USER_ID));
+    }
+
+    @Test
+    public void anUnsupportedSavedScoreCanBeClearedWithoutDeletingTheProduct() {
+        saveInitialProduct();
+        dao.updateHealthScore(BARCODE, null);
+        assertNull(dao.getProductWithDetails(BARCODE).product.healthScore);
         assertEquals(1, dao.countPantryProducts(USER_ID));
     }
 

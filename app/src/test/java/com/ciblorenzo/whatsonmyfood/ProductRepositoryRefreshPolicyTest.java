@@ -43,6 +43,37 @@ public class ProductRepositoryRefreshPolicyTest {
         ProductRefreshPolicy.preserveLocalState(refreshed, saved);
     }
 
+    @Test
+    public void refreshWithUnknownNutritionClearsDerivedClaimsButKeepsShopperState() {
+        ProductWithDetails saved = new ProductWithDetails();
+        saved.product = product("usda", "Old product", "Old healthy explanation", 100, 40);
+        saved.product.isFavorite = true;
+        ProductWithDetails refreshed = new ProductWithDetails();
+        refreshed.product = product("usda", "Updated product", null, null, 0);
+
+        ProductRefreshPolicy.preserveLocalState(refreshed, saved);
+
+        assertNull(refreshed.product.healthScore);
+        assertNull(refreshed.product.aiInsight);
+        assertTrue(refreshed.product.isFavorite);
+        assertEquals(Integer.valueOf(40), refreshed.product.userIngredientRiskScore);
+    }
+
+    @Test
+    public void refreshWithComparableCoreNutritionRetainsExistingLocalBehavior() {
+        ProductWithDetails saved = new ProductWithDetails();
+        saved.product = product("usda", "Old product", "Saved explanation", 75, 40);
+        ProductWithDetails refreshed = new ProductWithDetails();
+        refreshed.product = product("usda", "Updated product", null, null, 0);
+        refreshed.nutriments = new com.google.gson.Gson().fromJson(
+                "{\"sugars_100g\":1,\"saturated-fat_100g\":0,\"sodium_100g\":0.1}", Nutriments.class);
+
+        ProductRefreshPolicy.preserveLocalState(refreshed, saved);
+
+        assertEquals(Integer.valueOf(75), refreshed.product.healthScore);
+        assertEquals("Saved explanation", refreshed.product.aiInsight);
+    }
+
     private Product product(
             String barcode,
             String name,

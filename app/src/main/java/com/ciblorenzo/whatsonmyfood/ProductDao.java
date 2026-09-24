@@ -55,12 +55,7 @@ public interface ProductDao {
             return;
         }
         ProductWithDetails savedProduct = getProductWithDetails(refreshedProduct.product.barcode);
-        if (savedProduct != null) {
-            ProductRefreshPolicy.preserveLocalState(
-                    refreshedProduct.product,
-                    savedProduct.product
-            );
-        }
+        ProductRefreshPolicy.preserveLocalState(refreshedProduct, savedProduct);
         insertProductWithDetails(refreshedProduct);
     }
 
@@ -104,7 +99,7 @@ public interface ProductDao {
     void updateAiInsight(String barcode, String aiInsight);
 
     @Query("UPDATE products SET healthScore = :healthScore WHERE barcode = :barcode")
-    void updateHealthScore(String barcode, int healthScore);
+    void updateHealthScore(String barcode, Integer healthScore);
 
     @Query("UPDATE products SET userIngredientRiskScore = :score WHERE barcode = :barcode")
     void updateUserIngredientRiskScore(String barcode, int score);

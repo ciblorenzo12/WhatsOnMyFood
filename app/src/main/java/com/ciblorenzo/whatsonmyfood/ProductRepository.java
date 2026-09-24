@@ -35,7 +35,9 @@ public class ProductRepository implements ProductLookupGateway {
         SAVED_OFFLINE_RESULT,
         INFORMATION_MAY_BE_OUTDATED,
         INGREDIENTS_RECOVERED_FROM_LABEL_OR_SUPPORTING_SERVICE,
-        AI_EXPLANATION_UNAVAILABLE
+        AI_EXPLANATION_UNAVAILABLE,
+        USDA_FOOD_DATA_CENTRAL,
+        USDA_PER_100G_NUTRITION_UNAVAILABLE
     }
 
     public static class ProductResult {
@@ -104,7 +106,7 @@ public class ProductRepository implements ProductLookupGateway {
                             cachedProduct,
                             cacheDecision.dataStatus,
                             hasSavedAiInsight(cachedProduct) ? "Cache (Saved AI insight)" : "Cache",
-                            cacheDecision.sourceStatuses
+                            withSavedPrimarySource(cacheDecision.sourceStatuses, cacheMeta, cachedProduct)
                     ));
                     idlingResource.decrement();
                     return;
@@ -120,7 +122,7 @@ public class ProductRepository implements ProductLookupGateway {
                                 cachedProduct,
                                 cacheDecision.dataStatus,
                                 "Cache",
-                                cacheDecision.sourceStatuses
+                                withSavedPrimarySource(cacheDecision.sourceStatuses, cacheMeta, cachedProduct)
                         ));
                     } else {
                         callback.onError(new IOException(CacheLookupPolicy.offlineCacheMissMessage()));
@@ -205,13 +207,23 @@ public class ProductRepository implements ProductLookupGateway {
                     firstNonEmpty(openFoodFactsIngredients, supplementalIngredients)
             );
             productDao.insertRefreshedProductWithDetails(fetchedProduct);
-            productDao.insertCacheMeta(new CacheMeta(barcode, System.currentTimeMillis()));
+            CacheMeta cacheMeta = new CacheMeta(barcode, System.currentTimeMillis());
+            cacheMeta.sourceName = sourceName;
+            if (FoodDataCentralClient.class.getSimpleName().equals(sourceName)) {
+                cacheMeta.usdaNutrientBasis = bestResponse.provenance == null
+                        ? null : bestResponse.provenance.nutrientBasis;
+            }
+            productDao.insertCacheMeta(cacheMeta);
             boolean usedFallbackSource = !OpenFoodFactsApiClient.class.getSimpleName().equals(sourceName);
             callback.onComplete(new ProductResult(
                     fetchedProduct,
                     DataStatus.FRESH,
                     sourceName,
-                    SourceStatusResolver.forUpdatedDatabaseResult(usedFallbackSource, ingredientsRecovered)
+                    withSavedPrimarySource(
+                            SourceStatusResolver.forUpdatedDatabaseResult(usedFallbackSource, ingredientsRecovered),
+                            cacheMeta,
+                            fetchedProduct
+                    )
             ));
         } else {
             if (cachedProduct != null) {
@@ -219,7 +231,11 @@ public class ProductRepository implements ProductLookupGateway {
                         cachedProduct,
                         DataStatus.STALE,
                         "Cache",
-                        SourceStatusResolver.forUnavailableRefreshResult()
+                        withSavedPrimarySource(
+                                SourceStatusResolver.forUnavailableRefreshResult(),
+                                productDao.getCacheMeta(barcode),
+                                cachedProduct
+                        )
                 ));
             } else {
                  if (networkErrors == apiClients.size()) {
@@ -230,6 +246,24 @@ public class ProductRepository implements ProductLookupGateway {
             }
         }
         idlingResource.decrement();
+    }
+
+    private List<SourceStatus> withSavedPrimarySource(
+            List<SourceStatus> statuses,
+            CacheMeta cacheMeta,
+            ProductWithDetails product
+    ) {
+        if (cacheMeta == null) return statuses;
+        Nutriments nutrients = product == null ? null : product.nutriments;
+        boolean hasNutritionValues = nutrients != null && (
+                nutrients.energy != null || nutrients.energyKj != null
+                        || nutrients.fat != null || nutrients.saturatedFat != null
+                        || nutrients.carbohydrates != null || nutrients.sugars != null
+                        || nutrients.addedSugars != null || nutrients.fiber != null
+                        || nutrients.proteins != null || nutrients.sodium != null
+                        || nutrients.salt != null || nutrients.transFat != null
+                        || nutrients.cholesterol != null);
+        return cacheMeta.withPrimarySourceStatuses(statuses, hasNutritionValues);
     }
 
     private ProductWithDetails responseToProductWithDetails(ProductResponse response, String barcode) {
