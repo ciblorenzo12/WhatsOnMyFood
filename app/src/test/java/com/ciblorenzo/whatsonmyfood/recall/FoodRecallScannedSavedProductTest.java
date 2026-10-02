@@ -8,6 +8,7 @@ import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /** M7-10 regression coverage for representative scan and pantry checks. */
 public class FoodRecallScannedSavedProductTest {
@@ -15,19 +16,19 @@ public class FoodRecallScannedSavedProductTest {
     @Test
     public void scannedProductWithExactActiveUpcProducesConfirmedMatch() throws Exception {
         Product scannedProduct = product(
-                "721582132834",
-                "Pillsbury Bread Rolls Hard Roll Dough",
-                "Pillsbury",
-                "2.25 oz"
+                "030223075653",
+                "Pineapple Mango Salsa Mild",
+                "Taylor Farms",
+                "10 oz"
         );
         FoodRecallRecord activeRecall = record(
-                "H-1154-2026",
-                "Pillsbury Bread Rolls, Hard Roll Dough. Package UPC 7 21582-13283 4.",
-                "General Mills James Ford Bell Technical Center",
-                "Class II",
-                "Possible foreign material",
-                "Package UPC 7 21582-13283 4; Better if Used by OCT 12 26",
-                "20260819",
+                "H-1354-2026",
+                "Pineapple Mango Salsa Mild. Net Wt: 10 oz. UPC: 030223075653",
+                "Taylor Fresh Foods Inc",
+                "Class I",
+                "Potential contamination with Salmonella.",
+                "TFIC211, 8/7/2026; TFTX211, 8/9/2026",
+                "20260923",
                 "Ongoing"
         );
         FoodRecallRepository repository = repositoryReturning(activeRecall);
@@ -36,7 +37,11 @@ public class FoodRecallScannedSavedProductTest {
 
         assertEquals(FoodRecallState.CONFIRMED_MATCH, result.state);
         assertEquals(100, result.confidenceScore);
-        assertEquals("H-1154-2026", result.record.recallNumber);
+        assertEquals("H-1354-2026", result.record.recallNumber);
+        assertTrue(result.record.officialUrl().startsWith(
+                "https://api.fda.gov/food/enforcement.json"
+        ));
+        assertTrue(result.record.officialUrl().contains("H-1354-2026"));
     }
 
     @Test

@@ -384,6 +384,8 @@
     <string name="food_recall_saved_context">Ouvert depuis un produit enregistr&#233; dans le garde-manger</string>
     <string name="food_recall_product_fallback">Nom du produit indisponible</string>
     <string name="food_recall_brand_fallback">Marque non indiqu&#233;e</string>
+    <string name="food_recall_quantity_fallback">Format de l&#8217;emballage non indiqu&#233;</string>
+    <string name="food_recall_quantity_value">Format de l&#8217;emballage : %1$s</string>
     <string name="food_recall_barcode_value">Code-barres : %1$s</string>
     <string name="food_recall_official_source">Ouvrir les rappels officiels de la FDA</string>
     <string name="food_recall_disclaimer">L&#8217;absence de correspondance connue ne garantit pas qu&#8217;un produit est s&#251;r. Comparez toujours le lot, la date et l&#8217;emballage avec l&#8217;avis de rappel officiel.</string>
@@ -425,6 +427,17 @@
     <string name="food_recall_fallback_title">V&#233;rification automatique indisponible ?</string>
     <string name="food_recall_fallback_message">Vous pouvez toujours consulter la page officielle de la FDA. Recherchez avec le nom, la marque, l&#8217;UPC et les d&#233;tails de l&#8217;emballage.</string>
     <string name="food_recall_details_title">Dossier officiel de rappel</string>
+    <string name="food_recall_product_identity_title">Produit en cours de v&#233;rification</string>
+    <string name="food_recall_record_product_title">Produit rappel&#233;</string>
+    <string name="food_recall_record_status_title">Statut du rappel</string>
+    <string name="food_recall_record_reason_title">Motif du rappel</string>
+    <string name="food_recall_record_package_title">D&#233;tails de l&#8217;emballage concern&#233;</string>
+    <string name="food_recall_record_source_title">Source officielle et dates</string>
+    <string name="food_recall_source_name">Source : Food and Drug Administration des &#201;tats-Unis (FDA)</string>
+    <string name="food_recall_previous_match_failed">R&#233;sultat pr&#233;c&#233;dent r&#233;ussi : un rappel correspondant a &#233;t&#233; trouv&#233;. La derni&#232;re mise &#224; jour n&#8217;a pas abouti ; consultez l&#8217;avis enregistr&#233; et v&#233;rifiez &#224; nouveau.</string>
+    <string name="food_recall_previous_no_match_failed">R&#233;sultat pr&#233;c&#233;dent r&#233;ussi : aucune correspondance connue. La derni&#232;re mise &#224; jour n&#8217;a pas abouti ; ce r&#233;sultat n&#8217;est donc pas actuel et ne garantit pas la s&#233;curit&#233;.</string>
+    <string name="food_recall_previous_match_stale">Cette correspondance provient d&#8217;une ancienne v&#233;rification r&#233;ussie. Consultez l&#8217;avis enregistr&#233; et v&#233;rifiez &#224; nouveau pour obtenir les informations actuelles.</string>
+    <string name="food_recall_previous_no_match_stale">Ce r&#233;sultat sans correspondance connue provient d&#8217;une ancienne v&#233;rification r&#233;ussie. V&#233;rifiez &#224; nouveau avant de vous y fier.</string>
     <string name="food_recall_detail_match_confirmed">Pourquoi il correspond : un identifiant ou une forte correspondance de produit et de marque a &#233;t&#233; trouv&#233;.</string>
     <string name="food_recall_detail_match_possible">Pourquoi il peut correspondre : certains d&#233;tails du produit ou de la marque se ressemblent. Confirmez l&#8217;emballage avant d&#8217;agir.</string>
     <string name="food_recall_detail_number">Num&#233;ro de rappel : %1$s</string>

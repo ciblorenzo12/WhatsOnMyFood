@@ -384,6 +384,8 @@
     <string name="food_recall_saved_context">Abierto desde un producto guardado en la despensa</string>
     <string name="food_recall_product_fallback">Nombre del producto no disponible</string>
     <string name="food_recall_brand_fallback">Marca no indicada</string>
+    <string name="food_recall_quantity_fallback">Tama&#241;o del envase no indicado</string>
+    <string name="food_recall_quantity_value">Tama&#241;o del envase: %1$s</string>
     <string name="food_recall_barcode_value">C&#243;digo de barras: %1$s</string>
     <string name="food_recall_official_source">Abrir las retiradas oficiales de la FDA</string>
     <string name="food_recall_disclaimer">Que no haya una coincidencia conocida no garantiza que el producto sea seguro. Compara siempre el lote, la fecha y el envase con el aviso oficial de retirada.</string>
@@ -425,6 +427,17 @@
     <string name="food_recall_fallback_title">&#191;Consulta autom&#225;tica no disponible?</string>
     <string name="food_recall_fallback_message">A&#250;n puedes revisar la p&#225;gina oficial de la FDA. Busca por nombre, marca, UPC y datos del envase.</string>
     <string name="food_recall_details_title">Registro oficial de retirada</string>
+    <string name="food_recall_product_identity_title">Producto que se est&#225; comprobando</string>
+    <string name="food_recall_record_product_title">Producto retirado</string>
+    <string name="food_recall_record_status_title">Estado de la retirada</string>
+    <string name="food_recall_record_reason_title">Motivo de la retirada</string>
+    <string name="food_recall_record_package_title">Datos del envase afectado</string>
+    <string name="food_recall_record_source_title">Fuente oficial y fechas</string>
+    <string name="food_recall_source_name">Fuente: Administraci&#243;n de Alimentos y Medicamentos de EE. UU. (FDA)</string>
+    <string name="food_recall_previous_match_failed">Resultado correcto anterior: se encontr&#243; una coincidencia de retirada. La &#250;ltima actualizaci&#243;n no termin&#243;; revisa el aviso guardado y vuelve a consultar.</string>
+    <string name="food_recall_previous_no_match_failed">Resultado correcto anterior: ninguna coincidencia conocida. La &#250;ltima actualizaci&#243;n no termin&#243;, por lo que este resultado no es actual ni garantiza la seguridad.</string>
+    <string name="food_recall_previous_match_stale">Esta coincidencia procede de una consulta correcta anterior. Revisa el aviso guardado y vuelve a consultar para obtener informaci&#243;n actual.</string>
+    <string name="food_recall_previous_no_match_stale">Este resultado sin coincidencias conocidas procede de una consulta correcta anterior. Vuelve a consultar antes de confiar en &#233;l.</string>
     <string name="food_recall_detail_match_confirmed">Por qu&#233; coincide: se encontr&#243; un identificador o una coincidencia s&#243;lida de producto y marca.</string>
     <string name="food_recall_detail_match_possible">Por qu&#233; puede coincidir: algunos datos del producto o la marca se parecen. Confirma el envase antes de actuar.</string>
     <string name="food_recall_detail_number">N&#250;mero de retirada: %1$s</string>

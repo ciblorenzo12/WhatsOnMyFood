@@ -19,18 +19,33 @@ public class FoodRecallLayoutContractTest {
                 "@+id/food_recall_toolbar",
                 "@+id/food_recall_entry_context",
                 "@+id/food_recall_product_card",
+                "@+id/food_recall_product_name",
+                "@+id/food_recall_product_brand",
+                "@+id/food_recall_product_quantity",
+                "@+id/food_recall_product_barcode",
                 "@+id/food_recall_state_card",
                 "@+id/food_recall_state_badge",
                 "@+id/food_recall_state_title",
                 "@+id/food_recall_state_message",
                 "@+id/food_recall_guidance",
+                "@+id/food_recall_previous_result_notice",
                 "@+id/food_recall_details",
                 "@+id/food_recall_details_title",
                 "@+id/food_recall_match_basis",
-                "@+id/food_recall_number",
+                "@string/food_recall_record_product_title",
+                "@+id/food_recall_description",
+                "@string/food_recall_record_status_title",
                 "@+id/food_recall_status",
+                "@+id/food_recall_classification",
+                "@string/food_recall_record_reason_title",
                 "@+id/food_recall_reason",
+                "@string/food_recall_record_package_title",
                 "@+id/food_recall_codes",
+                "@string/food_recall_record_source_title",
+                "@+id/food_recall_source_name",
+                "@+id/food_recall_number",
+                "@+id/food_recall_firm",
+                "@+id/food_recall_report_date",
                 "@+id/food_recall_source_updated",
                 "@+id/food_recall_fallback",
                 "@+id/food_recall_primary_action",
@@ -60,6 +75,9 @@ public class FoodRecallLayoutContractTest {
         assertTrue(strings.contains("What to do next"));
         assertTrue(strings.contains("Automatic check unavailable?"));
         assertTrue(strings.contains("Official recall record"));
+        assertTrue(strings.contains("Package size not provided"));
+        assertTrue(strings.contains("Official source and dates"));
+        assertTrue(strings.contains("Previous successful result"));
     }
 
     private static void assertOrdered(String source, String... values) {

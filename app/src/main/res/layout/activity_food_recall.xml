@@ -63,9 +63,18 @@
                     android:padding="16dp">
 
                     <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/food_recall_product_identity_title"
+                        android:textColor="@color/text_muted"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
                         android:id="@+id/food_recall_product_name"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
                         android:textColor="@color/text_primary"
                         android:textSize="20sp"
                         android:textStyle="bold"
@@ -79,6 +88,15 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="14sp"
                         tools:text="Sample Brand" />
+
+                    <TextView
+                        android:id="@+id/food_recall_product_quantity"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:textColor="@color/text_muted"
+                        android:textSize="12sp"
+                        tools:text="Package size: 12 oz" />
 
                     <TextView
                         android:id="@+id/food_recall_product_barcode"
@@ -191,6 +209,20 @@
                             tools:text="Pause use and compare the package with the official notice." />
                     </LinearLayout>
 
+                    <TextView
+                        android:id="@+id/food_recall_previous_result_notice"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:background="@drawable/glass_panel_compact"
+                        android:lineSpacingExtra="3dp"
+                        android:padding="14dp"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp"
+                        android:visibility="gone"
+                        tools:text="Previous successful result: a recall match was found. The latest update did not finish, so review the saved notice below and check again."
+                        tools:visibility="visible" />
+
                     <LinearLayout
                         android:id="@+id/food_recall_details"
                         android:layout_width="match_parent"
@@ -222,41 +254,13 @@
                             tools:text="Why it may match: Some product details overlap." />
 
                         <TextView
-                            android:id="@+id/food_recall_number"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="14dp"
+                            android:text="@string/food_recall_record_product_title"
                             android:textColor="@color/text_primary"
-                            android:textSize="14sp"
-                            android:layout_marginTop="10dp"
-                            android:textStyle="bold"
-                            tools:text="Recall number: F-0000-2026" />
-
-                        <TextView
-                            android:id="@+id/food_recall_firm"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:textColor="@color/text_secondary"
                             android:textSize="13sp"
-                            tools:text="Recalling firm: Example Foods" />
-
-                        <TextView
-                            android:id="@+id/food_recall_classification"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="13sp"
-                            tools:text="Classification: Class I" />
-
-                        <TextView
-                            android:id="@+id/food_recall_status"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="13sp"
-                            tools:text="FDA status: Ongoing" />
+                            android:textStyle="bold" />
 
                         <TextView
                             android:id="@+id/food_recall_description"
@@ -268,6 +272,42 @@
                             tools:text="Product: Example product description" />
 
                         <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="14dp"
+                            android:text="@string/food_recall_record_status_title"
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/food_recall_status"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp"
+                            tools:text="FDA status: Ongoing" />
+
+                        <TextView
+                            android:id="@+id/food_recall_classification"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp"
+                            tools:text="Classification: Class I" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="14dp"
+                            android:text="@string/food_recall_record_reason_title"
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
                             android:id="@+id/food_recall_reason"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -277,6 +317,15 @@
                             tools:text="Reason: Possible undeclared allergen" />
 
                         <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="14dp"
+                            android:text="@string/food_recall_record_package_title"
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
                             android:id="@+id/food_recall_codes"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -284,6 +333,42 @@
                             android:textColor="@color/text_secondary"
                             android:textSize="13sp"
                             tools:text="Codes and dates: Lot 123" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="14dp"
+                            android:text="@string/food_recall_record_source_title"
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/food_recall_source_name"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:text="@string/food_recall_source_name"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/food_recall_number"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp"
+                            tools:text="Recall number: F-0000-2026" />
+
+                        <TextView
+                            android:id="@+id/food_recall_firm"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp"
+                            tools:text="Recalling firm: Example Foods" />
 
                         <TextView
                             android:id="@+id/food_recall_report_date"

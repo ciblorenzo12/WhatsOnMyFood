@@ -25,9 +25,9 @@ public class FoodRecallScanSavedFlowTest {
     @Test
     public void scannedProductKeepsScanContextAndShowsConfirmedAlert() {
         ProductWithDetails product = product(
-                "721582132834",
-                "Pillsbury Bread Rolls Hard Roll Dough",
-                "Pillsbury"
+                "030223075653",
+                "Pineapple Mango Salsa Mild",
+                "Taylor Farms"
         );
 
         try (ActivityScenario<FoodRecallActivity> ignored = launch(
@@ -38,13 +38,17 @@ public class FoodRecallScanSavedFlowTest {
             onView(withId(R.id.food_recall_entry_context))
                     .check(matches(withText(R.string.food_recall_scanned_context)));
             onView(withId(R.id.food_recall_product_name))
-                    .check(matches(withText("Pillsbury Bread Rolls Hard Roll Dough")));
+                    .check(matches(withText("Pineapple Mango Salsa Mild")));
             onView(withId(R.id.food_recall_product_barcode))
-                    .check(matches(withText("Barcode: 721582132834")));
+                    .check(matches(withText("Barcode: 030223075653")));
+            onView(withId(R.id.food_recall_product_quantity))
+                    .check(matches(withText(R.string.food_recall_quantity_fallback)));
             onView(withId(R.id.food_recall_state_badge))
                     .check(matches(withText(R.string.food_recall_confirmed_badge)));
             onView(withId(R.id.food_recall_state_title))
                     .check(matches(withText(R.string.food_recall_confirmed_title)));
+            onView(withId(R.id.food_recall_primary_action))
+                    .check(matches(withText(R.string.food_recall_check_again)));
         }
     }
 

@@ -385,6 +385,8 @@
     <string name="food_recall_saved_context">Opened from a saved pantry product</string>
     <string name="food_recall_product_fallback">Product name unavailable</string>
     <string name="food_recall_brand_fallback">Brand not provided</string>
+    <string name="food_recall_quantity_fallback">Package size not provided</string>
+    <string name="food_recall_quantity_value">Package size: %1$s</string>
     <string name="food_recall_barcode_value">Barcode: %1$s</string>
     <string name="food_recall_official_source">Open official FDA recalls</string>
     <string name="food_recall_disclaimer">A no-known-match result is not a guarantee that a product is safe. Always compare the lot, date, and package details with the official recall notice.</string>
@@ -427,6 +429,17 @@
     <string name="food_recall_fallback_title">Automatic check unavailable?</string>
     <string name="food_recall_fallback_message">You can still review the official FDA recall page. Search using the product name, brand, UPC, and package details.</string>
     <string name="food_recall_details_title">Official recall record</string>
+    <string name="food_recall_product_identity_title">Product being checked</string>
+    <string name="food_recall_record_product_title">Recalled product</string>
+    <string name="food_recall_record_status_title">Recall status</string>
+    <string name="food_recall_record_reason_title">Reason for recall</string>
+    <string name="food_recall_record_package_title">Affected package details</string>
+    <string name="food_recall_record_source_title">Official source and dates</string>
+    <string name="food_recall_source_name">Source: U.S. Food and Drug Administration (FDA)</string>
+    <string name="food_recall_previous_match_failed">Previous successful result: a recall match was found. The latest update did not finish, so review the saved notice below and check again.</string>
+    <string name="food_recall_previous_no_match_failed">Previous successful result: no known match. The latest update did not finish, so this is not a current result or a safety guarantee.</string>
+    <string name="food_recall_previous_match_stale">This recall match is from an older successful check. Review the saved notice below and check again for current information.</string>
+    <string name="food_recall_previous_no_match_stale">This no-known-match result is from an older successful check. Check again before relying on it.</string>
     <string name="food_recall_detail_match_confirmed">Why it matched: A product identifier or a strong product-and-brand match was found.</string>
     <string name="food_recall_detail_match_possible">Why it may match: Some product or brand details overlap. Confirm the package before taking action.</string>
     <string name="food_recall_detail_number">Recall number: %1$s</string>

@@ -18,6 +18,7 @@ public class FoodRecallPresentationTest {
         assertEquals(R.color.recall_critical, model.statusColor);
         assertTrue(model.showPrimaryAction);
         assertTrue(model.showOfficialSource);
+        assertEquals(R.string.food_recall_check_again, model.primaryActionText);
         assertEquals(R.string.food_recall_guidance_confirmed, model.guidanceText);
         assertTrue(model.urgentAlert);
         assertFalse(model.showFallbackPanel);
@@ -30,6 +31,7 @@ public class FoodRecallPresentationTest {
 
         assertEquals(R.string.food_recall_possible_badge, model.badgeText);
         assertEquals(R.color.recall_caution, model.statusColor);
+        assertEquals(R.string.food_recall_check_again, model.primaryActionText);
         assertEquals(R.string.food_recall_guidance_possible, model.guidanceText);
         assertTrue(model.urgentAlert);
         assertTrue(FoodRecallPresentation.requiresImmediateAttention(FoodRecallState.POSSIBLE_MATCH));
@@ -62,6 +64,10 @@ public class FoodRecallPresentationTest {
     public void unknownStateNameFallsBackToReady() {
         assertEquals(FoodRecallState.READY, FoodRecallState.fromName("not-a-state"));
         assertEquals(FoodRecallState.READY, FoodRecallState.fromName(null));
+        assertEquals(
+                R.string.food_recall_action,
+                FoodRecallPresentation.forState(FoodRecallState.READY).primaryActionText
+        );
     }
 
     @Test
