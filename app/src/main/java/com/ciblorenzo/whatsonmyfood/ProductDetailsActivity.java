@@ -1067,7 +1067,9 @@ public class ProductDetailsActivity extends BaseActivity {
                 SpannableString spannable = new SpannableString(ingredient.text);
                 AnalysisResult highlightResult = findIngredientHighlightResult(ingredient.text, report.getResults());
                 if (highlightResult != null) {
-                    int color = highlightResult.getLevel() == AnalysisResult.WarningLevel.POSITIVE ? 0x3300FF00 : 0x33FF0000;
+                    int color = com.ciblorenzo.whatsonmyfood.ui.IngredientPresentation.isAllergenNotice(highlightResult)
+                            ? com.ciblorenzo.whatsonmyfood.ui.IngredientPresentation.ALLERGEN_HIGHLIGHT_COLOR
+                            : highlightResult.getLevel() == AnalysisResult.WarningLevel.POSITIVE ? 0x3300FF00 : 0x33FF0000;
                     spannable.setSpan(new BackgroundColorSpan(color), 0, spannable.length(), 0);
                     spannable.setSpan(new StyleSpan(Typeface.BOLD), 0, spannable.length(), 0);
                 }
@@ -1081,7 +1083,10 @@ public class ProductDetailsActivity extends BaseActivity {
         AnalysisResult best = null;
         if (ingredientText == null || results == null) return null;
         for (AnalysisResult result : results) {
-            if (result == null || !matchesTrigger(ingredientText, result.getTriggeringIngredient())) {
+            // Allergen notices get a distinct yellow highlight, without a score penalty.
+            if (result == null || (result.getLevel() == AnalysisResult.WarningLevel.INFO
+                    && !com.ciblorenzo.whatsonmyfood.ui.IngredientPresentation.isAllergenNotice(result))
+                    || !matchesTrigger(ingredientText, result.getTriggeringIngredient())) {
                 continue;
             }
             if (best == null || ingredientHighlightPriority(ingredientText, result) > ingredientHighlightPriority(ingredientText, best)) {
@@ -1130,6 +1135,8 @@ public class ProductDetailsActivity extends BaseActivity {
     }
 
     private int ingredientHighlightPriority(String ingredientText, AnalysisResult result) {
+        // An organic claim must not hide the ingredient's allergen notice.
+        if (com.ciblorenzo.whatsonmyfood.ui.IngredientPresentation.isAllergenNotice(result)) return 110;
         String normalizedIngredient = ingredientText.toLowerCase(Locale.US);
         boolean organicOverride = normalizedIngredient.contains("organic") && !containsRefinedOilRisk(normalizedIngredient);
         if (organicOverride && result.getLevel() == AnalysisResult.WarningLevel.POSITIVE) {

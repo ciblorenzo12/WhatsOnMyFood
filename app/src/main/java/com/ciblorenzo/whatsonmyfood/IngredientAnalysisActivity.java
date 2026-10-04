@@ -833,6 +833,14 @@ public class IngredientAnalysisActivity extends BaseActivity {
                 }
                 applyIngredientHighlight(builder, ingredient.text, start, end, res);
             }
+            // Apply allergen notices last so an organic/positive highlight cannot hide them.
+            for (AnalysisResult res : report.getResults()) {
+                if (com.ciblorenzo.whatsonmyfood.ui.IngredientPresentation.isAllergenNotice(res)
+                        && res.getTriggeringIngredient() != null
+                        && !res.getTriggeringIngredient().trim().isEmpty()) {
+                    applyIngredientHighlight(builder, ingredient.text, start, end, res);
+                }
+            }
             if (i < productDetails.ingredients.size() - 1) builder.append(", ");
         }
         ingredientsTextView.setText(builder);
@@ -864,7 +872,9 @@ public class IngredientAnalysisActivity extends BaseActivity {
 
     private void setIngredientHighlight(SpannableStringBuilder builder, int start, int end, AnalysisResult.WarningLevel level) {
         int color;
-        if (level == AnalysisResult.WarningLevel.POSITIVE) {
+        if (level == AnalysisResult.WarningLevel.INFO) {
+            color = com.ciblorenzo.whatsonmyfood.ui.IngredientPresentation.ALLERGEN_HIGHLIGHT_COLOR;
+        } else if (level == AnalysisResult.WarningLevel.POSITIVE) {
             color = 0x3322C55E;
         } else if (level == AnalysisResult.WarningLevel.SEVERE) {
             color = 0x33EF4444;

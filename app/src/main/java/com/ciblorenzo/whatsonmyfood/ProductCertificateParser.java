@@ -79,7 +79,7 @@ public final class ProductCertificateParser {
         if (containsAny(normalized, "ok kosher", "star k", "star k kosher", "kof k",
                 "kof k kosher", "crc kosher", "klbd kosher", "kosher certified",
                 "kosher pareve", "kosher parve", "kosher dairy", "kosher")) {
-            return certificate("kosher", "Kosher Certified", "KOSHER", "kosher", false);
+            return certificate("kosher", "Kosher", "KOSHER", "kosher", false);
         }
 
         if (containsAny(normalized, "certified gluten free", "gluten free certification organization",
@@ -248,11 +248,20 @@ public final class ProductCertificateParser {
         String[] parts = labels.split("[,;|\\n]+");
         for (String part : parts) {
             String cleaned = cleanLabel(part);
-            if (!cleaned.isEmpty()) {
+            // Provider status fragments do not identify what was verified or by whom.
+            // Filter them from both the text row and the badge list, while preserving
+            // complete names such as "Non-GMO Project Verified".
+            if (!cleaned.isEmpty() && !isStandaloneStatus(cleaned)) {
                 result.add(cleaned);
             }
         }
         return result;
+    }
+
+    private static boolean isStandaloneStatus(String label) {
+        String normalized = normalize(label);
+        return normalized.equals("verified") || normalized.equals("certified")
+                || normalized.equals("certification") || normalized.equals("approved");
     }
 
     private static String cleanLabel(String label) {

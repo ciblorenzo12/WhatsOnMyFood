@@ -10,6 +10,34 @@ import static org.junit.Assert.assertTrue;
 public class ProductCertificateParserTest {
 
     @Test
+    public void removesOrphanStatusLabelsWithoutLosingNamedCertifications() {
+        String labels = "Kosher, USDA Organic, Non-GMO Project Verified, en:verified";
+        List<ProductCertificate> certificates = ProductCertificateParser.findCertificates(labels);
+        assertEquals(3, certificates.size());
+        assertEquals("Kosher", certificates.get(0).displayName);
+        assertEquals(null, certificates.get(0).logoKey);
+        assertEquals("usda_organic", certificates.get(1).logoKey);
+        assertEquals("non_gmo_project_verified", certificates.get(2).logoKey);
+        assertEquals("Kosher, USDA Organic, Non GMO Project Verified",
+                ProductCertificateParser.formatLabelsForDisplay(labels));
+    }
+
+    @Test
+    public void bareStatusWordsNeverProduceBadgesOrDisplayText() {
+        String labels = "Verified; CERTIFIED | en:approved\ncertification";
+        assertTrue(ProductCertificateParser.findCertificates(labels).isEmpty());
+        assertEquals("", ProductCertificateParser.formatLabelsForDisplay(labels));
+    }
+
+    @Test
+    public void identifiedKosherCertifierRetainsItsLogo() {
+        List<ProductCertificate> certificates = ProductCertificateParser.findCertificates(
+                "Kosher, Orthodox Union Kosher, Verified");
+        assertEquals(1, certificates.size());
+        assertEquals("ou_kosher", certificates.get(0).logoKey);
+    }
+
+    @Test
     public void findsCommonCertificatesFromLabels() {
         List<ProductCertificate> certificates = ProductCertificateParser.findCertificates(
                 "Organic, Non-GMO Project Verified, Orthodox Union Kosher"
