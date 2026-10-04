@@ -16,9 +16,8 @@ public class OrganicWheatRule implements ProductAnalysisRule {
         List<AnalysisResult> results = new ArrayList<>();
         if (productWithDetails != null && productWithDetails.ingredients != null) {
             for (Ingredient ingredient : productWithDetails.ingredients) {
-                if (ingredient.text != null) {
-                    String lowerCaseIngredient = ingredient.text.toLowerCase();
-                    if (lowerCaseIngredient.contains("organic") && lowerCaseIngredient.contains("wheat")) {
+                if (ingredient != null && ingredient.text != null) {
+                    if (OrganicClaim.isOrganic(ingredient.text) && OrganicClaim.isWheat(ingredient.text)) {
                         results.add(new AnalysisResult("Contains Organic Wheat", AnalysisResult.WarningLevel.POSITIVE, -10, ingredient.text, EXPLANATION));
                         // Found it, no need to check further in this product
                         break;

@@ -14,12 +14,17 @@ public class NonOrganicWheatRule implements ProductAnalysisRule {
     @Override
     public List<AnalysisResult> evaluate(ProductWithDetails productWithDetails) {
         List<AnalysisResult> results = new ArrayList<>();
+        // Product labels and ingredient names are separate provider fields. A certified
+        // product may list simply "whole grain wheat" without repeating "organic".
+        if (productWithDetails != null && productWithDetails.product != null
+                && OrganicClaim.isOrganic(productWithDetails.product.labels)) {
+            return results;
+        }
         if (productWithDetails != null && productWithDetails.ingredients != null) {
             for (Ingredient ingredient : productWithDetails.ingredients) {
-                if (ingredient.text != null) {
-                    String lowerCaseIngredient = ingredient.text.toLowerCase();
-                    if (lowerCaseIngredient.contains("wheat") && !lowerCaseIngredient.contains("organic")) {
-                        results.add(new AnalysisResult("Contains non-organic wheat", AnalysisResult.WarningLevel.WARNING, 20, "wheat", EXPLANATION));
+                if (ingredient != null && ingredient.text != null) {
+                    if (OrganicClaim.isWheat(ingredient.text) && !OrganicClaim.isOrganic(ingredient.text)) {
+                        results.add(new AnalysisResult("Contains non-organic wheat", AnalysisResult.WarningLevel.WARNING, 20, ingredient.text, EXPLANATION));
                         break; // Found it, no need to check further
                     }
                 }
@@ -30,7 +35,7 @@ public class NonOrganicWheatRule implements ProductAnalysisRule {
 
     @Override
     public String getRuleDescription() {
-        return "Conventional wheat: subtracts 20 points when an ingredient names wheat without calling that ingredient organic.";
+        return "Conventional wheat: subtracts 20 points when wheat is listed without an organic claim on either the ingredient or the product label.";
     }
 
     @Override
