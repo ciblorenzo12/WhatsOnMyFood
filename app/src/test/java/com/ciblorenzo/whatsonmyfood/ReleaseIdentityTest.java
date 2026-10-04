@@ -9,8 +9,8 @@ public class ReleaseIdentityTest {
 
     @Test
     public void candidateUsesTheRequestedRcVersionIdentity() {
-        assertEquals("1.30.0-rc1", BuildConfig.VERSION_NAME);
-        assertEquals(18, BuildConfig.VERSION_CODE);
+        assertEquals("1.32.0-rc1", BuildConfig.VERSION_NAME);
+        assertEquals(19, BuildConfig.VERSION_CODE);
     }
 
     @Test

@@ -1,7 +1,7 @@
 import java.util.Properties
 
 plugins {
-    id("com.android.application") version "9.3.1"
+    id("com.android.application") version "9.3.3"
     id("com.google.gms.google-services") version "4.4.4"
 }
 
@@ -51,8 +51,8 @@ android {
         applicationId = "com.ciblorenzo.whatsonmyfood"
         minSdk = 26
         targetSdk = 36
-        versionCode = 18
-        versionName = "1.30.0-rc1"
+        versionCode = 19
+        versionName = "1.32.0-rc1"
 
         // USDA credentials are server-only; Android calls the protected backend.
         buildConfigField("String", "NUTRITIONIX_APP_ID", buildConfigString(apiKey("NUTRITIONIX_APP_ID")))
