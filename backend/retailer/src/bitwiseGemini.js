@@ -93,6 +93,7 @@ const PRIMARY_HEALTH_AUTHORITIES = [
 ];
 const RESEARCH_HOSTS = ["pubmed.ncbi.nlm.nih.gov", "pmc.ncbi.nlm.nih.gov", "doi.org", "bmj.com"];
 const PROFESSIONAL_HEALTH_HOSTS = ["heart.org"];
+const SOURCE_QUALITY_RAW_MAX = 99;
 
 function sourceHost(value) {
   try {
@@ -155,7 +156,10 @@ function sourceVerification(source, claimContext, factCheckStatus = "authoritati
   const claimMatch = sourceClaimMatchScore(source, claimContext);
   const retrieval = factCheckStatus === "grounded" ? 12 : 7;
   const transport = /^https:\/\//i.test(url) ? 8 : 0;
-  const score = Math.max(0, Math.min(100, authority + evidence + claimMatch + retrieval + transport));
+  const rawScore = authority + evidence + claimMatch + retrieval + transport;
+  // Preserve component weights while giving both server and local scores
+  // the same attainable 0–100 display range.
+  const score = Math.max(0, Math.min(100, Math.round(rawScore * 100 / SOURCE_QUALITY_RAW_MAX)));
   const level = score >= 90 ? "very_strong" : score >= 75 ? "strong" : score >= 60 ? "moderate" : "limited";
 
   const basis = [];
@@ -171,7 +175,9 @@ function sourceVerification(source, claimContext, factCheckStatus = "authoritati
     score,
     level,
     basis,
-    method: "source_quality_v1",
+    method: "source_quality_v2",
+    raw_score: rawScore,
+    raw_max: SOURCE_QUALITY_RAW_MAX,
     note: "Evidence-quality estimate, not the probability that every claim is true.",
   };
 }

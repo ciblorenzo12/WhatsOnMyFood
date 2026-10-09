@@ -448,10 +448,24 @@ test("rates an official topic-matched nutrition source without another model req
     url: "https://www.fda.gov/food/nutrition-facts-label/added-sugars-nutrition-facts-label",
   }, "Ingredients: cane sugar and corn syrup", "grounded");
 
-  assert.ok(rating.score >= 90);
+  assert.equal(rating.score, 100);
   assert.equal(rating.level, "very_strong");
-  assert.equal(rating.method, "source_quality_v1");
+  assert.equal(rating.method, "source_quality_v2");
+  assert.equal(rating.raw_score, 99);
+  assert.equal(rating.raw_max, 99);
   assert.match(rating.note, /not the probability/i);
+});
+
+test("normalizes intermediate server points before assigning the quality level", () => {
+  const rating = sourceVerification({
+    key: "added_sugars",
+    name: "FDA - Added Sugars",
+    url: "https://www.fda.gov/nutrition/added-sugars",
+  }, "Product contains cane sugar", "authoritative_sources_selected");
+
+  assert.equal(rating.raw_score, 94);
+  assert.equal(rating.score, 95);
+  assert.equal(rating.level, "very_strong");
 });
 
 test("does not overrate an unclassified publisher with weak claim fit", () => {

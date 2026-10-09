@@ -7,6 +7,8 @@ import java.util.Locale;
 
 /** Fast, offline source-quality estimate used when rendering scientific references. */
 public final class SourceReliabilityEvaluator {
+    private static final int LOCAL_RAW_MAX = 92;
+    private static final int SERVER_V1_RAW_MAX = 99;
 
     private static final List<String> PRIMARY_AUTHORITIES = Arrays.asList(
             "fda.gov", "nih.gov", "ncbi.nlm.nih.gov", "cdc.gov", "usda.gov",
@@ -44,11 +46,25 @@ public final class SourceReliabilityEvaluator {
         int relevance = relevanceScore(name, url, searchQuery);
         int traceability = traceabilityScore(name, url);
         int transport = url != null && url.trim().toLowerCase(Locale.US).startsWith("https://") ? 8 : 0;
-        return fromScore(authority + evidence + relevance + traceability + transport);
+        return fromScore(normalize(authority + evidence + relevance + traceability + transport,
+                LOCAL_RAW_MAX));
     }
 
     public static Rating fromServerScore(int score) {
         return fromScore(score);
+    }
+
+    public static Rating fromServerScore(int score, String method) {
+        // v1 stored raw server points. v2 already stores a normalized score.
+        // Missing or unknown method identifiers retain the supplied scale.
+        return "source_quality_v1".equals(method)
+                ? fromScore(normalize(score, SERVER_V1_RAW_MAX))
+                : fromServerScore(score);
+    }
+
+    private static int normalize(int rawScore, int rawMax) {
+        int bounded = Math.max(0, Math.min(rawMax, rawScore));
+        return (int) Math.round(bounded * 100.0 / rawMax);
     }
 
     private static Rating fromScore(int value) {

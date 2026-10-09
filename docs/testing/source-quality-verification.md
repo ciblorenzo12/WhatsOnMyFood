@@ -1,14 +1,41 @@
 # Scientific source quality verification
 
-The full scoring formula, scientific basis, interpretation, limitations, and governance rules are documented in [Scientific Source Quality Verification Method](../source-quality-verification-method.md).
+The current scoring formula, interpretation, and test procedure are documented below.
 
 ## What changed
 
-Each scientific source now shows a **Verification estimate from 0% to 100%** and a plain-language level: **Very strong**, **Strong**, **Moderate**, or **Limited**.
+Each scientific source shows a **source-quality estimate on a 0–100 scale** and a plain-language level: **Very strong**, **Strong**, **Moderate**, or **Limited**.
 
 The estimate is calculated after Bitwise finishes generating its response. It does not add text to the prompt, make another model request, or wait for another network response. Android also calculates a local fallback estimate for older saved explanations and deterministic rule sources that do not yet contain server metadata.
 
 The number estimates the quality of a source for verification. It is **not** a statistical probability that every statement on the page—or every Bitwise claim—is true.
+
+## Display-scale correction, October 5, 2026
+
+The component weights remain unchanged. Server raw points have a maximum of 99:
+publisher authority (30), evidence orientation (24), topic match (25), retrieval
+status (12), and HTTPS (8). The local fallback has a maximum of 92: authority
+(30), evidence orientation (24), title/URL relevance (20), traceability (10),
+and HTTPS (8).
+
+Both paths now display `round(raw points × 100 / raw maximum)`, bounded to
+0–100. The server marks this method `source_quality_v2` and also returns
+`raw_score` and `raw_max`. Android converts saved scores marked
+`source_quality_v1` using the old 99-point maximum; it does not rescale v2
+scores or scores with missing/unknown method identifiers. Local fallback
+scores are computed from source metadata each time.
+
+The common quality bands are applied after normalization: Very strong
+(90–100), Strong (75–89), Moderate (60–74), and Limited (0–59). Normalization
+can change the displayed category near a threshold. It aligns the numerical
+range; it does not establish that the two methods measure source quality
+equally well or validate the weights against expert reviews.
+
+This is a current implementation correction. The study-build description
+in the thesis retains the historical unnormalized 99/92-point methods;
+survey responses and completed-study results are unchanged. Deploy the
+backend and release the updated Android client before describing this
+correction as live behavior. Updated clients also normalize legacy v1 data.
 
 ## Evidence-informed method
 
@@ -60,7 +87,9 @@ Pass result:
 BUILD SUCCESSFUL
 ```
 
-The four cases cover FDA guidance, a peer-reviewed research repository, an unclassified publisher, and safe handling of a server-provided score.
+The cases cover FDA guidance reaching 100, a peer-reviewed research repository,
+an unclassified publisher, intermediate-score normalization, quality bands,
+and version-aware handling of saved server scores.
 
 ## Manual product-detail test
 
@@ -68,7 +97,7 @@ The four cases cover FDA guidance, a peer-reviewed research repository, an uncla
 2. Scan a product that produces a Bitwise explanation.
 3. Scroll to **SCIENTIFIC SOURCES** in the product-detail fragment.
 4. Confirm the short disclaimer explains what the estimate means.
-5. Confirm every source shows a percentage and one quality level.
+5. Confirm every source shows a quality estimate and one quality level.
 6. Tap the source name and confirm the original page still opens.
 7. Return to the product and confirm no duplicate source was added.
 8. Reopen a saved Pantry product and confirm older cached sources also receive an estimate.

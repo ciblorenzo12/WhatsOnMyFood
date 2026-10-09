@@ -70,7 +70,8 @@ public final class ScientificSourceTextBuilder {
         JSONObject verification = source.optJSONObject("verification");
         int serverScore = verification != null ? verification.optInt("score", -1) : -1;
         if (serverScore >= 0 && serverScore <= 100) {
-            return SourceReliabilityEvaluator.fromServerScore(serverScore);
+            return SourceReliabilityEvaluator.fromServerScore(
+                    serverScore, verification.optString("method", ""));
         }
         return SourceReliabilityEvaluator.evaluate(
                 name,
