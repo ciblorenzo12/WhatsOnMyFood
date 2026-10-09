@@ -82,6 +82,9 @@ Run all unit tests:
 
 ### Participant testing build
 
+The current signed beta is [2.0.0-beta](docs/releases/2.0.0-beta.md), version code
+21. Its APK is saved at `outputs/releases/2.0.0-beta/WhatsOnMyFood-2.0.0-beta.apk`.
+
 Debug and release APKs currently disable the normal three-per-day Bitwise limit so
 users can complete every assigned AI-supported scan without subscribing. The
 subscription state is not changed and usage is not counted while this override is
@@ -104,7 +107,7 @@ Run focused analysis tests:
 
 ## Google Play Release
 
-The Android app targets API 35 and includes Google Play Billing for the Bitwise Plus subscription product `bitwise_plus_monthly`.
+The Android app targets API 36 and includes Google Play Billing for the Bitwise Plus subscription product `bitwise_plus_monthly`.
 
 See `docs/play_release_checklist.md` for the release bundle command, Play Console subscription setup, purchase testing flow, and store policy checklist.
 

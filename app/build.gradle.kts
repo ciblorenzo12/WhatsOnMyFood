@@ -51,8 +51,8 @@ android {
         applicationId = "com.ciblorenzo.whatsonmyfood"
         minSdk = 26
         targetSdk = 36
-        versionCode = 20
-        versionName = "1.32.0-rc2"
+        versionCode = 21
+        versionName = "2.0.0-beta"
 
         // USDA credentials are server-only; Android calls the protected backend.
         buildConfigField("String", "NUTRITIONIX_APP_ID", buildConfigString(apiKey("NUTRITIONIX_APP_ID")))
